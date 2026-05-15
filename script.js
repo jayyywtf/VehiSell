@@ -144,7 +144,7 @@ document.getElementById('form-auth').addEventListener('submit', async function (
 
         authBtn.textContent = "Uploading ID...";
         
-        // 🔥 CHANGED: Crushing the ID photo to 300px and 40% quality
+        // Crushing the ID photo to 300px and 40% quality
         compressImage(idFile, 300, 300, 0.4, async function (compressedIdPhoto) {
             try {
                 authBtn.textContent = "Creating Account...";
@@ -211,7 +211,7 @@ sellForm.onsubmit = (e) => {
     submitBtn.disabled = true;
     submitBtn.textContent = "Uploading to Cloud...";
 
-    // 🔥 CHANGED: Crushing the product photo to 400px and 40% quality
+    // Crushing the product photo to 400px and 40% quality
     compressImage(file, 400, 400, 0.4, async function (compressedProductPhoto) {
         try {
             const newItem = {
@@ -306,7 +306,12 @@ function renderFilteredListings(filterTerm = '', filterCat = 'all') {
                     <span>👤 ${item.seller}</span>
                     ${isOwner ?
                 `<button class="btn-del" style="background:#ef4444;color:white;padding:0.5rem;border:none;border-radius:6px;cursor:pointer;" onclick="deleteItem('${item.docId}')">Remove</button>` :
-                `<button class="btn-contact" style="background:var(--primary);color:white;padding:0.5rem;border:none;border-radius:6px;cursor:pointer;" onclick="contactSeller('${item.sellerKey}')">Contact</button>`
+                `
+                <div style="display: flex; gap: 5px;">
+                    <button class="btn-contact" style="background:#10b981;color:white;padding:0.5rem 1rem;border:none;border-radius:6px;cursor:pointer;font-weight:bold;" onclick="openReserveModal('${item.title.replace(/'/g, "\\'")}', ${item.price})">Reserve</button>
+                    <button class="btn-contact" style="background:var(--primary);color:white;padding:0.5rem;border:none;border-radius:6px;cursor:pointer;" onclick="contactSeller('${item.sellerKey}')">Contact</button>
+                </div>
+                `
             }
                 </div>
             </div>
@@ -358,11 +363,36 @@ window.contactSeller = async function(sellerKey) {
     }
 };
 
-window.onclick = (event) => {
-    const modal = document.getElementById('seller-modal');
-    if (event.target === modal) {
-        modal.classList.add('hidden');
+// --- RESERVATION LOGIC ---
+window.openReserveModal = function(title, price) {
+    if (!currentUser) {
+        alert("You must be logged in to reserve an item.");
+        showTab('auth');
+        return;
     }
+
+    const numericPrice = Number(price);
+    const reserveFee = numericPrice * 0.05; // Calculate 5%
+
+    // Populate the modal with the exact math
+    document.getElementById('reserve-item-title').innerText = title;
+    document.getElementById('reserve-full-price').innerText = numericPrice.toLocaleString();
+    document.getElementById('reserve-fee-amount').innerText = reserveFee.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+    document.getElementById('reserve-modal').classList.remove('hidden');
+};
+
+window.confirmReservation = function() {
+    alert("Payment submitted for verification! The seller will be notified once the funds clear our escrow.");
+    document.getElementById('reserve-modal').classList.add('hidden');
+};
+
+// Close both modals if clicked outside
+window.onclick = (event) => {
+    const sellerModal = document.getElementById('seller-modal');
+    const reserveModal = document.getElementById('reserve-modal');
+    if (event.target === sellerModal) sellerModal.classList.add('hidden');
+    if (event.target === reserveModal) reserveModal.classList.add('hidden');
 };
 
 document.getElementById('search-input').oninput = (e) => {

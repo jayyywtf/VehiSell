@@ -122,6 +122,34 @@
         </div>
     </div>
 
+    <div id="reserve-modal" class="modal hidden">
+        <div class="modal-content glass-card" style="text-align: center;">
+            <span class="close-btn" onclick="document.getElementById('reserve-modal').classList.add('hidden')" style="cursor: pointer; float: right; font-size: 24px;">&times;</span>
+            <h2>Reserve Item</h2>
+            <h3 id="reserve-item-title" style="margin-bottom: 5px;">Item Name</h3>
+            <p style="color: var(--light); margin-top: 0; font-size: 0.9rem;">Full Price: ₱<span id="reserve-full-price">0</span></p>
+            
+            <div style="background: #ecfdf5; padding: 15px; border-radius: 10px; margin: 20px 0; border: 1px solid #10b981;">
+                <p style="margin: 0; font-weight: bold; color: #065f46;">Required Downpayment (5%)</p>
+                <h2 style="margin: 5px 0; color: #10b981; font-size: 2rem;">₱<span id="reserve-fee-amount">0</span></h2>
+            </div>
+            
+            <div style="text-align: left; margin-bottom: 20px;">
+                <h4 style="margin-bottom: 10px;">Send payment to VehiSell Escrow:</h4>
+                <div style="border: 1px solid #cbd5e1; padding: 12px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+                    <strong>📱 GCash</strong>
+                    <span style="font-family: monospace; font-size: 1.1rem;">0912 345 6789</span>
+                </div>
+                <div style="border: 1px solid #cbd5e1; padding: 12px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+                    <strong>🏦 Bank Transfer</strong>
+                    <span style="font-family: monospace; font-size: 1.1rem;">0012 3456 7890</span>
+                </div>
+            </div>
+            
+            <button class="btn-primary" style="background: #10b981;" onclick="confirmReservation()">I have sent the payment</button>
+        </div>
+    </div>
+
     <script src="script.js" type="module"></script>
 </body>
 </html>

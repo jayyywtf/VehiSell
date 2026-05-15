@@ -42,10 +42,10 @@ header {
     border-radius: 8px;
 }
 
-    .nav-btn.active {
-        background: #e0e7ff;
-        color: var(--primary);
-    }
+.nav-btn.active {
+    background: #e0e7ff;
+    color: var(--primary);
+}
 
 .nav-accent {
     background: var(--primary) !important;
@@ -60,7 +60,7 @@ main {
 
 .grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
     gap: 1.5rem;
 }
 
@@ -105,11 +105,11 @@ main {
     transition: 0.3s;
 }
 
-    .id-preview:hover {
-        transform: scale(6) translate(30px, -20px);
-        z-index: 50;
-        box-shadow: 0 10px 20px rgba(0,0,0,0.2);
-    }
+.id-preview:hover {
+    transform: scale(6) translate(30px, -20px);
+    z-index: 50;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+}
 
 .id-badge span {
     font-size: 0.65rem;
@@ -220,17 +220,17 @@ input, textarea {
     border: 1px solid #e2e8f0;
 }
 
-    .filter-bar input {
-        margin: 0;
-        flex: 2;
-    }
+.filter-bar input {
+    margin: 0;
+    flex: 2;
+}
 
-    .filter-bar select {
-        flex: 1;
-        border-radius: 10px;
-        padding: 0.8rem;
-        border: 1px solid #cbd5e1;
-    }
+.filter-bar select {
+    flex: 1;
+    border-radius: 10px;
+    padding: 0.8rem;
+    border: 1px solid #cbd5e1;
+}
 
 .hidden {
     display: none !important;
@@ -267,7 +267,6 @@ input, textarea {
         opacity: 0;
         transform: translateY(20px);
     }
-
     to {
         opacity: 1;
         transform: translateY(0);
@@ -334,6 +333,17 @@ input, textarea {
     color: white;
 }
 
-    .btn-fb:hover {
-        background: #166fe5;
+.btn-fb:hover {
+    background: #166fe5;
+}
+
+/* Ensure the header and filters don't break on tiny phones */
+@media (max-width: 600px) {
+    .header-container {
+        flex-direction: column;
+        gap: 10px;
     }
+    .filter-bar {
+        flex-direction: column;
+    }
+}
