@@ -1,5 +1,24 @@
-﻿let currentUser = JSON.parse(localStorage.getItem('user_session')) || null;
-let listings = JSON.parse(localStorage.getItem('market_listings')) || [];
+﻿import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, doc, setDoc, getDoc, collection, getDocs, addDoc, query, where, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+// We leave the storage imports here just in case you upgrade in the future!
+import { getStorage, ref, uploadString, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
+
+const firebaseConfig = {
+    apiKey: "AIzaSyATVV-25NWLsUx_hsg2msXyW5HukrF83cc",
+    authDomain: "vehisell-c2885.firebaseapp.com",
+    projectId: "vehisell-c2885",
+    storageBucket: "vehisell-c2885.firebasestorage.app",
+    messagingSenderId: "215673029794",
+    appId: "1:215673029794:web:2a71002794b6b56cb743fb",
+    measurementId: "G-8D01S12W9C"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const storage = getStorage(app);
+
+let currentUser = JSON.parse(localStorage.getItem('user_session')) || null;
+let allListings = []; 
 let isLoginMode = true;
 
 const navButtons = document.querySelectorAll('.nav-btn');
@@ -32,7 +51,6 @@ const authBtn = document.getElementById('auth-btn');
 
 function toggleAuthMode() {
     isLoginMode = !isLoginMode;
-
     if (isLoginMode) {
         authTitle.textContent = 'Welcome Back';
         authBtn.textContent = 'Login';
@@ -45,76 +63,130 @@ function toggleAuthMode() {
         switchBtn.textContent = "Already have an account? Login";
     }
 }
-
 switchBtn.addEventListener('click', toggleAuthMode);
 
-// --- BULLETPROOF AUTHENTICATION LOGIC ---
-document.getElementById('form-auth').addEventListener('submit', function (e) {
+// UPGRADED COMPRESSION ENGINE: Now catches bad formats instead of freezing!
+function compressImage(file, maxWidth, maxHeight, quality, onSuccess, onError) {
+    if (!file.type.match(/image.*/)) {
+        if(onError) onError("Unsupported format. Please upload a standard JPG or PNG.");
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function (event) {
+        const img = new Image();
+        img.onload = function () {
+            const canvas = document.createElement('canvas');
+            let width = img.width;
+            let height = img.height;
+            if (width > height) {
+                if (width > maxWidth) { height = Math.round((height *= maxWidth / width)); width = maxWidth; }
+            } else {
+                if (height > maxHeight) { width = Math.round((width *= maxHeight / height)); height = maxHeight; }
+            }
+            canvas.width = width; canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            onSuccess(canvas.toDataURL('image/jpeg', quality));
+        };
+        img.onerror = function() {
+            if(onError) onError("Could not read image. (If using an iPhone, ensure the photo is a JPG, not HEIC).");
+        };
+        img.src = event.target.result;
+    };
+    reader.onerror = function() {
+         if(onError) onError("File reading failed.");
+    };
+    reader.readAsDataURL(file);
+}
+
+document.getElementById('form-auth').addEventListener('submit', async function (e) {
     e.preventDefault();
 
-    // Grab the raw username and convert it to lowercase for safe storage/lookup
     const rawUser = document.getElementById('auth-user').value.trim();
     const safeUserKey = rawUser.toLowerCase();
     const pass = document.getElementById('auth-pass').value;
 
+    authBtn.disabled = true; 
+
     if (isLoginMode) {
-        // LOGIN logic
-        const stored = JSON.parse(localStorage.getItem(`reg_user_${safeUserKey}`));
-        if (stored && stored.password === pass) {
-            login(stored);
-        } else {
-            alert("❌ Invalid username or password.");
+        authBtn.textContent = "Logging in...";
+        try {
+            const q = query(collection(db, "users"), where("usernameKey", "==", safeUserKey), where("password", "==", pass));
+            const querySnapshot = await getDocs(q);
+
+            if (!querySnapshot.empty) {
+                const userData = querySnapshot.docs[0].data();
+                login(userData);
+            } else {
+                alert("❌ Invalid username or password.");
+            }
+        } catch (error) {
+            console.error(error);
+            alert("Error logging in.");
         }
+        authBtn.textContent = "Login";
+        authBtn.disabled = false;
+
     } else {
-        // REGISTRATION logic
         const confirmPass = document.getElementById('auth-pass-confirm').value;
         const phone = document.getElementById('auth-phone').value.trim();
-        const address = document.getElementById('auth-address').value.trim();
         const fbLink = document.getElementById('auth-fb').value.trim();
         const idFileInput = document.getElementById('auth-id-img');
         const idFile = idFileInput.files[0];
 
-        if (!rawUser) return alert("❌ Username required");
-        if (pass !== confirmPass) return alert("❌ Passwords don't match");
-        if (!phone || !address || !fbLink) return alert("❌ Phone, Address, and Facebook link are required");
-        if (!idFile) return alert("❌ ID photo required");
+        if (!rawUser) return resetBtn("❌ Username required", "Create Verified Account");
+        if (pass !== confirmPass) return resetBtn("❌ Passwords don't match", "Create Verified Account");
+        if (!phone || !fbLink) return resetBtn("❌ Phone and Facebook link are required", "Create Verified Account");
+        if (!idFile) return resetBtn("❌ ID photo required", "Create Verified Account");
 
-        const reader = new FileReader();
-        reader.onload = function () {
+        const q = query(collection(db, "users"), where("usernameKey", "==", safeUserKey));
+        const userExists = await getDocs(q);
+        if (!userExists.empty) return resetBtn("❌ Username already taken!", "Create Verified Account");
+
+        authBtn.textContent = "Uploading ID...";
+        
+        compressImage(idFile, 600, 600, 0.6, async function (compressedIdPhoto) {
             try {
+                authBtn.textContent = "Creating Account...";
+                
+                // --- BYPASS: Saving the image text straight to the database! ---
                 const newUser = {
-                    username: rawUser, // Keep their original casing for display
-                    password: pass,
+                    username: rawUser,
+                    usernameKey: safeUserKey,
+                    password: pass, 
                     phone: phone,
-                    address: address,
                     fb: fbLink,
-                    idPhoto: reader.result
+                    idPhoto: compressedIdPhoto 
                 };
-
-                // Save using the safe lowercase key
-                localStorage.setItem(`reg_user_${safeUserKey}`, JSON.stringify(newUser));
+                await addDoc(collection(db, "users"), newUser);
 
                 alert("✅ Account created successfully! Logging you in...");
-
-                // Clear the form and Auto-Login!
                 document.getElementById('form-auth').reset();
                 login(newUser);
 
             } catch (error) {
-                console.error("Storage Error:", error);
-                alert("❌ Error: Image file is too large! Please choose a smaller photo (under 2MB).");
+                console.error(error);
+                resetBtn("❌ Error saving to cloud. Make sure your Firestore Rules are open!", "Create Verified Account");
             }
-        };
-        reader.readAsDataURL(idFile);
+        }, function(errorMessage) {
+            resetBtn("❌ " + errorMessage, "Create Verified Account");
+        });
     }
 });
+
+function resetBtn(msg, originalText) {
+    alert(msg);
+    authBtn.textContent = originalText;
+    authBtn.disabled = false;
+}
 
 function login(user) {
     localStorage.setItem('user_session', JSON.stringify(user));
     currentUser = user;
     updateNav();
     showTab('buy');
-    renderListings();
+    fetchAndRenderListings();
 }
 
 function updateNav() {
@@ -131,58 +203,90 @@ document.getElementById('logout-btn').onclick = () => {
     location.reload();
 };
 
-// --- POSTING ITEMS LOGIC ---
 const sellForm = document.getElementById('form-sell');
 sellForm.onsubmit = (e) => {
     e.preventDefault();
     const file = document.getElementById('p-img').files[0];
     if (!file) return alert("Please select an image.");
 
-    const reader = new FileReader();
-    reader.onload = () => {
+    const submitBtn = sellForm.querySelector('button');
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Uploading to Cloud...";
+
+    compressImage(file, 800, 800, 0.7, async function (compressedProductPhoto) {
         try {
+            // --- BYPASS: Saving the item image straight to the database! ---
             const newItem = {
-                id: Date.now(),
                 title: document.getElementById('p-title').value,
                 price: document.getElementById('p-price').value,
                 category: document.getElementById('p-category').value,
                 desc: document.getElementById('p-desc').value,
                 seller: currentUser.username,
-                image: reader.result
+                sellerKey: currentUser.username.toLowerCase(),
+                sellerIdPhoto: currentUser.idPhoto, 
+                image: compressedProductPhoto, 
+                timestamp: Date.now()
             };
-            listings.unshift(newItem);
-            localStorage.setItem('market_listings', JSON.stringify(listings));
+            
+            submitBtn.textContent = "Saving...";
+            await addDoc(collection(db, "listings"), newItem);
+
             sellForm.reset();
             alert("✅ Item listed successfully!");
-            renderListings();
+            fetchAndRenderListings();
             showTab('buy');
+
         } catch (error) {
-            alert("❌ Storage full! Try using a smaller product photo.");
+            console.error(error);
+            alert("❌ Failed to list item. Check console.");
+            submitBtn.disabled = false;
+            submitBtn.textContent = "Post Item";
         }
-    };
-    reader.readAsDataURL(file);
+    }, function(errorMessage) {
+        alert("❌ " + errorMessage);
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Post Item";
+    });
 };
 
-// --- RENDERING ITEMS ---
-function renderListings(filterTerm = '', filterCat = 'all') {
+async function fetchAndRenderListings() {
+    const grid = document.getElementById('listings-grid');
+    grid.innerHTML = '<p style="text-align:center; grid-column:1/-1; color: var(--light);">Loading cloud listings...</p>';
+
+    try {
+        const querySnapshot = await getDocs(collection(db, "listings"));
+        allListings = [];
+        querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            data.docId = doc.id; 
+            allListings.push(data);
+        });
+        
+        allListings.sort((a, b) => b.timestamp - a.timestamp);
+        renderFilteredListings('', 'all');
+
+    } catch (error) {
+        console.error(error);
+        grid.innerHTML = '<p style="text-align:center; grid-column:1/-1; color: red;">Error loading items.</p>';
+    }
+}
+
+function renderFilteredListings(filterTerm = '', filterCat = 'all') {
     const grid = document.getElementById('listings-grid');
     grid.innerHTML = '';
 
-    const filtered = listings.filter(item => {
+    const filtered = allListings.filter(item => {
         const matchesSearch = item.title.toLowerCase().includes(filterTerm.toLowerCase());
         const matchesCat = filterCat === 'all' || item.category === filterCat;
         return matchesSearch && matchesCat;
     });
 
     if (filtered.length === 0) {
-        grid.innerHTML = '<p style="text-align:center; grid-column:1/-1; padding: 2rem; color: var(--light);">No matching items found.</p>';
+        grid.innerHTML = '<p style="text-align:center; grid-column:1/-1; padding: 2rem; color: var(--light);">No items yet.</p>';
         return;
     }
 
     filtered.forEach(item => {
-        // Look up the seller using lowercase to match our new safe storage logic
-        const safeSellerKey = item.seller.toLowerCase();
-        const sellerData = JSON.parse(localStorage.getItem(`reg_user_${safeSellerKey}`));
         const isOwner = currentUser && currentUser.username === item.seller;
 
         const card = document.createElement('div');
@@ -190,9 +294,9 @@ function renderListings(filterTerm = '', filterCat = 'all') {
         card.innerHTML = `
             <div class="img-wrapper">
                 <img src="${item.image}" class="product-img" alt="${item.title}">
-                ${sellerData ? `
+                ${item.sellerIdPhoto ? `
                 <div class="id-badge">
-                    <img src="${sellerData.idPhoto}" class="id-preview" title="Hover to view Seller ID">
+                    <img src="${item.sellerIdPhoto}" class="id-preview" title="Hover to view Seller ID">
                     <span>Verified</span>
                 </div>` : ''}
             </div>
@@ -203,8 +307,8 @@ function renderListings(filterTerm = '', filterCat = 'all') {
                 <div class="card-footer">
                     <span>👤 ${item.seller}</span>
                     ${isOwner ?
-                `<button class="btn-del" style="background:#ef4444;color:white;padding:0.5rem;border:none;border-radius:6px;cursor:pointer;" onclick="deleteItem(${item.id})">Remove</button>` :
-                `<button class="btn-contact" style="background:var(--primary);color:white;padding:0.5rem;border:none;border-radius:6px;cursor:pointer;" onclick="contactSeller('${item.seller}')">Contact</button>`
+                `<button class="btn-del" style="background:#ef4444;color:white;padding:0.5rem;border:none;border-radius:6px;cursor:pointer;" onclick="deleteItem('${item.docId}')">Remove</button>` :
+                `<button class="btn-contact" style="background:var(--primary);color:white;padding:0.5rem;border:none;border-radius:6px;cursor:pointer;" onclick="contactSeller('${item.sellerKey}')">Contact</button>`
             }
                 </div>
             </div>
@@ -213,41 +317,47 @@ function renderListings(filterTerm = '', filterCat = 'all') {
     });
 }
 
-function deleteItem(id) {
-    if (confirm("Delete this listing?")) {
-        listings = listings.filter(i => i.id !== id);
-        localStorage.setItem('market_listings', JSON.stringify(listings));
-        renderListings();
+window.deleteItem = async function(docId) {
+    if (confirm("Delete this listing from the cloud?")) {
+        try {
+            await deleteDoc(doc(db, "listings", docId));
+            alert("Deleted!");
+            fetchAndRenderListings();
+        } catch (error) {
+            alert("Error deleting item.");
+        }
     }
-}
+};
 
-// --- MODAL POP-UP LOGIC ---
-function contactSeller(seller) {
-    const safeSellerKey = seller.toLowerCase();
-    const sellerData = JSON.parse(localStorage.getItem(`reg_user_${safeSellerKey}`));
+window.contactSeller = async function(sellerKey) {
+    try {
+        const q = query(collection(db, "users"), where("usernameKey", "==", sellerKey));
+        const querySnapshot = await getDocs(q);
+        
+        if (querySnapshot.empty) {
+            alert("Sorry, seller details could not be found in the database.");
+            return;
+        }
 
-    if (!sellerData) {
-        alert("Sorry, seller details could not be found.");
-        return;
+        const sellerData = querySnapshot.docs[0].data();
+
+        document.getElementById('modal-seller-name').innerText = sellerData.username;
+        document.getElementById('modal-seller-avatar').src = sellerData.idPhoto;
+
+        const phoneBtn = document.getElementById('modal-seller-phone');
+        phoneBtn.href = `tel:${sellerData.phone}`; 
+        phoneBtn.innerText = `📞 Call / SMS: ${sellerData.phone}`;
+
+        const fbBtn = document.getElementById('modal-seller-fb');
+        let cleanFbLink = sellerData.fb.startsWith('http') ? sellerData.fb : `https://${sellerData.fb}`;
+        fbBtn.href = cleanFbLink;
+
+        document.getElementById('modal-seller-address').style.display = 'none';
+
+        document.getElementById('seller-modal').classList.remove('hidden');
+    } catch (error) {
+        alert("Error loading seller info.");
     }
-
-    document.getElementById('modal-seller-name').innerText = sellerData.username;
-    document.getElementById('modal-seller-address').innerText = sellerData.address || "Address not provided";
-    document.getElementById('modal-seller-avatar').src = sellerData.idPhoto;
-
-    const phoneBtn = document.getElementById('modal-seller-phone');
-    phoneBtn.href = `tel:${sellerData.phone}`;
-    phoneBtn.innerText = `📞 Call / SMS: ${sellerData.phone}`;
-
-    const fbBtn = document.getElementById('modal-seller-fb');
-    let cleanFbLink = sellerData.fb.startsWith('http') ? sellerData.fb : `https://${sellerData.fb}`;
-    fbBtn.href = cleanFbLink;
-
-    document.getElementById('seller-modal').classList.remove('hidden');
-}
-
-document.getElementById('close-modal').onclick = () => {
-    document.getElementById('seller-modal').classList.add('hidden');
 };
 
 window.onclick = (event) => {
@@ -257,17 +367,15 @@ window.onclick = (event) => {
     }
 };
 
-// --- FILTERS ---
 document.getElementById('search-input').oninput = (e) => {
     const cat = document.getElementById('category-filter').value;
-    renderListings(e.target.value, cat);
+    renderFilteredListings(e.target.value, cat);
 };
 
 document.getElementById('category-filter').onchange = (e) => {
     const term = document.getElementById('search-input').value;
-    renderListings(term, e.target.value);
+    renderFilteredListings(term, e.target.value);
 };
 
-// Initialize App
 updateNav();
-renderListings();
+fetchAndRenderListings();
