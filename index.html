@@ -1,0 +1,131 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VehiSell | Verified Marketplace</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <header>
+        <div class="header-container">
+            <h1 class="logo">Vehi<span>Sell</span></h1>
+            <nav id="main-nav">
+                <button class="nav-btn active" data-tab="buy">Marketplace</button>
+                <button class="nav-btn" data-tab="sell">Sell Item</button>
+                <button class="nav-btn nav-accent" id="nav-auth" data-tab="auth">Sign In</button>
+                <button class="nav-btn hidden" id="nav-acc" data-tab="acc">Profile</button>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <section id="sec-buy" class="tab-content">
+            <div class="section-header">
+                <h2>Verified Listings</h2>
+                <p>Buy with confidence from ID-verified sellers.</p>
+            </div>
+            <div class="filter-bar">
+                <input type="text" id="search-input" placeholder="Search items...">
+                <select id="category-filter">
+                    <option value="all">All Categories</option>
+                    <option value="parts">Parts</option>
+                    <option value="sedan">Sedan</option>
+                    <option value="suv">SUV</option>
+                    <option value="4x4">4X4</option>
+                </select>
+            </div>
+            <div id="listings-grid" class="grid"></div>
+        </section>
+
+        <section id="sec-sell" class="tab-content hidden">
+            <div class="glass-card">
+                <h2>Create Listing</h2>
+                <form id="form-sell">
+                    <input type="text" id="p-title" placeholder="Item Name" required>
+                    <input type="number" id="p-price" placeholder="Price (PHP)" required>
+
+                    <select id="p-category" required>
+                        <option value="" disabled selected>Select Category</option>
+                        <option value="parts">Parts</option>
+                        <option value="sedan">Sedan</option>
+                        <option value="suv">SUV</option>
+                        <option value="4x4">4X4</option>
+                    </select>
+
+                    <textarea id="p-desc" placeholder="Product details..." rows="4" required></textarea>
+
+                    <div class="file-box">
+                        <label>Product Photo</label>
+                        <input type="file" id="p-img" accept="image/*" required>
+                    </div>
+                    <button type="submit" class="btn-primary">Post Item</button>
+                </form>
+            </div>
+        </section>
+
+        <section id="sec-auth" class="tab-content hidden">
+            <div class="glass-card">
+                <h2 id="auth-title">Welcome Back</h2>
+                <form id="form-auth">
+                    <input type="text" id="auth-user" placeholder="Username" required>
+                    <input type="password" id="auth-pass" placeholder="Password" required>
+
+                    <div id="signup-extra" class="hidden">
+                        <input type="password" id="auth-pass-confirm" placeholder="Confirm Password">
+
+                        <input type="tel" id="auth-phone" placeholder="Phone Number (e.g., 09123456789)">
+                        <input type="text" id="auth-address" placeholder="Complete Address (e.g., Lipa City, Batangas)">
+                        <input type="url" id="auth-fb" placeholder="Facebook Profile Link (https://...)">
+
+                        <div class="id-upload-area">
+                            <label>Verify Identity (Required)</label>
+                            <p>Upload a photo of your Valid ID</p>
+                            <input type="file" id="auth-id-img" accept="image/*">
+                        </div>
+                    </div>
+
+                    <button type="submit" id="auth-btn" class="btn-primary">Login</button>
+                </form>
+                <div class="auth-toggle">
+                    <button type="button" id="switch-auth" class="btn-text">New here? Create a verified account</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="sec-acc" class="tab-content hidden">
+            <div class="glass-card acc-view">
+                <div class="avatar">👤</div>
+                <h2 id="acc-name">User</h2>
+                <div class="id-display-section">
+                    <p>Your Verified ID:</p>
+                    <img id="acc-id-display" src="" alt="User ID">
+                </div>
+                <button class="btn-secondary" id="logout-btn">Logout</button>
+            </div>
+        </section>
+    </main>
+
+    <div id="seller-modal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-btn" id="close-modal">&times;</span>
+            <div class="modal-header">
+                <img id="modal-seller-avatar" src="" alt="Seller" class="modal-avatar">
+                <div>
+                    <h2 id="modal-seller-name">Seller Name</h2>
+                    <span class="badge-verified">✓ ID Verified</span>
+                </div>
+            </div>
+            <div class="modal-body">
+                <p class="modal-address">📍 <span id="modal-seller-address">Address</span></p>
+                <a id="modal-seller-phone" href="#" class="btn-primary link-btn">📞 Call / SMS</a>
+                <a id="modal-seller-fb" href="#" target="_blank" class="btn-fb link-btn">🌐 View Facebook Profile</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
