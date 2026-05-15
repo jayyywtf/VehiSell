@@ -46,7 +46,7 @@
                 <form id="form-sell">
                     <input type="text" id="p-title" placeholder="Item Name" required>
                     <input type="number" id="p-price" placeholder="Price (PHP)" required>
-
+                    
                     <select id="p-category" required>
                         <option value="" disabled selected>Select Category</option>
                         <option value="parts">Parts</option>
@@ -56,7 +56,7 @@
                     </select>
 
                     <textarea id="p-desc" placeholder="Product details..." rows="4" required></textarea>
-
+                    
                     <div class="file-box">
                         <label>Product Photo</label>
                         <input type="file" id="p-img" accept="image/*" required>
@@ -72,13 +72,12 @@
                 <form id="form-auth">
                     <input type="text" id="auth-user" placeholder="Username" required>
                     <input type="password" id="auth-pass" placeholder="Password" required>
-
+                    
                     <div id="signup-extra" class="hidden">
                         <input type="password" id="auth-pass-confirm" placeholder="Confirm Password">
-
+                        
                         <input type="tel" id="auth-phone" placeholder="Phone Number (e.g., 09123456789)">
-                        <input type="text" id="auth-address" placeholder="Complete Address (e.g., Lipa City, Batangas)">
-                        <input type="url" id="auth-fb" placeholder="Facebook Profile Link (https://...)">
+                        <input type="text" id="auth-fb" placeholder="Facebook Profile Link (e.g., facebook.com/juan)">
 
                         <div class="id-upload-area">
                             <label>Verify Identity (Required)</label>
@@ -109,23 +108,20 @@
     </main>
 
     <div id="seller-modal" class="modal hidden">
-        <div class="modal-content">
-            <span class="close-btn" id="close-modal">&times;</span>
-            <div class="modal-header">
-                <img id="modal-seller-avatar" src="" alt="Seller" class="modal-avatar">
-                <div>
-                    <h2 id="modal-seller-name">Seller Name</h2>
-                    <span class="badge-verified">✓ ID Verified</span>
-                </div>
-            </div>
-            <div class="modal-body">
-                <p class="modal-address">📍 <span id="modal-seller-address">Address</span></p>
-                <a id="modal-seller-phone" href="#" class="btn-primary link-btn">📞 Call / SMS</a>
-                <a id="modal-seller-fb" href="#" target="_blank" class="btn-fb link-btn">🌐 View Facebook Profile</a>
+        <div class="modal-content glass-card" style="text-align: center;">
+            <span class="close-btn" onclick="document.getElementById('seller-modal').classList.add('hidden')" style="cursor: pointer; float: right; font-size: 24px;">&times;</span>
+            <h2>Contact Seller</h2>
+            <img id="modal-seller-avatar" src="" alt="Seller ID" style="width: 100%; max-width: 200px; border-radius: 8px; margin: 10px 0;">
+            <h3 id="modal-seller-name">Seller Name</h3>
+            <p id="modal-seller-address" style="color: #666; font-size: 14px; margin-bottom: 15px;">Location</p>
+            
+            <div class="modal-actions" style="display: flex; flex-direction: column; gap: 10px;">
+                <a id="modal-seller-phone" href="#" class="btn-primary" style="text-decoration: none;">📞 Call / SMS</a>
+                <a id="modal-seller-fb" href="#" target="_blank" class="btn-secondary" style="text-decoration: none;">📘 Message on Facebook</a>
             </div>
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <script src="script.js" type="module"></script>
 </body>
 </html>
