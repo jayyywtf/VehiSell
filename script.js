@@ -1,5 +1,4 @@
 ﻿import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-// Notice we added onSnapshot here!
 import { getFirestore, doc, setDoc, getDoc, collection, getDocs, addDoc, query, where, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getStorage, ref, uploadString, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
 
@@ -185,7 +184,7 @@ function login(user) {
     updateNav();
     showTab('buy');
     fetchAndRenderListings();
-    listenForLiveAlerts(); // Start listening for popups!
+    listenForLiveAlerts(); // TURN ON THE NOTIFICATION RADAR!
 }
 
 function updateNav() {
@@ -334,7 +333,6 @@ window.deleteItem = async function(docId) {
     }
 };
 
-// --- CONTACT SELLER (UNTOUCHED ORIGINAL LOGIC) ---
 window.contactSeller = async function(sellerKey) {
     try {
         const q = query(collection(db, "users"), where("usernameKey", "==", sellerKey));
@@ -390,7 +388,7 @@ window.openReserveModal = function(title, price, sellerKey) {
 
 window.confirmReservation = async function() {
     document.getElementById('reserve-modal').classList.add('hidden');
-    alert("Payment submitted for verification! The seller has been notified.");
+    alert("Payment submitted! The seller has been notified.");
 
     // Fire off the real-time notification to the seller
     try {
@@ -410,7 +408,6 @@ window.confirmReservation = async function() {
 let currentChatUnsubscribe = null;
 let activeChatUserId = null;
 
-// Creates a unique room ID for any two users
 function getChatId(user1, user2) {
     return user1 < user2 ? `${user1}_${user2}` : `${user2}_${user1}`;
 }
@@ -443,8 +440,7 @@ window.openChatModal = function(sellerKey, sellerName) {
             chatBox.appendChild(div);
         });
         
-        // Auto-scroll to the bottom
-        chatBox.scrollTop = chatBox.scrollHeight;
+        chatBox.scrollTop = chatBox.scrollHeight; // Auto-scroll
     });
 };
 
@@ -497,10 +493,10 @@ function listenForLiveAlerts() {
                 const docId = change.doc.id;
                 const data = change.doc.data();
                 
-                // Only show popups for BRAND NEW alerts (happened in the last 5 seconds)
                 if (!seenAlerts.has(docId)) {
                     seenAlerts.add(docId);
-                    if (Date.now() - data.timestamp < 5000) {
+                    // Only show popups for recent alerts (last 10 seconds)
+                    if (Date.now() - data.timestamp < 10000) {
                         triggerToastPopup(data);
                     }
                 }
@@ -510,23 +506,35 @@ function listenForLiveAlerts() {
 }
 
 function triggerToastPopup(data) {
-    // If they are actively staring at the chat with this person, don't show a popup
+    // If they are already staring at the chat with this person, don't show a popup
     if (data.type === 'message' && activeChatUserId === data.fromUser.toLowerCase()) return;
 
     const container = document.getElementById('toast-container');
     const toast = document.createElement('div');
     toast.className = data.type === 'reserve' ? 'toast reserve-toast' : 'toast';
     
+    // NEW: Make the popup visually clickable
+    toast.style.cursor = 'pointer';
+    toast.title = "Click to reply!";
+
     if (data.type === 'reserve') {
-        toast.innerHTML = `<h4>🎉 Item Reserved!</h4><p><strong>${data.fromUser}</strong> just paid the downpayment for your ${data.itemName}.</p>`;
+        toast.innerHTML = `<h4>🎉 Item Reserved!</h4><p><strong>${data.fromUser}</strong> paid the downpayment. Click to chat.</p>`;
     } else if (data.type === 'message') {
         toast.innerHTML = `<h4>💬 New Message</h4><p><strong>${data.fromUser}:</strong> ${data.text}</p>`;
     }
 
+    // NEW: When the seller clicks the popup, instantly open the chat!
+    toast.onclick = () => {
+        window.openChatModal(data.fromUser.toLowerCase(), data.fromUser);
+        toast.remove();
+    };
+
     container.appendChild(toast);
     
-    // Automatically delete the popup after 6 seconds
-    setTimeout(() => { toast.remove(); }, 6000);
+    // Delete popup after 8 seconds
+    setTimeout(() => { 
+        if(container.contains(toast)) toast.remove(); 
+    }, 8000);
 }
 
 // Global modal close logic
