@@ -21,6 +21,8 @@
         </div>
     </header>
 
+    <div id="toast-container" class="toast-container"></div>
+
     <main>
         <section id="sec-buy" class="tab-content">
             <div class="section-header">
@@ -119,6 +121,23 @@
                 <a id="modal-seller-phone" href="#" class="btn-primary" style="text-decoration: none;">📞 Call / SMS</a>
                 <a id="modal-seller-fb" href="#" target="_blank" class="btn-secondary" style="text-decoration: none;">📘 Message on Facebook</a>
             </div>
+        </div>
+    </div>
+
+    <div id="chat-modal" class="modal hidden">
+        <div class="modal-content glass-card" style="padding: 0; overflow: hidden; display: flex; flex-direction: column; height: 75vh; max-height: 600px;">
+            <div style="background: var(--primary); color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center;">
+                <h3 id="chat-target-name" style="margin: 0;">Live Chat</h3>
+                <span class="close-btn" onclick="closeChatModal()" style="cursor: pointer; color: white; position: static;">&times;</span>
+            </div>
+            
+            <div id="chat-messages" style="flex: 1; padding: 15px; overflow-y: auto; background: #f8fafc; display: flex; flex-direction: column; gap: 10px;">
+                </div>
+
+            <form id="form-chat" style="display: flex; padding: 10px; background: white; border-top: 1px solid #e2e8f0;">
+                <input type="text" id="chat-input" placeholder="Type a message..." required style="flex: 1; margin: 0; border-radius: 20px 0 0 20px; border-right: none;">
+                <button type="submit" class="btn-primary" style="width: auto; border-radius: 0 20px 20px 0; padding: 0 20px;">Send</button>
+            </form>
         </div>
     </div>
 

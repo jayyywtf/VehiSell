@@ -1,5 +1,6 @@
 ﻿import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, doc, setDoc, getDoc, collection, getDocs, addDoc, query, where, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+// Notice we added onSnapshot here!
+import { getFirestore, doc, setDoc, getDoc, collection, getDocs, addDoc, query, where, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getStorage, ref, uploadString, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
 
 const firebaseConfig = {
@@ -144,7 +145,6 @@ document.getElementById('form-auth').addEventListener('submit', async function (
 
         authBtn.textContent = "Uploading ID...";
         
-        // Crushing the ID photo to 300px and 40% quality
         compressImage(idFile, 300, 300, 0.4, async function (compressedIdPhoto) {
             try {
                 authBtn.textContent = "Creating Account...";
@@ -185,6 +185,7 @@ function login(user) {
     updateNav();
     showTab('buy');
     fetchAndRenderListings();
+    listenForLiveAlerts(); // Start listening for popups!
 }
 
 function updateNav() {
@@ -211,7 +212,6 @@ sellForm.onsubmit = (e) => {
     submitBtn.disabled = true;
     submitBtn.textContent = "Uploading to Cloud...";
 
-    // Crushing the product photo to 400px and 40% quality
     compressImage(file, 400, 400, 0.4, async function (compressedProductPhoto) {
         try {
             const newItem = {
@@ -302,14 +302,16 @@ function renderFilteredListings(filterTerm = '', filterCat = 'all') {
                 <p class="price">₱${Number(item.price).toLocaleString()}</p>
                 <h3>${item.title}</h3>
                 <p class="desc">${item.desc}</p>
-                <div class="card-footer">
-                    <span>👤 ${item.seller}</span>
+                
+                <div class="card-footer" style="flex-direction: column; align-items: stretch; gap: 10px;">
+                    <span style="font-weight: 600;">👤 ${item.seller}</span>
                     ${isOwner ?
-                `<button class="btn-del" style="background:#ef4444;color:white;padding:0.5rem;border:none;border-radius:6px;cursor:pointer;" onclick="deleteItem('${item.docId}')">Remove</button>` :
+                `<button class="btn-del" style="background:#ef4444;color:white;padding:0.5rem;border:none;border-radius:6px;cursor:pointer;" onclick="deleteItem('${item.docId}')">Remove Listing</button>` :
                 `
-                <div style="display: flex; gap: 5px;">
-                    <button class="btn-contact" style="background:#10b981;color:white;padding:0.5rem 1rem;border:none;border-radius:6px;cursor:pointer;font-weight:bold;" onclick="openReserveModal('${item.title.replace(/'/g, "\\'")}', ${item.price})">Reserve</button>
-                    <button class="btn-contact" style="background:var(--primary);color:white;padding:0.5rem;border:none;border-radius:6px;cursor:pointer;" onclick="contactSeller('${item.sellerKey}')">Contact</button>
+                <div style="display: flex; gap: 5px; justify-content: space-between;">
+                    <button class="btn-contact" style="background:#10b981;color:white;padding:0.5rem;border:none;border-radius:6px;cursor:pointer;font-weight:bold;flex:1;" onclick="openReserveModal('${item.title.replace(/'/g, "\\'")}', ${item.price}, '${item.sellerKey}')">Reserve</button>
+                    <button class="btn-contact" style="background:var(--primary);color:white;padding:0.5rem;border:none;border-radius:6px;cursor:pointer;flex:1;" onclick="openChatModal('${item.sellerKey}', '${item.seller}')">Live Chat</button>
+                    <button class="btn-contact" style="background:#64748b;color:white;padding:0.5rem;border:none;border-radius:6px;cursor:pointer;flex:1;" onclick="contactSeller('${item.sellerKey}')">Contact</button>
                 </div>
                 `
             }
@@ -332,6 +334,7 @@ window.deleteItem = async function(docId) {
     }
 };
 
+// --- CONTACT SELLER (UNTOUCHED ORIGINAL LOGIC) ---
 window.contactSeller = async function(sellerKey) {
     try {
         const q = query(collection(db, "users"), where("usernameKey", "==", sellerKey));
@@ -364,17 +367,20 @@ window.contactSeller = async function(sellerKey) {
 };
 
 // --- RESERVATION LOGIC ---
-window.openReserveModal = function(title, price) {
+let pendingReservation = null;
+
+window.openReserveModal = function(title, price, sellerKey) {
     if (!currentUser) {
         alert("You must be logged in to reserve an item.");
         showTab('auth');
         return;
     }
 
-    const numericPrice = Number(price);
-    const reserveFee = numericPrice * 0.05; // Calculate 5%
+    pendingReservation = { title, sellerKey }; 
 
-    // Populate the modal with the exact math
+    const numericPrice = Number(price);
+    const reserveFee = numericPrice * 0.05; 
+
     document.getElementById('reserve-item-title').innerText = title;
     document.getElementById('reserve-full-price').innerText = numericPrice.toLocaleString();
     document.getElementById('reserve-fee-amount').innerText = reserveFee.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
@@ -382,12 +388,148 @@ window.openReserveModal = function(title, price) {
     document.getElementById('reserve-modal').classList.remove('hidden');
 };
 
-window.confirmReservation = function() {
-    alert("Payment submitted for verification! The seller will be notified once the funds clear our escrow.");
+window.confirmReservation = async function() {
     document.getElementById('reserve-modal').classList.add('hidden');
+    alert("Payment submitted for verification! The seller has been notified.");
+
+    // Fire off the real-time notification to the seller
+    try {
+        await addDoc(collection(db, "notifications"), {
+            targetUser: pendingReservation.sellerKey,
+            type: 'reserve',
+            fromUser: currentUser.username,
+            itemName: pendingReservation.title,
+            timestamp: Date.now()
+        });
+    } catch(err) {
+        console.error("Failed to send notification", err);
+    }
 };
 
-// Close both modals if clicked outside
+// --- LIVE CHAT LOGIC ---
+let currentChatUnsubscribe = null;
+let activeChatUserId = null;
+
+// Creates a unique room ID for any two users
+function getChatId(user1, user2) {
+    return user1 < user2 ? `${user1}_${user2}` : `${user2}_${user1}`;
+}
+
+window.openChatModal = function(sellerKey, sellerName) {
+    if (!currentUser) { alert("Login required to chat."); showTab('auth'); return; }
+    
+    activeChatUserId = sellerKey;
+    document.getElementById('chat-target-name').innerText = "Chat with " + sellerName;
+    document.getElementById('chat-modal').classList.remove('hidden');
+
+    const chatId = getChatId(currentUser.usernameKey, sellerKey);
+    const q = query(collection(db, "messages"), where("chatId", "==", chatId));
+
+    if (currentChatUnsubscribe) currentChatUnsubscribe();
+
+    // Turn on the Live Radar for this specific chat
+    currentChatUnsubscribe = onSnapshot(q, (snapshot) => {
+        let msgs = [];
+        snapshot.forEach(doc => msgs.push(doc.data()));
+        msgs.sort((a, b) => a.timestamp - b.timestamp);
+
+        const chatBox = document.getElementById('chat-messages');
+        chatBox.innerHTML = '';
+        
+        msgs.forEach(m => {
+            const div = document.createElement('div');
+            div.className = 'chat-bubble ' + (m.sender === currentUser.usernameKey ? 'sent' : 'received');
+            div.innerText = m.text;
+            chatBox.appendChild(div);
+        });
+        
+        // Auto-scroll to the bottom
+        chatBox.scrollTop = chatBox.scrollHeight;
+    });
+};
+
+window.closeChatModal = function() {
+    document.getElementById('chat-modal').classList.add('hidden');
+    activeChatUserId = null; 
+};
+
+// Sending a message
+document.getElementById('form-chat').onsubmit = async (e) => {
+    e.preventDefault();
+    const input = document.getElementById('chat-input');
+    const text = input.value.trim();
+    if (!text) return;
+    input.value = '';
+
+    const chatId = getChatId(currentUser.usernameKey, activeChatUserId);
+
+    // Save message to database
+    await addDoc(collection(db, "messages"), {
+        chatId: chatId,
+        sender: currentUser.usernameKey,
+        text: text,
+        timestamp: Date.now()
+    });
+
+    // Fire off notification to the other person
+    await addDoc(collection(db, "notifications"), {
+        targetUser: activeChatUserId,
+        type: 'message',
+        fromUser: currentUser.username,
+        text: text,
+        timestamp: Date.now()
+    });
+};
+
+// --- REAL-TIME ALERTS (The "Radar") ---
+let alertsUnsubscribe = null;
+let seenAlerts = new Set();
+
+function listenForLiveAlerts() {
+    if (!currentUser) return;
+    if (alertsUnsubscribe) alertsUnsubscribe();
+
+    const q = query(collection(db, "notifications"), where("targetUser", "==", currentUser.usernameKey));
+    
+    alertsUnsubscribe = onSnapshot(q, (snapshot) => {
+        snapshot.docChanges().forEach((change) => {
+            if (change.type === "added") {
+                const docId = change.doc.id;
+                const data = change.doc.data();
+                
+                // Only show popups for BRAND NEW alerts (happened in the last 5 seconds)
+                if (!seenAlerts.has(docId)) {
+                    seenAlerts.add(docId);
+                    if (Date.now() - data.timestamp < 5000) {
+                        triggerToastPopup(data);
+                    }
+                }
+            }
+        });
+    });
+}
+
+function triggerToastPopup(data) {
+    // If they are actively staring at the chat with this person, don't show a popup
+    if (data.type === 'message' && activeChatUserId === data.fromUser.toLowerCase()) return;
+
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    toast.className = data.type === 'reserve' ? 'toast reserve-toast' : 'toast';
+    
+    if (data.type === 'reserve') {
+        toast.innerHTML = `<h4>🎉 Item Reserved!</h4><p><strong>${data.fromUser}</strong> just paid the downpayment for your ${data.itemName}.</p>`;
+    } else if (data.type === 'message') {
+        toast.innerHTML = `<h4>💬 New Message</h4><p><strong>${data.fromUser}:</strong> ${data.text}</p>`;
+    }
+
+    container.appendChild(toast);
+    
+    // Automatically delete the popup after 6 seconds
+    setTimeout(() => { toast.remove(); }, 6000);
+}
+
+// Global modal close logic
 window.onclick = (event) => {
     const sellerModal = document.getElementById('seller-modal');
     const reserveModal = document.getElementById('reserve-modal');
@@ -407,3 +549,4 @@ document.getElementById('category-filter').onchange = (e) => {
 
 updateNav();
 fetchAndRenderListings();
+if (currentUser) listenForLiveAlerts();
