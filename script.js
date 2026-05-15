@@ -1,6 +1,5 @@
 ﻿import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, doc, setDoc, getDoc, collection, getDocs, addDoc, query, where, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-// We leave the storage imports here just in case you upgrade in the future!
 import { getStorage, ref, uploadString, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
 
 const firebaseConfig = {
@@ -65,7 +64,6 @@ function toggleAuthMode() {
 }
 switchBtn.addEventListener('click', toggleAuthMode);
 
-// UPGRADED COMPRESSION ENGINE: Now catches bad formats instead of freezing!
 function compressImage(file, maxWidth, maxHeight, quality, onSuccess, onError) {
     if (!file.type.match(/image.*/)) {
         if(onError) onError("Unsupported format. Please upload a standard JPG or PNG.");
@@ -90,7 +88,7 @@ function compressImage(file, maxWidth, maxHeight, quality, onSuccess, onError) {
             onSuccess(canvas.toDataURL('image/jpeg', quality));
         };
         img.onerror = function() {
-            if(onError) onError("Could not read image. (If using an iPhone, ensure the photo is a JPG, not HEIC).");
+            if(onError) onError("Could not read image. Ensure photo is JPG, not HEIC.");
         };
         img.src = event.target.result;
     };
@@ -146,11 +144,11 @@ document.getElementById('form-auth').addEventListener('submit', async function (
 
         authBtn.textContent = "Uploading ID...";
         
-        compressImage(idFile, 600, 600, 0.6, async function (compressedIdPhoto) {
+        // 🔥 CHANGED: Crushing the ID photo to 300px and 40% quality
+        compressImage(idFile, 300, 300, 0.4, async function (compressedIdPhoto) {
             try {
                 authBtn.textContent = "Creating Account...";
                 
-                // --- BYPASS: Saving the image text straight to the database! ---
                 const newUser = {
                     username: rawUser,
                     usernameKey: safeUserKey,
@@ -167,7 +165,7 @@ document.getElementById('form-auth').addEventListener('submit', async function (
 
             } catch (error) {
                 console.error(error);
-                resetBtn("❌ Error saving to cloud. Make sure your Firestore Rules are open!", "Create Verified Account");
+                resetBtn("❌ Error saving to cloud.", "Create Verified Account");
             }
         }, function(errorMessage) {
             resetBtn("❌ " + errorMessage, "Create Verified Account");
@@ -213,9 +211,9 @@ sellForm.onsubmit = (e) => {
     submitBtn.disabled = true;
     submitBtn.textContent = "Uploading to Cloud...";
 
-    compressImage(file, 800, 800, 0.7, async function (compressedProductPhoto) {
+    // 🔥 CHANGED: Crushing the product photo to 400px and 40% quality
+    compressImage(file, 400, 400, 0.4, async function (compressedProductPhoto) {
         try {
-            // --- BYPASS: Saving the item image straight to the database! ---
             const newItem = {
                 title: document.getElementById('p-title').value,
                 price: document.getElementById('p-price').value,
