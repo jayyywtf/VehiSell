@@ -340,8 +340,8 @@ function renderImagePreviews() {
             const div = document.createElement('div');
             div.style = "position: relative; display: inline-block;";
             div.innerHTML = `
-                <img src="${ev.target.result}" style="width: 65px; height: 65px; object-fit: cover; border-radius: 8px; border: 1px solid #cbd5e1;">
-                <span onclick="removePendingImage(${index})" style="position: absolute; top: -5px; right: -5px; background: #ef4444; color: white; border-radius: 50%; width: 20px; height: 20px; text-align: center; line-height: 18px; font-size: 14px; cursor: pointer; font-weight: bold; border: 2px solid white;">&times;</span>
+                <img src="${ev.target.result}" style="width: 75px; height: 75px; object-fit: cover; border-radius: 12px; border: 2px solid #cbd5e1; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+                <span onclick="removePendingImage(${index})" style="position: absolute; top: -8px; right: -8px; background: #ef4444; color: white; border-radius: 50%; width: 24px; height: 24px; text-align: center; line-height: 20px; font-size: 16px; cursor: pointer; font-weight: bold; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">&times;</span>
             `;
             container.appendChild(div);
         };
@@ -394,7 +394,7 @@ sellForm.onsubmit = async (e) => {
 
 async function fetchAndRenderListings() {
     const grid = document.getElementById('listings-grid');
-    grid.innerHTML = '<p style="text-align:center; grid-column:1/-1; color: var(--light);">Loading cloud listings...</p>';
+    grid.innerHTML = '<p style="text-align:center; grid-column:1/-1; color: var(--light);">Loading premium listings...</p>';
 
     try {
         const querySnapshot = await getDocs(collection(db, "listings"));
@@ -425,7 +425,7 @@ function renderFilteredListings(filterTerm = '', filterCat = 'all') {
     });
 
     if (filtered.length === 0) {
-        grid.innerHTML = '<p style="text-align:center; grid-column:1/-1; padding: 2rem; color: var(--light);">No items yet.</p>';
+        grid.innerHTML = '<p style="text-align:center; grid-column:1/-1; padding: 3rem; color: var(--light); font-size:1.1rem;">No items found. Be the first to post!</p>';
         return;
     }
 
@@ -441,28 +441,30 @@ function renderFilteredListings(filterTerm = '', filterCat = 'all') {
                 <div class="img-wrapper">
                     <img src="${thumbnailSrc}" class="product-img" alt="${item.title}">
                 </div>
-                
-                ${item.sellerIdPhoto ? `
-                <div class="id-badge">
-                    <img src="${item.sellerIdPhoto}" class="id-preview" title="Hover to view Seller ID">
-                    <span>Verified</span>
-                </div>` : ''}
+            </div>
+            
+            ${item.sellerIdPhoto ? `
+            <div class="id-badge" onclick="viewFullImage('${item.sellerIdPhoto}')" title="Click to view ID">
+                <img src="${item.sellerIdPhoto}" class="id-preview">
+                <span>Verified</span>
+            </div>` : ''}
 
+            <div onclick="openProductModal('${item.docId}')" style="cursor: pointer; display: flex; flex-direction: column; flex: 1;">
                 <div class="product-body" style="padding-bottom: 0;">
                     <p class="price">₱${Number(item.price).toLocaleString()}</p>
                     <h3>${item.title}</h3>
                     <p class="desc" style="margin-bottom: 5px;">${item.desc}</p>
-                    <p style="font-size: 0.75rem; color: var(--light); margin: 0 0 10px 0;">📅 Posted: ${datePosted}</p>
+                    <p style="font-size: 0.75rem; color: var(--light); margin: 0 0 10px 0; font-weight: 600;">📅 Posted: ${datePosted}</p>
                 </div>
             </div>
             
-            <div class="product-body" style="padding-top: 0;">
+            <div class="product-body" style="padding-top: 0; flex: 0;">
                 <div class="card-footer" style="flex-direction: column; align-items: stretch; gap: 10px; border-top: none;">
-                    <span style="font-weight: 600;">👤 ${item.seller}</span>
+                    <span style="font-weight: 800; color: var(--text);">👤 ${item.seller}</span>
                     ${isOwner ?
-                `<button class="btn-del" style="background:#ef4444;color:white;padding:0.5rem;border:none;border-radius:6px;cursor:pointer;" onclick="deleteItem('${item.docId}')">Remove Listing</button>` :
+                `<button class="btn-del" style="background:#ef4444;color:white;padding:0.8rem;border:none;border-radius:12px;cursor:pointer;font-weight:800;" onclick="deleteItem('${item.docId}')">Remove Listing</button>` :
                 `
-                <button class="btn-contact" style="background:var(--primary);color:white;padding:0.5rem;border:none;border-radius:6px;cursor:pointer;flex:1;" onclick="openProductModal('${item.docId}')">View Details & Chat</button>
+                <button class="btn-primary" style="padding:0.8rem;border-radius:12px;cursor:pointer;flex:1;" onclick="openProductModal('${item.docId}')">View Details & Chat</button>
                 `
             }
                 </div>
@@ -491,7 +493,8 @@ window.openProductModal = function(docId) {
         imageArray.forEach(imgSrc => {
             const img = document.createElement('img');
             img.src = imgSrc;
-            img.style = "height: 60px; width: 60px; object-fit: cover; border-radius: 5px; cursor: pointer; border: 2px solid transparent;";
+            // FIX: Added flex-shrink: 0 to stop thumbnails from squishing
+            img.style = "height: 80px; width: 80px; object-fit: cover; border-radius: 8px; cursor: pointer; border: 2px solid transparent; flex-shrink: 0;";
             img.onmouseover = () => img.style.borderColor = "var(--primary)";
             img.onmouseout = () => img.style.borderColor = "transparent";
             img.onclick = () => document.getElementById('pm-main-img').src = imgSrc; 
@@ -504,12 +507,12 @@ window.openProductModal = function(docId) {
     actionsDiv.innerHTML = '';
 
     if (isOwner) {
-        actionsDiv.innerHTML = `<button class="btn-del" style="background:#ef4444;color:white;padding:0.8rem 1.5rem;border:none;border-radius:6px;cursor:pointer;" onclick="deleteItem('${item.docId}')">Remove Listing</button>`;
+        actionsDiv.innerHTML = `<button class="btn-del" style="background:#ef4444;color:white;padding:1rem 2rem;border:none;border-radius:12px;cursor:pointer;font-weight:800;" onclick="deleteItem('${item.docId}')">Remove Listing</button>`;
     } else {
         actionsDiv.innerHTML = `
-            <button class="btn-contact" style="background:#64748b;color:white;padding:0.8rem 1.2rem;border:none;border-radius:6px;cursor:pointer;" onclick="contactSeller('${item.sellerKey}')">Contact</button>
-            <button class="btn-contact" style="background:var(--primary);color:white;padding:0.8rem 1.2rem;border:none;border-radius:6px;cursor:pointer;" onclick="openChatModal('${item.sellerKey}', '${item.seller}')">Live Chat</button>
-            <button class="btn-contact" style="background:#10b981;color:white;padding:0.8rem 1.2rem;border:none;border-radius:6px;cursor:pointer;font-weight:bold;" onclick="openReserveModal('${item.title.replace(/'/g, "\\'")}', ${item.price}, '${item.sellerKey}', '${item.seller}')">Reserve</button>
+            <button class="btn-contact" style="background:#64748b;color:white;padding:1rem 1.5rem;border:none;border-radius:12px;cursor:pointer;font-weight:700;" onclick="contactSeller('${item.sellerKey}')">Contact</button>
+            <button class="btn-contact" style="background:var(--primary);color:white;padding:1rem 1.5rem;border:none;border-radius:12px;cursor:pointer;font-weight:700;" onclick="openChatModal('${item.sellerKey}', '${item.seller}')">Live Chat</button>
+            <button class="btn-contact" style="background:#10b981;color:white;padding:1rem 1.5rem;border:none;border-radius:12px;cursor:pointer;font-weight:800;" onclick="openReserveModal('${item.title.replace(/'/g, "\\'")}', ${item.price}, '${item.sellerKey}', '${item.seller}')">Reserve</button>
         `;
     }
 
@@ -583,14 +586,14 @@ window.openReserveModal = function(title, price, sellerKey, sellerName) {
     
     if (isMobile) {
         gcashDiv.innerHTML = `
-            <a href="intent://#Intent;package=com.globe.gcash.android;scheme=gcash;end" style="background:#005ce6; color:white; font-weight:bold; text-decoration:none; display:inline-block; padding:12px 20px; border-radius:10px; box-shadow: 0 4px 10px rgba(0,92,230,0.3);">📱 Open GCash App</a>
-            <p style="font-size:0.85rem; color:var(--light); margin-top:10px; margin-bottom:0;">Account Number: <strong>0912 345 6789</strong></p>
+            <a href="intent://#Intent;package=com.globe.gcash.android;scheme=gcash;end" style="background:#005ce6; color:white; font-weight:800; text-decoration:none; display:inline-block; padding:15px 25px; border-radius:12px; box-shadow: 0 4px 15px rgba(0,92,230,0.3); font-size: 1.1rem;">📱 Open GCash App</a>
+            <p style="font-size:0.95rem; color:var(--text); margin-top:15px; margin-bottom:0;">Account Number: <strong style="color:var(--primary); font-family:monospace; font-size:1.1rem;">0912 345 6789</strong></p>
         `;
     } else {
         const gcashNumber = "09123456789"; 
         gcashDiv.innerHTML = `
-            <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${gcashNumber}" alt="GCash QR Code" style="border-radius:10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-            <p style="font-size:0.85rem; color:var(--light); margin-top:10px; margin-bottom:0;">Scan code with your GCash App</p>
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${gcashNumber}" alt="GCash QR Code" style="border-radius:12px; box-shadow: 0 5px 20px rgba(0,0,0,0.1);">
+            <p style="font-size:0.95rem; color:var(--text); margin-top:15px; margin-bottom:0; font-weight:600;">Scan code with your GCash App</p>
         `;
     }
 
@@ -610,7 +613,7 @@ window.confirmReservation = async function() {
     submitBtn.disabled = true;
     submitBtn.textContent = "Verifying Payment...";
 
-    compressImage(receiptFile, 600, 600, 0.6, async function (compressedReceipt) {
+    compressImage(receiptFile, 800, 800, 0.7, async function (compressedReceipt) {
         try {
             await addDoc(collection(db, "notifications"), {
                 targetUser: pendingReservation.sellerKey,
@@ -689,13 +692,13 @@ window.openChatModal = function(sellerKey, sellerName) {
             
             let innerHtml = '';
             if (m.imageUrl) {
-                innerHtml += `<img src="${m.imageUrl}" style="max-width: 100%; border-radius: 8px; margin-bottom: 5px; cursor: pointer;" onclick="viewFullImage('${m.imageUrl}')"><br>`;
+                innerHtml += `<img src="${m.imageUrl}" style="max-width: 100%; border-radius: 8px; margin-bottom: 8px; cursor: zoom-in;" onclick="viewFullImage('${m.imageUrl}')"><br>`;
             }
             if (m.text) {
                 innerHtml += `<span style="display: block;">${m.text}</span>`;
             }
             
-            innerHtml += `<span style="display: block; font-size: 0.65rem; opacity: 0.7; margin-top: 5px; text-align: right;">${timeString}</span>`;
+            innerHtml += `<span style="display: block; font-size: 0.65rem; opacity: 0.6; margin-top: 6px; text-align: right; font-weight: 600;">${timeString}</span>`;
             
             div.innerHTML = innerHtml;
             chatBox.appendChild(div);
@@ -854,7 +857,7 @@ function loadInbox() {
         const notifBadge = document.getElementById('notif-badge');
 
         if(interactors.size === 0) {
-            dropdownBox.innerHTML = '<p style="color: var(--light); text-align: center; margin: 15px 0; font-size: 0.85rem;">No messages yet.</p>';
+            dropdownBox.innerHTML = '<p style="color: var(--light); text-align: center; margin: 20px 0; font-size: 0.9rem;">No messages yet.</p>';
             notifBadge.classList.add('hidden');
             return;
         } else {
@@ -866,7 +869,7 @@ function loadInbox() {
             let actionText = data.type === 'reserve' ? 'reserved your item.' : 'sent you a message.';
             
             const dropDiv = document.createElement('div');
-            dropDiv.style = "display: flex; justify-content: space-between; align-items: center; padding: 12px 10px; border-bottom: 1px solid #f1f5f9; cursor: pointer; transition: background 0.2s;";
+            dropDiv.style = "display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid #f1f5f9; cursor: pointer; transition: background 0.2s;";
             dropDiv.onmouseover = () => dropDiv.style.background = '#f8fafc';
             dropDiv.onmouseout = () => dropDiv.style.background = 'transparent';
             dropDiv.onclick = () => {
@@ -875,17 +878,16 @@ function loadInbox() {
             };
             dropDiv.innerHTML = `
                 <div>
-                    <strong style="color: var(--text); font-size: 0.95rem;">${user}</strong>
-                    <p style="margin: 3px 0 0 0; font-size: 0.8rem; color: var(--light);">${actionText}</p>
+                    <strong style="color: var(--text); font-size: 1.05rem;">${user}</strong>
+                    <p style="margin: 4px 0 0 0; font-size: 0.85rem; color: var(--light);">${actionText}</p>
                 </div>
-                <span style="font-size: 1.2rem; color: var(--primary);">💬</span>
+                <span style="font-size: 1.5rem; color: var(--primary);">💬</span>
             `;
             dropdownBox.appendChild(dropDiv);
         });
     });
 }
 
-// --- UPGRADED ADMIN DASHBOARD LOGIC ---
 let currentTotalAdminProfit = 0;
 let adminReserves = [];
 let adminWithdrawals = [];
@@ -894,7 +896,6 @@ async function loadAdminDashboard() {
     const resQuery = query(collection(db, "reservations"));
     const withQuery = query(collection(db, "withdrawals"));
     
-    // Helper function to beautifully combine and render the ledger
     const updateDashboardUI = () => {
         let grossProfit = 0;
         adminReserves.forEach(r => grossProfit += Number(r.fee));
@@ -912,40 +913,39 @@ async function loadAdminDashboard() {
         adminReserves.forEach(r => allLogs.push({ type: 'reserve', data: r, time: r.timestamp }));
         adminWithdrawals.forEach(w => allLogs.push({ type: 'withdraw', data: w, time: w.timestamp }));
 
-        // Sort everything chronologically!
         allLogs.sort((a, b) => b.time - a.time);
 
         if (allLogs.length === 0) {
-            logsBox.innerHTML = '<p style="color: var(--light); text-align: center; margin: 15px 0;">No system transactions yet.</p>';
+            logsBox.innerHTML = '<p style="color: var(--light); text-align: center; margin: 20px 0;">No system transactions yet.</p>';
         } else {
             allLogs.forEach(log => {
                 const logItem = document.createElement('div');
-                logItem.style = "padding: 10px; border-bottom: 1px solid #e2e8f0; font-size: 0.9rem;";
+                logItem.style = "padding: 15px; border-bottom: 1px solid #e2e8f0; font-size: 0.95rem;";
                 
                 const timeString = new Date(log.time).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 
                 if (log.type === 'reserve') {
                     const r = log.data;
                     logItem.innerHTML = `
-                        <div style="display:flex; justify-content: space-between;">
-                            <span><strong>${r.buyer}</strong> reserved <em>${r.item}</em> from <strong>${r.seller}</strong></span>
-                            <span style="color: #10b981; font-weight: bold;">+₱${Number(r.fee).toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                        <div style="display:flex; justify-content: space-between; align-items: center;">
+                            <span style="color: var(--text);"><strong>${r.buyer}</strong> reserved <em>${r.item}</em> from <strong>${r.seller}</strong></span>
+                            <span style="color: #10b981; font-weight: 800; font-size: 1.1rem;">+₱${Number(r.fee).toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
                         </div>
-                        <div style="display:flex; justify-content: space-between; margin-top: 5px; font-size: 0.8rem;">
-                            <span style="color: var(--light);">${timeString}</span>
-                            ${r.receipt ? `<span onclick="viewFullImage('${r.receipt}')" style="color:var(--primary); font-weight:bold; cursor: pointer;">🔍 View Receipt</span>` : ''}
+                        <div style="display:flex; justify-content: space-between; margin-top: 8px; font-size: 0.85rem;">
+                            <span style="color: var(--light); font-weight: 600;">${timeString}</span>
+                            ${r.receipt ? `<span onclick="viewFullImage('${r.receipt}')" style="color:var(--primary); font-weight:800; cursor: pointer;">🔍 View Receipt</span>` : ''}
                         </div>
                     `;
                 } else {
                     const w = log.data;
                     logItem.innerHTML = `
-                        <div style="display:flex; justify-content: space-between;">
-                            <span><strong>Bank Withdrawal</strong></span>
-                            <span style="color: #ef4444; font-weight: bold;">-₱${Number(w.amount).toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                        <div style="display:flex; justify-content: space-between; align-items: center;">
+                            <span style="color: var(--text);"><strong>Bank Withdrawal</strong></span>
+                            <span style="color: #ef4444; font-weight: 800; font-size: 1.1rem;">-₱${Number(w.amount).toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
                         </div>
-                        <div style="display:flex; justify-content: space-between; margin-top: 5px; font-size: 0.8rem;">
-                            <span style="color: var(--light);">${timeString}</span>
-                            <span style="color: var(--light); font-weight:bold;">🏦 Processed</span>
+                        <div style="display:flex; justify-content: space-between; margin-top: 8px; font-size: 0.85rem;">
+                            <span style="color: var(--light); font-weight: 600;">${timeString}</span>
+                            <span style="color: var(--light); font-weight:800;">🏦 Processed</span>
                         </div>
                     `;
                 }
@@ -954,14 +954,12 @@ async function loadAdminDashboard() {
         }
     };
 
-    // Listen for new Reservations in real-time
     onSnapshot(resQuery, (snapshot) => {
         adminReserves = [];
         snapshot.forEach(doc => adminReserves.push(doc.data()));
         updateDashboardUI();
     });
 
-    // Listen for new Withdrawals in real-time
     onSnapshot(withQuery, (snapshot) => {
         adminWithdrawals = [];
         snapshot.forEach(doc => adminWithdrawals.push(doc.data()));
@@ -984,7 +982,7 @@ async function loadAdminDashboard() {
         pendingBox.innerHTML = '';
         
         if(snapshot.empty) {
-            pendingBox.innerHTML = '<p style="color: var(--light); text-align: center;">No pending accounts.</p>';
+            pendingBox.innerHTML = '<p style="color: var(--light); text-align: center; margin: 20px 0;">No pending accounts.</p>';
             return;
         }
 
@@ -993,28 +991,28 @@ async function loadAdminDashboard() {
             const uId = docSnap.id;
             
             const div = document.createElement('div');
-            div.style = "padding: 15px; border-bottom: 1px solid #e2e8f0; margin-bottom: 10px; background: #f8fafc; border-radius: 8px;";
+            div.style = "padding: 20px; border-bottom: 1px solid #e2e8f0; margin-bottom: 15px; background: white; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.02);";
             div.innerHTML = `
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                     <div>
-                        <strong style="font-size: 1.1rem; color: var(--text);">${u.username}</strong>
-                        <p style="margin: 0; font-size: 0.85rem; color: var(--light);">${u.email}</p>
+                        <strong style="font-size: 1.2rem; color: var(--text);">${u.username}</strong>
+                        <p style="margin: 2px 0 0 0; font-size: 0.9rem; color: var(--light); font-weight: 600;">${u.email}</p>
                     </div>
-                    <div style="display: flex; gap: 5px;">
-                        <button class="btn-primary" style="background: #10b981; padding: 5px 15px; width: auto;" onclick="approveUser('${uId}', '${u.username}', '${u.usernameKey}')">Approve</button>
-                        <button class="btn-secondary" style="padding: 5px 15px; width: auto; margin: 0;" onclick="rejectUser('${uId}')">Reject</button>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn-primary" style="background: #10b981; padding: 8px 20px; width: auto;" onclick="approveUser('${uId}', '${u.username}', '${u.usernameKey}')">Approve</button>
+                        <button class="btn-secondary" style="padding: 8px 20px; width: auto; margin: 0; border: none; background: #fee2e2; color: #ef4444;" onclick="rejectUser('${uId}')">Reject</button>
                     </div>
                 </div>
-                <div style="display: flex; gap: 10px;">
+                <div style="display: flex; gap: 15px;">
                     <div style="flex: 1;">
-                        <p style="font-size: 0.8rem; margin: 0 0 5px 0; font-weight: bold;">Front ID</p>
-                        <img src="${u.idPhoto}" onclick="viewFullImage('${u.idPhoto}')" style="width: 100%; height: 100px; object-fit: cover; border-radius: 6px; border: 1px solid #cbd5e1; cursor: zoom-in;">
+                        <p style="font-size: 0.85rem; margin: 0 0 8px 0; font-weight: 800; color: var(--light);">Front ID</p>
+                        <img src="${u.idPhoto}" onclick="viewFullImage('${u.idPhoto}')" style="width: 100%; height: 120px; object-fit: cover; border-radius: 8px; border: 2px solid #e2e8f0; cursor: zoom-in;">
                     </div>
                     ${u.idPhotoBack ? `
                     <div style="flex: 1;">
-                        <p style="font-size: 0.8rem; margin: 0 0 5px 0; font-weight: bold;">Back ID</p>
-                        <img src="${u.idPhotoBack}" onclick="viewFullImage('${u.idPhotoBack}')" style="width: 100%; height: 100px; object-fit: cover; border-radius: 6px; border: 1px solid #cbd5e1; cursor: zoom-in;">
-                    </div>` : '<div style="flex: 1;"><p style="font-size: 0.8rem; margin: 0 0 5px 0; color:var(--light);">No Back ID</p></div>'}
+                        <p style="font-size: 0.85rem; margin: 0 0 8px 0; font-weight: 800; color: var(--light);">Back ID</p>
+                        <img src="${u.idPhotoBack}" onclick="viewFullImage('${u.idPhotoBack}')" style="width: 100%; height: 120px; object-fit: cover; border-radius: 8px; border: 2px solid #e2e8f0; cursor: zoom-in;">
+                    </div>` : '<div style="flex: 1; display:flex; align-items:center; justify-content:center; background:#f8fafc; border-radius:8px; border:2px dashed #e2e8f0;"><p style="font-size: 0.85rem; margin: 0; color:var(--light); font-weight:600;">No Back ID Provided</p></div>'}
                 </div>
             `;
             pendingBox.appendChild(div);
@@ -1052,7 +1050,6 @@ window.rejectUser = async function(docId) {
     }
 };
 
-// --- UPDATED CUSTOM WITHDRAWAL PROMPT ---
 document.getElementById('btn-withdraw').onclick = async () => {
     if(currentTotalAdminProfit <= 0) {
         alert("You have no funds available to withdraw.");
