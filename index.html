@@ -11,7 +11,15 @@
 
     <header>
         <div class="header-container">
-            <h1 class="logo">Vehi<span>Sell</span></h1>
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <h1 class="logo" style="margin: 0;">Vehi<span>Sell</span></h1>
+                <div id="quick-icons" style="display: none;">
+                    <button class="icon-btn" onclick="showTab('acc')" title="Messages & Notifications">
+                        🔔 <span id="notif-badge" class="hidden badge">0</span>
+                    </button>
+                </div>
+            </div>
+
             <nav id="main-nav">
                 <button class="nav-btn active" data-tab="buy">Marketplace</button>
                 <button class="nav-btn" data-tab="sell">Sell Item</button>
@@ -61,8 +69,8 @@
                     <textarea id="p-desc" placeholder="Product details..." rows="4" required></textarea>
                     
                     <div class="file-box">
-                        <label>Product Photos (Select multiple)</label>
-                        <input type="file" id="p-img" accept="image/*" multiple required>
+                        <label>Product Photos (Select & Append multiple)</label>
+                        <input type="file" id="p-img" accept="image/*" multiple>
                         <div id="sell-img-previews" style="display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap;"></div>
                     </div>
                     <button type="submit" class="btn-primary">Post Item</button>
@@ -169,22 +177,21 @@
     </main>
 
     <div id="image-modal" class="modal hidden" style="z-index: 9999;">
-        <div class="modal-content" style="background: transparent; box-shadow: none; text-align: center; padding: 0; max-width: 90%;">
+        <div class="modal-content" style="background: transparent; box-shadow: none; text-align: center; padding: 0; max-width: 90%; max-height: none; overflow: visible;">
             <span class="close-btn" onclick="document.getElementById('image-modal').classList.add('hidden')" style="color: white; font-size: 40px; position: absolute; right: 0; top: -40px;">&times;</span>
             <img id="full-image-viewer" src="" style="max-width: 100%; max-height: 85vh; border-radius: 10px; box-shadow: 0 10px 40px rgba(0,0,0,0.6);">
         </div>
     </div>
 
     <div id="product-modal" class="modal hidden">
-        <div class="modal-content glass-card" style="max-width: 700px; padding: 0; overflow: hidden; display: flex; flex-direction: column;">
+        <div class="modal-content glass-card" style="max-width: 700px; padding: 0; overflow-y: auto; display: flex; flex-direction: column;">
             <span class="close-btn" onclick="document.getElementById('product-modal').classList.add('hidden')" style="cursor: pointer; position: absolute; right: 15px; top: 10px; z-index: 10; background: rgba(255,255,255,0.9); border-radius: 50%; width: 32px; height: 32px; text-align: center; line-height: 32px; font-weight: bold;">&times;</span>
             
             <div style="background: #0f172a; text-align: center; position: relative;">
                 <img id="pm-main-img" src="" style="height: 350px; max-width: 100%; object-fit: contain; cursor: zoom-in;" onclick="viewFullImage(this.src)">
             </div>
             
-            <div id="pm-thumbnails" style="display: flex; gap: 10px; padding: 10px; background: #1e293b; overflow-x: auto; justify-content: center;">
-                </div>
+            <div id="pm-thumbnails" style="display: flex; gap: 10px; padding: 10px; background: #1e293b; overflow-x: auto; justify-content: center;"></div>
 
             <div style="padding: 20px; text-align: left;">
                 <h2 id="pm-price" style="color: #10b981; margin: 0 0 5px 0; font-size: 2rem;">₱0</h2>
@@ -196,7 +203,7 @@
                         <span style="font-size: 1.5rem;">👤</span>
                         <strong id="pm-seller-name" style="font-size: 1.1rem; color: var(--primary);">Seller Name</strong>
                     </div>
-                    <div id="pm-actions" style="display: flex; gap: 10px;">
+                    <div id="pm-actions" style="display: flex; gap: 10px; flex-wrap: wrap; flex: 1; justify-content: flex-end;">
                         </div>
                 </div>
             </div>
