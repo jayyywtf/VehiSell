@@ -31,7 +31,8 @@
             </div>
 
             <nav id="main-nav">
-                <button class="nav-btn active" data-tab="buy">Marketplace</button>
+                <button class="nav-btn active" data-tab="home">Home</button>
+                <button class="nav-btn" data-tab="buy">Marketplace</button>
                 <button class="nav-btn hidden" id="nav-saved" data-tab="saved" style="color: #ef4444;">Saved ❤️</button>
                 <button class="nav-btn" data-tab="sell">Sell Item</button>
                 <button class="nav-btn nav-accent" id="nav-auth" data-tab="auth">Sign In</button>
@@ -44,7 +45,63 @@
     <div id="toast-container" class="toast-container"></div>
 
     <main>
-        <section id="sec-buy" class="tab-content">
+        <section id="sec-home" class="tab-content">
+            <div class="hero-section">
+                <h1 class="hero-title">The Premium Marketplace<br>for <span>Vehicles & Parts.</span></h1>
+                <p class="hero-subtitle">Buy, sell, and reserve with absolute confidence. Every seller is ID-verified, and every transaction is protected by our secure Escrow system.</p>
+                <div class="hero-buttons">
+                    <button class="btn-primary" style="width: auto; padding: 1rem 2.5rem; font-size: 1.1rem; border-radius: 30px;" onclick="window.switchTab('buy')">Explore Marketplace</button>
+                    <button class="btn-secondary" style="width: auto; padding: 1rem 2.5rem; font-size: 1.1rem; border-radius: 30px;" onclick="window.switchTab('sell')">Start Selling</button>
+                </div>
+            </div>
+
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🛡️</div>
+                    <h3>ID-Verified Sellers</h3>
+                    <p>No scams. No fake accounts. Every single seller on our platform undergoes manual government ID verification by our administrative team before they can list a single item.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">💳</div>
+                    <h3>Secure 5% Escrow</h3>
+                    <p>Found the perfect car but need time to inspect it? Secure it instantly! Pay a small 5% downpayment into our protected escrow to reserve the vehicle and remove it from the market.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">💬</div>
+                    <h3>Real-Time Live Chat</h3>
+                    <p>Negotiate, ask for extra pictures, and finalize meetup details using our lightning-fast built-in messaging system. Receive instant email notifications so you never miss a deal.</p>
+                </div>
+            </div>
+
+            <footer class="site-footer">
+                <div class="footer-grid">
+                    <div class="footer-col">
+                        <h2 class="logo" style="color: white; font-size: 2rem; margin-top: 0;">Vehi<span>Sell</span></h2>
+                        <p>The safest way to buy and sell vehicles and parts in the Philippines. Join thousands of verified users today.</p>
+                    </div>
+                    <div class="footer-col">
+                        <h3>Contact Us</h3>
+                        <p>📞 Phone: +63 912 345 6789</p>
+                        <p>✉️ Email: support@vehisell.com</p>
+                        <p>🏢 Office: Makati City, Metro Manila</p>
+                    </div>
+                    <div class="footer-col">
+                        <h3>Quick Links</h3>
+                        <ul>
+                            <li><a href="#" onclick="window.switchTab('buy'); return false;">Browse Marketplace</a></li>
+                            <li><a href="#" onclick="window.switchTab('auth'); return false;">Create an Account</a></li>
+                            <li><a href="#">Safety Guidelines</a></li>
+                            <li><a href="#">Privacy Policy</a></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="footer-bottom">
+                    &copy; 2026 VehiSell Marketplace. All rights reserved.
+                </div>
+            </footer>
+        </section>
+
+        <section id="sec-buy" class="tab-content hidden">
             <div class="section-header" style="margin-bottom: 2rem;">
                 <h2 style="font-size: 2rem; margin: 0 0 5px 0;">Verified Listings</h2>
                 <p style="color: var(--light); margin: 0; font-size: 1.1rem;">Buy with confidence from ID-verified sellers.</p>
@@ -100,7 +157,7 @@
 
                     <textarea id="p-desc" placeholder="Product details..." rows="5" required></textarea>
                     
-                    <div class="file-box" style="margin-bottom: 1rem;">
+                    <div class="file-box" style="margin-bottom: 1.5rem;">
                         <label style="font-weight: 700; font-size: 0.9rem; color: var(--light); margin-bottom: 8px; display: block;">Product Photos (Select multiple)</label>
                         <input type="file" id="p-img" accept="image/*" multiple style="background: white;">
                         <div id="sell-img-previews" style="display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap;"></div>
