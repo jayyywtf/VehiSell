@@ -128,7 +128,7 @@ document.getElementById('form-auth').addEventListener('submit', async function (
 
     } else {
         const confirmPass = document.getElementById('auth-pass-confirm').value;
-        const email = document.getElementById('auth-email').value.trim(); // NEW EMAIL FIELD
+        const email = document.getElementById('auth-email').value.trim(); 
         const phone = document.getElementById('auth-phone').value.trim();
         const fbLink = document.getElementById('auth-fb').value.trim();
         const idFileInput = document.getElementById('auth-id-img');
@@ -153,7 +153,7 @@ document.getElementById('form-auth').addEventListener('submit', async function (
                     username: rawUser,
                     usernameKey: safeUserKey,
                     password: pass, 
-                    email: email, // SAVE EMAIL TO DB
+                    email: email, 
                     phone: phone,
                     fb: fbLink,
                     idPhoto: compressedIdPhoto 
@@ -163,6 +163,13 @@ document.getElementById('form-auth').addEventListener('submit', async function (
                 alert("✅ Account created successfully! Logging you in...");
                 document.getElementById('form-auth').reset();
                 login(newUser);
+
+                // --- SEND WELCOME EMAIL ---
+                sendEmailNotification(
+                    safeUserKey, 
+                    "Welcome to VehiSell!", 
+                    `Hello ${rawUser}, your verified VehiSell account has been successfully created. Welcome to the marketplace!`
+                );
 
             } catch (error) {
                 console.error(error);
@@ -196,7 +203,6 @@ function updateNav() {
         document.getElementById('acc-name').innerText = currentUser.username;
         document.getElementById('acc-id-display').src = currentUser.idPhoto;
 
-        // SECRET ADMIN UNLOCK
         if (currentUser.usernameKey === 'admin') {
             document.getElementById('nav-admin').classList.remove('hidden');
             loadAdminDashboard();
@@ -398,7 +404,6 @@ window.confirmReservation = async function() {
     alert("Payment submitted! The seller has been notified.");
 
     try {
-        // 1. Notify the seller
         await addDoc(collection(db, "notifications"), {
             targetUser: pendingReservation.sellerKey,
             type: 'reserve',
@@ -407,7 +412,6 @@ window.confirmReservation = async function() {
             timestamp: Date.now()
         });
 
-        // 2. Log to reservations so Admin can calculate profit
         await addDoc(collection(db, "reservations"), {
             item: pendingReservation.title,
             buyer: currentUser.username,
@@ -416,11 +420,11 @@ window.confirmReservation = async function() {
             timestamp: Date.now()
         });
 
-        // 3. Send "Email" (Simulated)
+        // --- SEND RESERVATION EMAIL TO SELLER ---
         sendEmailNotification(
             pendingReservation.sellerKey, 
-            "VehiSell Escrow: Item Reserved!", 
-            `Good news! ${currentUser.username} has paid the 5% downpayment (₱${pendingReservation.fee}) to reserve your ${pendingReservation.title}.`
+            "Item Reserved!", 
+            `Great news! ${currentUser.username} has just paid the 5% escrow downpayment (₱${pendingReservation.fee}) to reserve your ${pendingReservation.title}. Log in to chat with them to complete the sale.`
         );
 
     } catch(err) {
@@ -495,11 +499,11 @@ document.getElementById('form-chat').onsubmit = async (e) => {
         timestamp: Date.now()
     });
 
-    // Send simulated email
+    // --- SEND CHAT NOTIFICATION EMAIL ---
     sendEmailNotification(
         activeChatUserId, 
-        "VehiSell: New Message!", 
-        `You have a new message from ${currentUser.username}: "${text}"`
+        "New Message Received", 
+        `You have a new unread message from ${currentUser.username} on VehiSell: "${text}"`
     );
 };
 
@@ -582,26 +586,35 @@ async function loadAdminDashboard() {
     });
 }
 
-// --- EMAIL NOTIFICATION WORKAROUND ---
-async function sendEmailNotification(targetUsernameKey, subject, body) {
-    /* NOTE: To make this send REAL emails to a user's Gmail/Yahoo, 
-       you must sign up for a free account at EmailJS.com.
-       Once you have an account, replace this console.log with the EmailJS send() function.
-    */
+// --- REAL EMAILJS INTEGRATION ---
+async function sendEmailNotification(targetUsernameKey, subjectTitle, bodyMessage) {
     try {
         const q = query(collection(db, "users"), where("usernameKey", "==", targetUsernameKey));
         const userDoc = await getDocs(q);
+        
         if(!userDoc.empty) {
             const userEmail = userDoc.docs[0].data().email;
+            const currentTime = new Date().toLocaleString(); // Creates the {{time}} for your template
             
-            console.log("-----------------------------------------");
-            console.log(`[SIMULATED ADMIN EMAIL SENT TO: ${userEmail}]`);
-            console.log(`SUBJECT: ${subject}`);
-            console.log(`BODY: ${body}`);
-            console.log("-----------------------------------------");
+            // NOTE: Replace these three strings with your ACTUAL EmailJS IDs
+            emailjs.send("YOUR_SERVICE_ID", "YOUR_TEMPLATE_ID", {
+                to_email: userEmail,             // Maps to {{to_email}}
+                title: subjectTitle,             // Maps to {{title}}
+                name: "VehiSell Admin",          // Maps to {{name}}
+                message: bodyMessage,            // Maps to {{message}}
+                time: currentTime,               // Maps to {{time}}
+                email: "admin@vehisell.com"      // Maps to {{email}}
+            }).then(
+              (response) => {
+                console.log('✅ Email sent successfully!', response.status, response.text);
+              },
+              (error) => {
+                console.error('❌ Email failed to send.', error);
+              }
+            );
         }
     } catch(err) {
-        console.error("Could not fetch user email", err);
+        console.error("Could not fetch user email for notification", err);
     }
 }
 
