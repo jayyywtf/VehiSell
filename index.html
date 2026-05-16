@@ -32,6 +32,7 @@
 
             <nav id="main-nav">
                 <button class="nav-btn active" data-tab="buy">Marketplace</button>
+                <button class="nav-btn hidden" id="nav-saved" data-tab="saved" style="color: #ef4444;">Saved ❤️</button>
                 <button class="nav-btn" data-tab="sell">Sell Item</button>
                 <button class="nav-btn nav-accent" id="nav-auth" data-tab="auth">Sign In</button>
                 <button class="nav-btn hidden" id="nav-acc" data-tab="acc">Profile</button>
@@ -48,6 +49,7 @@
                 <h2 style="font-size: 2rem; margin: 0 0 5px 0;">Verified Listings</h2>
                 <p style="color: var(--light); margin: 0; font-size: 1.1rem;">Buy with confidence from ID-verified sellers.</p>
             </div>
+            
             <div class="filter-bar">
                 <input type="text" id="search-input" placeholder="Search for vehicles or parts...">
                 <select id="category-filter">
@@ -57,8 +59,28 @@
                     <option value="suv">SUV</option>
                     <option value="4x4">4X4</option>
                 </select>
+                <input type="number" id="min-price" placeholder="Min Price ₱">
+                <input type="number" id="max-price" placeholder="Max Price ₱">
+                <select id="sort-filter">
+                    <option value="newest">Sort: Newest First</option>
+                    <option value="price-asc">Sort: Price (Low to High)</option>
+                    <option value="price-desc">Sort: Price (High to Low)</option>
+                </select>
             </div>
+            
             <div id="listings-grid" class="grid"></div>
+            
+            <div id="load-more-container" style="text-align: center; margin-top: 2rem; display: none;">
+                <button id="btn-load-more" class="btn-secondary" style="width: auto; padding: 12px 40px; font-size: 1.1rem;">Load More Items</button>
+            </div>
+        </section>
+
+        <section id="sec-saved" class="tab-content hidden">
+            <div class="section-header" style="margin-bottom: 2rem;">
+                <h2 style="font-size: 2rem; margin: 0 0 5px 0;">My Saved Items ❤️</h2>
+                <p style="color: var(--light); margin: 0; font-size: 1.1rem;">Keep track of the vehicles you love.</p>
+            </div>
+            <div id="saved-grid" class="grid"></div>
         </section>
 
         <section id="sec-sell" class="tab-content hidden">
@@ -78,11 +100,20 @@
 
                     <textarea id="p-desc" placeholder="Product details..." rows="5" required></textarea>
                     
-                    <div class="file-box" style="margin-bottom: 1.5rem;">
+                    <div class="file-box" style="margin-bottom: 1rem;">
                         <label style="font-weight: 700; font-size: 0.9rem; color: var(--light); margin-bottom: 8px; display: block;">Product Photos (Select multiple)</label>
                         <input type="file" id="p-img" accept="image/*" multiple style="background: white;">
                         <div id="sell-img-previews" style="display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap;"></div>
                     </div>
+                    
+                    <div id="boost-container" class="hidden" style="margin: 15px 0; background: #fffbeb; padding: 15px; border-radius: 12px; border: 1px solid #f59e0b;">
+                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: 800; color: #d97706;">
+                            <input type="checkbox" id="p-boost" style="width: 20px; height: 20px; margin:0;">
+                            Boost this listing (₱150 fee)
+                        </label>
+                        <p style="margin: 5px 0 0 30px; font-size: 0.8rem; color: #b45309;">Boosted listings always appear at the very top of the marketplace.</p>
+                    </div>
+
                     <button type="submit" class="btn-primary">Post Item</button>
                 </form>
             </div>
@@ -100,6 +131,14 @@
                         <input type="email" id="auth-email" placeholder="Email Address (For Notifications)">
                         <input type="tel" id="auth-phone" placeholder="Phone Number (e.g., 09123456789)">
                         <input type="text" id="auth-fb" placeholder="Facebook Profile Link">
+
+                        <div style="margin: 15px 0; background: #e0e7ff; padding: 15px; border-radius: 12px; border: 1px solid var(--primary);">
+                            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: 800; color: var(--primary);">
+                                <input type="checkbox" id="auth-is-dealer" style="width: 20px; height: 20px; margin: 0;">
+                                Register as a Verified Dealer
+                            </label>
+                            <p style="margin: 5px 0 0 30px; font-size: 0.8rem; color: var(--text);">Dealers can boost listings and receive a premium badge.</p>
+                        </div>
 
                         <div class="id-upload-area" style="background: white;">
                             <label style="color: var(--primary); font-weight: 800;">Front of Valid ID (Required)</label>
@@ -124,7 +163,8 @@
         <section id="sec-acc" class="tab-content hidden">
             <div class="glass-card acc-view" style="max-width: 600px; text-align: center;">
                 <div style="font-size: 4rem; margin-bottom: 10px;">👤</div>
-                <h2 id="acc-name" style="margin-top: 0;">User</h2>
+                <h2 id="acc-name" style="margin-top: 0; margin-bottom: 5px;">User</h2>
+                <div id="acc-dealer-badge" style="display: none; color: #3b82f6; font-weight: bold; font-size: 1rem; margin-bottom: 15px;">☑️ Verified Premium Dealer</div>
                 
                 <div class="id-display-section" style="width: 100%; text-align: left; background: #f8fafc; padding: 20px; border-radius: 16px; border: 1px solid #e2e8f0; margin-top: 20px; box-sizing: border-box;">
                     <p style="font-weight: 800; margin-bottom: 10px; color: var(--text);">Front ID:</p>
@@ -187,6 +227,11 @@
                     <p style="color: var(--light); text-align: center; margin: 20px 0;">No pending accounts.</p>
                 </div>
 
+                <h3 style="margin-bottom: 15px; color: #ef4444; font-size: 1.2rem;">🚩 Reported Listings</h3>
+                <div id="admin-reports" style="max-height: 300px; overflow-y: auto; background: #fff1f2; border: 1px solid #fecdd3; border-radius: 16px; padding: 15px; margin-bottom: 25px;">
+                    <p style="color: var(--light); text-align: center; margin: 20px 0;">No reported listings.</p>
+                </div>
+
                 <h3 style="margin-bottom: 15px; font-size: 1.2rem;">System Ledger</h3>
                 <div id="admin-logs" style="max-height: 350px; overflow-y: auto; background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 15px;">
                 </div>
@@ -214,7 +259,10 @@
             <div id="pm-thumbnails"></div>
 
             <div style="padding: 20px; text-align: left; background: white;">
-                <h2 id="pm-price" style="color: #10b981; margin: 0 0 5px 0; font-size: 2rem; letter-spacing: -1px;">₱0</h2>
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <h2 id="pm-price" style="color: #10b981; margin: 0 0 5px 0; font-size: 2rem; letter-spacing: -1px;">₱0</h2>
+                    <button onclick="reportCurrentListing()" style="background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #ef4444;" title="Report this listing">🚩 Report</button>
+                </div>
                 <h3 id="pm-title" style="margin: 0 0 10px 0; font-size: 1.5rem; color: var(--text);">Product Title</h3>
                 <p id="pm-desc" style="color: var(--light); white-space: pre-wrap; line-height: 1.6; max-height: 150px; overflow-y: auto; padding-right: 10px; font-size: 0.95rem;">Description...</p>
                 
@@ -287,8 +335,7 @@
             <div style="text-align: left; margin-bottom: 20px;">
                 <h4 style="margin-bottom: 15px; text-align: center; color: var(--text);">Send payment to VehiSell Escrow</h4>
                 
-                <div id="dynamic-gcash" style="text-align: center; margin-bottom: 15px; padding: 20px; border: 1px solid #cbd5e1; border-radius: 16px; background: white; box-shadow: 0 4px 10px rgba(0,0,0,0.02);">
-                </div>
+                <div id="dynamic-gcash" style="text-align: center; margin-bottom: 15px; padding: 20px; border: 1px solid #cbd5e1; border-radius: 16px; background: white; box-shadow: 0 4px 10px rgba(0,0,0,0.02);"></div>
 
                 <div style="border: 1px solid #cbd5e1; padding: 15px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; background: white;">
                     <strong style="color: var(--text);">🏦 Bank Transfer</strong>
