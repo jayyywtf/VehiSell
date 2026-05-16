@@ -107,8 +107,13 @@
                 <div class="avatar">👤</div>
                 <h2 id="acc-name">User</h2>
                 <div class="id-display-section">
-                    <p>Your Verified ID:</p>
-                    <img id="acc-id-display" src="" alt="User ID">
+                    <p>Your Verified ID (Front):</p>
+                    <a id="id-front-link" target="_blank"><img id="acc-id-display" src="" alt="User ID Front"></a>
+                    
+                    <div id="acc-id-back-container" class="hidden" style="margin-top: 15px;">
+                        <p>Your Verified ID (Back):</p>
+                        <a id="id-back-link" target="_blank"><img id="acc-id-back-display" src="" alt="User ID Back" style="width: 100%; border-radius: 10px; border: 2px solid var(--primary);"></a>
+                    </div>
                 </div>
                 
                 <div style="margin-top: 30px; width: 100%; text-align: left;">
@@ -201,8 +206,7 @@
             <div style="text-align: left; margin-bottom: 15px;">
                 <h4 style="margin-bottom: 10px; text-align: center;">Send payment to VehiSell Escrow</h4>
                 
-                <div id="dynamic-gcash" style="text-align: center; margin-bottom: 15px; padding: 15px; border: 1px solid #cbd5e1; border-radius: 10px; background: #f8fafc;">
-                </div>
+                <div id="dynamic-gcash" style="text-align: center; margin-bottom: 15px; padding: 15px; border: 1px solid #cbd5e1; border-radius: 10px; background: #f8fafc;"></div>
 
                 <div style="border: 1px solid #cbd5e1; padding: 12px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
                     <strong>🏦 Bank Transfer</strong>
