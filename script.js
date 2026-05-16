@@ -69,7 +69,6 @@ function compressImage(file, maxWidth, maxHeight, quality, onSuccess, onError) {
         if(onError) onError("Unsupported format. Please upload a standard JPG or PNG.");
         return;
     }
-
     const reader = new FileReader();
     reader.onload = function (event) {
         const img = new Image();
@@ -145,7 +144,6 @@ document.getElementById('form-auth').addEventListener('submit', async function (
 
         authBtn.textContent = "Uploading ID...";
         
-        // UPGRADED QUALITY: 800px width, 80% quality for crisp ID readability
         compressImage(idFile, 800, 800, 0.8, async function (compressedIdPhoto) {
             try {
                 authBtn.textContent = "Creating Account...";
@@ -165,7 +163,6 @@ document.getElementById('form-auth').addEventListener('submit', async function (
                 document.getElementById('form-auth').reset();
                 login(newUser);
 
-                // --- SEND WELCOME EMAIL ---
                 sendEmailNotification(
                     safeUserKey, 
                     "Welcome to VehiSell!", 
@@ -206,7 +203,11 @@ function updateNav() {
 
         if (currentUser.usernameKey === 'admin') {
             document.getElementById('nav-admin').classList.remove('hidden');
+            document.querySelector('[data-tab="sell"]').classList.add('hidden'); 
             loadAdminDashboard();
+        } else {
+            document.querySelector('[data-tab="sell"]').classList.remove('hidden'); 
+            loadInbox();
         }
     }
 }
@@ -226,7 +227,6 @@ sellForm.onsubmit = (e) => {
     submitBtn.disabled = true;
     submitBtn.textContent = "Uploading to Cloud...";
 
-    // UPGRADED QUALITY: 1200px width, 80% quality for gorgeous product shots
     compressImage(file, 1200, 1200, 0.8, async function (compressedProductPhoto) {
         try {
             const newItem = {
@@ -326,7 +326,7 @@ function renderFilteredListings(filterTerm = '', filterCat = 'all') {
                 `<button class="btn-del" style="background:#ef4444;color:white;padding:0.5rem;border:none;border-radius:6px;cursor:pointer;" onclick="deleteItem('${item.docId}')">Remove Listing</button>` :
                 `
                 <div style="display: flex; gap: 5px; justify-content: space-between;">
-                    <button class="btn-contact" style="background:#10b981;color:white;padding:0.5rem;border:none;border-radius:6px;cursor:pointer;font-weight:bold;flex:1;" onclick="openReserveModal('${item.title.replace(/'/g, "\\'")}', ${item.price}, '${item.sellerKey}')">Reserve</button>
+                    <button class="btn-contact" style="background:#10b981;color:white;padding:0.5rem;border:none;border-radius:6px;cursor:pointer;font-weight:bold;flex:1;" onclick="openReserveModal('${item.title.replace(/'/g, "\\'")}', ${item.price}, '${item.sellerKey}', '${item.seller}')">Reserve</button>
                     <button class="btn-contact" style="background:var(--primary);color:white;padding:0.5rem;border:none;border-radius:6px;cursor:pointer;flex:1;" onclick="openChatModal('${item.sellerKey}', '${item.seller}')">Live Chat</button>
                     <button class="btn-contact" style="background:#64748b;color:white;padding:0.5rem;border:none;border-radius:6px;cursor:pointer;flex:1;" onclick="contactSeller('${item.sellerKey}')">Contact</button>
                 </div>
@@ -384,7 +384,7 @@ window.contactSeller = async function(sellerKey) {
 
 let pendingReservation = null;
 
-window.openReserveModal = function(title, price, sellerKey) {
+window.openReserveModal = function(title, price, sellerKey, sellerName) {
     if (!currentUser) {
         alert("You must be logged in to reserve an item.");
         showTab('auth');
@@ -394,46 +394,89 @@ window.openReserveModal = function(title, price, sellerKey) {
     const numericPrice = Number(price);
     const reserveFee = numericPrice * 0.05; 
     
-    pendingReservation = { title, sellerKey, price: numericPrice, fee: reserveFee }; 
+    pendingReservation = { title, sellerKey, sellerName, price: numericPrice, fee: reserveFee }; 
 
     document.getElementById('reserve-item-title').innerText = title;
     document.getElementById('reserve-full-price').innerText = numericPrice.toLocaleString();
     document.getElementById('reserve-fee-amount').innerText = reserveFee.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
 
+    // --- DYNAMIC GCASH LOGIC ---
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    const gcashDiv = document.getElementById('dynamic-gcash');
+    
+    if (isMobile) {
+        // Render a deep link button for Mobile Devices
+        gcashDiv.innerHTML = `
+            <a href="intent://#Intent;package=com.globe.gcash.android;scheme=gcash;end" style="background:#005ce6; color:white; font-weight:bold; text-decoration:none; display:inline-block; padding:12px 20px; border-radius:10px; box-shadow: 0 4px 10px rgba(0,92,230,0.3);">📱 Open GCash App</a>
+            <p style="font-size:0.85rem; color:var(--light); margin-top:10px; margin-bottom:0;">Account Number: <strong>0912 345 6789</strong></p>
+        `;
+    } else {
+        // Render a scannable QR Code for Desktop Monitors
+        const gcashNumber = "09123456789"; 
+        gcashDiv.innerHTML = `
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${gcashNumber}" alt="GCash QR Code" style="border-radius:10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+            <p style="font-size:0.85rem; color:var(--light); margin-top:10px; margin-bottom:0;">Scan code with your GCash App</p>
+        `;
+    }
+
+    document.getElementById('reserve-receipt').value = ""; // Reset the file input
     document.getElementById('reserve-modal').classList.remove('hidden');
 };
 
 window.confirmReservation = async function() {
-    document.getElementById('reserve-modal').classList.add('hidden');
-    alert("Payment submitted! The seller has been notified.");
-
-    try {
-        await addDoc(collection(db, "notifications"), {
-            targetUser: pendingReservation.sellerKey,
-            type: 'reserve',
-            fromUser: currentUser.username,
-            itemName: pendingReservation.title,
-            timestamp: Date.now()
-        });
-
-        await addDoc(collection(db, "reservations"), {
-            item: pendingReservation.title,
-            buyer: currentUser.username,
-            seller: pendingReservation.sellerKey,
-            fee: pendingReservation.fee,
-            timestamp: Date.now()
-        });
-
-        // --- SEND RESERVATION EMAIL TO SELLER ---
-        sendEmailNotification(
-            pendingReservation.sellerKey, 
-            "Item Reserved!", 
-            `Great news! Your item ${pendingReservation.title} was just reserved by ${currentUser.username}. Log in to chat with them to complete the sale.`
-        );
-
-    } catch(err) {
-        console.error("Error", err);
+    // 1. Force the user to upload a receipt
+    const receiptFile = document.getElementById('reserve-receipt').files[0];
+    if (!receiptFile) {
+        alert("⚠️ Please upload a screenshot of your payment receipt before submitting.");
+        return;
     }
+
+    const submitBtn = document.getElementById('btn-confirm-reservation');
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Verifying Payment...";
+
+    // 2. Compress the receipt and save the data
+    compressImage(receiptFile, 600, 600, 0.6, async function (compressedReceipt) {
+        try {
+            await addDoc(collection(db, "notifications"), {
+                targetUser: pendingReservation.sellerKey,
+                type: 'reserve',
+                fromUser: currentUser.username,
+                itemName: pendingReservation.title,
+                timestamp: Date.now()
+            });
+
+            await addDoc(collection(db, "reservations"), {
+                item: pendingReservation.title,
+                buyer: currentUser.username,
+                seller: pendingReservation.sellerName, 
+                fee: pendingReservation.fee,
+                receipt: compressedReceipt, // Saved for the Admin
+                timestamp: Date.now()
+            });
+
+            sendEmailNotification(
+                pendingReservation.sellerKey, 
+                "Item Reserved!", 
+                `Great news! Your item ${pendingReservation.title} was just reserved by ${currentUser.username}. Log in to chat with them to complete the sale.`
+            );
+
+            document.getElementById('reserve-modal').classList.add('hidden');
+            alert("✅ Payment submitted successfully! The seller has been notified.");
+
+        } catch(err) {
+            console.error("Error", err);
+            alert("Error submitting reservation.");
+        }
+        
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Submit Payment Proof";
+
+    }, function(err) {
+        alert("Failed to process receipt image.");
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Submit Payment Proof";
+    });
 };
 
 let currentChatUnsubscribe = null;
@@ -503,7 +546,6 @@ document.getElementById('form-chat').onsubmit = async (e) => {
         timestamp: Date.now()
     });
 
-    // --- SEND CHAT NOTIFICATION EMAIL ---
     sendEmailNotification(
         activeChatUserId, 
         "New Message Received", 
@@ -562,35 +604,124 @@ function triggerToastPopup(data) {
     setTimeout(() => { if(container.contains(toast)) toast.remove(); }, 8000);
 }
 
-// --- ADMIN DASHBOARD LOGIC ---
-async function loadAdminDashboard() {
-    const q = query(collection(db, "reservations"));
+function loadInbox() {
+    if (!currentUser || currentUser.usernameKey === 'admin') return;
     
+    const q = query(collection(db, "notifications"), where("targetUser", "==", currentUser.usernameKey));
     onSnapshot(q, (snapshot) => {
-        let totalProfit = 0;
+        const inboxBox = document.getElementById('inbox-list');
+        inboxBox.innerHTML = '';
+        
+        let interactors = new Map();
+        
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            if(!interactors.has(data.fromUser)) {
+                interactors.set(data.fromUser, data);
+            } else {
+                if(data.timestamp > interactors.get(data.fromUser).timestamp) {
+                    interactors.set(data.fromUser, data);
+                }
+            }
+        });
+
+        if(interactors.size === 0) {
+            inboxBox.innerHTML = '<p style="color: var(--light); text-align: center;">No messages yet.</p>';
+            return;
+        }
+
+        interactors.forEach((data, user) => {
+            const div = document.createElement('div');
+            div.style = "display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 10px 15px; border-radius: 8px; border: 1px solid #e2e8f0;";
+            
+            let actionText = data.type === 'reserve' ? 'reserved your item.' : 'sent you a message.';
+            
+            div.innerHTML = `
+                <div>
+                    <strong style="color: var(--primary); font-size: 1.1rem;">${user}</strong>
+                    <p style="margin: 3px 0 0 0; font-size: 0.85rem; color: var(--light);">${actionText}</p>
+                </div>
+                <button class="btn-primary" style="width: auto; padding: 8px 15px; font-size: 0.85rem;" onclick="openChatModal('${user.toLowerCase()}', '${user}')">Reply / Chat</button>
+            `;
+            inboxBox.appendChild(div);
+        });
+    });
+}
+
+// --- ADMIN DASHBOARD LOGIC (WITH WITHDRAWALS) ---
+let currentTotalAdminProfit = 0; // Kept in memory for the withdrawal button
+
+async function loadAdminDashboard() {
+    
+    // 1. Monitor Reservations & Withdrawals to calculate net profit
+    const resQuery = query(collection(db, "reservations"));
+    const withQuery = query(collection(db, "withdrawals"));
+    
+    onSnapshot(resQuery, async (snapshot) => {
+        let grossProfit = 0;
         const logsBox = document.getElementById('admin-logs');
         logsBox.innerHTML = '';
         
         let reserves = [];
         snapshot.forEach(doc => {
             const data = doc.data();
-            totalProfit += Number(data.fee);
+            grossProfit += Number(data.fee);
             reserves.push(data);
         });
 
-        document.getElementById('admin-total-profit').innerText = totalProfit.toLocaleString(undefined, {minimumFractionDigits: 2});
+        // Fetch withdrawals to subtract from gross profit
+        let totalWithdrawn = 0;
+        const wSnap = await getDocs(withQuery);
+        wSnap.forEach(d => totalWithdrawn += Number(d.data().amount));
 
+        currentTotalAdminProfit = grossProfit - totalWithdrawn;
+        document.getElementById('admin-total-profit').innerText = currentTotalAdminProfit.toLocaleString(undefined, {minimumFractionDigits: 2});
+
+        // Render Logs (We include a tiny "View Receipt" link for the admin)
         reserves.sort((a,b) => b.timestamp - a.timestamp);
         reserves.forEach(r => {
             const logItem = document.createElement('div');
             logItem.style = "padding: 10px; border-bottom: 1px solid #e2e8f0; font-size: 0.9rem;";
-            logItem.innerHTML = `<strong>${r.buyer}</strong> reserved <em>${r.item}</em> from <strong>${r.seller}</strong> (+₱${r.fee})`;
+            logItem.innerHTML = `
+                <strong>${r.buyer}</strong> reserved <em>${r.item}</em> from <strong>${r.seller}</strong> (+₱${r.fee.toLocaleString()})
+                ${r.receipt ? `<br><a href="${r.receipt}" target="_blank" style="color:var(--primary); font-size:0.8rem; font-weight:bold;">🔍 View Receipt</a>` : ''}
+            `;
             logsBox.appendChild(logItem);
         });
     });
+
+    try {
+        const usersSnap = await getDocs(collection(db, "users"));
+        document.getElementById('admin-total-users').innerText = usersSnap.size.toLocaleString();
+
+        const listingsSnap = await getDocs(collection(db, "listings"));
+        document.getElementById('admin-total-listings').innerText = listingsSnap.size.toLocaleString();
+    } catch(err) {
+        console.error("Could not fetch counts", err);
+    }
 }
 
-// --- REAL EMAILJS INTEGRATION ---
+// --- ADMIN WITHDRAW BUTTON LOGIC ---
+document.getElementById('btn-withdraw').onclick = async () => {
+    if(currentTotalAdminProfit <= 0) {
+        alert("You have no funds available to withdraw.");
+        return;
+    }
+
+    if(confirm(`Withdraw ₱${currentTotalAdminProfit.toLocaleString()} to your registered Admin Bank Account?`)) {
+        try {
+            await addDoc(collection(db, "withdrawals"), {
+                amount: currentTotalAdminProfit,
+                timestamp: Date.now()
+            });
+            alert("✅ Withdrawal Requested! Funds will reflect in your account within 2-3 business days.");
+            // The onSnapshot listener above will auto-recalculate and set the dashboard to 0!
+        } catch(err) {
+            alert("Error processing withdrawal.");
+        }
+    }
+};
+
 async function sendEmailNotification(targetUsernameKey, subjectTitle, bodyMessage) {
     try {
         const q = query(collection(db, "users"), where("usernameKey", "==", targetUsernameKey));
@@ -600,7 +731,6 @@ async function sendEmailNotification(targetUsernameKey, subjectTitle, bodyMessag
             const userEmail = userDoc.docs[0].data().email;
             const currentTime = new Date().toLocaleString(); 
             
-            // Your live EmailJS keys are securely injected here!
             emailjs.send("service_gzunt5g", "template_xlk8x6j", {
                 to_email: userEmail,             
                 title: subjectTitle,             
