@@ -14,13 +14,15 @@
             <div style="display: flex; align-items: center; gap: 15px;">
                 <h1 class="logo" style="margin: 0;">Vehi<span>Sell</span></h1>
                 
-                <div id="quick-icons" style="display: none; position: relative;">
-                    <button class="icon-btn" id="bell-btn" title="Messages & Notifications">
+                <div id="quick-icons" style="display: flex; align-items: center; gap: 10px; position: relative;">
+                    <button class="icon-btn" id="theme-toggle" title="Toggle Dark Mode">🌙</button>
+
+                    <button class="icon-btn" id="bell-btn" title="Messages & Notifications" style="display: none;">
                         🔔 <span id="notif-badge" class="hidden badge">0</span>
                     </button>
                     
-                    <div id="notif-dropdown" class="hidden" style="position: absolute; top: 55px; left: 0; background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); width: 320px; border-radius: 16px; box-shadow: 0 15px 50px rgba(0,0,0,0.15); border: 1px solid #e2e8f0; z-index: 1000; overflow: hidden;">
-                        <div style="background: #f8fafc; padding: 15px; border-bottom: 1px solid #e2e8f0; font-weight: 800; color: var(--text); font-size: 1rem;">
+                    <div id="notif-dropdown" class="hidden" style="position: absolute; top: 55px; left: 0; background: var(--card-bg); backdrop-filter: blur(10px); width: 320px; border-radius: 16px; box-shadow: 0 15px 50px rgba(0,0,0,0.15); border: 1px solid var(--border); z-index: 1000; overflow: hidden;">
+                        <div style="background: var(--bg); padding: 15px; border-bottom: 1px solid var(--border); font-weight: 800; color: var(--text); font-size: 1rem;">
                             Notifications
                         </div>
                         <div id="dropdown-list" style="max-height: 350px; overflow-y: auto; padding: 5px;">
@@ -37,7 +39,7 @@
                 <button class="nav-btn" data-tab="sell">Sell Item</button>
                 <button class="nav-btn nav-accent" id="nav-auth" data-tab="auth">Sign In</button>
                 <button class="nav-btn hidden" id="nav-acc" data-tab="acc">Profile</button>
-                <button class="nav-btn hidden" id="nav-admin" data-tab="admin" style="background: #1e293b; color: white;">Dashboard</button>
+                <button class="nav-btn hidden" id="nav-admin" data-tab="admin" style="background: var(--primary); color: white;">Dashboard</button>
             </nav>
         </div>
     </header>
@@ -51,7 +53,7 @@
                 <p class="hero-subtitle">Buy, sell, and reserve with absolute confidence. Every seller is ID-verified, and every transaction is protected by our secure Escrow system.</p>
                 <div class="hero-buttons">
                     <button class="btn-primary" style="width: auto; padding: 1rem 2.5rem; font-size: 1.1rem; border-radius: 30px;" onclick="window.switchTab('buy')">Explore Marketplace</button>
-                    <button class="btn-secondary" style="width: auto; padding: 1rem 2.5rem; font-size: 1.1rem; border-radius: 30px;" onclick="window.switchTab('sell')">Start Selling</button>
+                    <button class="btn-secondary" style="background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.3); width: auto; padding: 1rem 2.5rem; font-size: 1.1rem; border-radius: 30px;" onclick="window.switchTab('sell')">Start Selling</button>
                 </div>
             </div>
 
@@ -81,9 +83,9 @@
                     </div>
                     <div class="footer-col">
                         <h3>Contact Us</h3>
-                        <p>📞 Phone: +63 924 489 6829</p>
-                        <p>✉️ Email: hernandezbjay84@gmail.com</p>
-                        <p>🏢 Office: STI College Balayan, Balayan, Batangas</p>
+                        <p>📞 Phone: +63 912 345 6789</p>
+                        <p>✉️ Email: support@vehisell.com</p>
+                        <p>🏢 Office: Makati City, Metro Manila</p>
                     </div>
                     <div class="footer-col">
                         <h3>Quick Links</h3>
@@ -159,11 +161,11 @@
                     
                     <div class="file-box" style="margin-bottom: 1.5rem;">
                         <label style="font-weight: 700; font-size: 0.9rem; color: var(--light); margin-bottom: 8px; display: block;">Product Photos (Select multiple)</label>
-                        <input type="file" id="p-img" accept="image/*" multiple style="background: white;">
+                        <input type="file" id="p-img" accept="image/*" multiple style="background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px; color: var(--text);">
                         <div id="sell-img-previews" style="display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap;"></div>
                     </div>
                     
-                    <div id="boost-container" class="hidden" style="margin: 15px 0; background: #fffbeb; padding: 15px; border-radius: 12px; border: 1px solid #f59e0b;">
+                    <div id="boost-container" class="hidden" style="margin: 15px 0; background: rgba(245, 158, 11, 0.1); padding: 15px; border-radius: 12px; border: 1px solid #f59e0b;">
                         <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: 800; color: #d97706;">
                             <input type="checkbox" id="p-boost" style="width: 20px; height: 20px; margin:0;">
                             Boost this listing (₱150 fee)
@@ -189,7 +191,7 @@
                         <input type="tel" id="auth-phone" placeholder="Phone Number (e.g., 09123456789)">
                         <input type="text" id="auth-fb" placeholder="Facebook Profile Link">
 
-                        <div style="margin: 15px 0; background: #e0e7ff; padding: 15px; border-radius: 12px; border: 1px solid var(--primary);">
+                        <div style="margin: 15px 0; background: rgba(79, 70, 229, 0.1); padding: 15px; border-radius: 12px; border: 1px solid var(--primary);">
                             <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: 800; color: var(--primary);">
                                 <input type="checkbox" id="auth-is-dealer" style="width: 20px; height: 20px; margin: 0;">
                                 Register as a Verified Dealer
@@ -197,12 +199,12 @@
                             <p style="margin: 5px 0 0 30px; font-size: 0.8rem; color: var(--text);">Dealers can boost listings and receive a premium badge.</p>
                         </div>
 
-                        <div class="id-upload-area" style="background: white;">
+                        <div class="id-upload-area" style="background: var(--bg); border: 2px dashed var(--border); padding: 15px; border-radius: 12px;">
                             <label style="color: var(--primary); font-weight: 800;">Front of Valid ID (Required)</label>
                             <p style="margin: 5px 0; font-size: 0.85rem; color: var(--light);">Upload a clear photo of the front</p>
                             <input type="file" id="auth-id-img" accept="image/*" style="border:none; padding:0; background:transparent;">
                         </div>
-                        <div class="id-upload-area" style="margin-top: 15px; background: white;">
+                        <div class="id-upload-area" style="margin-top: 15px; background: var(--bg); border: 2px dashed var(--border); padding: 15px; border-radius: 12px;">
                             <label style="font-weight: 800;">Back of Valid ID (Optional)</label>
                             <p style="margin: 5px 0; font-size: 0.85rem; color: var(--light);">Upload the back if it contains details</p>
                             <input type="file" id="auth-id-back-img" accept="image/*" style="border:none; padding:0; background:transparent;">
@@ -223,7 +225,7 @@
                 <h2 id="acc-name" style="margin-top: 0; margin-bottom: 5px;">User</h2>
                 <div id="acc-dealer-badge" style="display: none; color: #3b82f6; font-weight: bold; font-size: 1rem; margin-bottom: 15px;">☑️ Verified Premium Dealer</div>
                 
-                <div class="id-display-section" style="width: 100%; text-align: left; background: #f8fafc; padding: 20px; border-radius: 16px; border: 1px solid #e2e8f0; margin-top: 20px; box-sizing: border-box;">
+                <div class="id-display-section" style="width: 100%; text-align: left; background: var(--bg); padding: 20px; border-radius: 16px; border: 1px solid var(--border); margin-top: 20px; box-sizing: border-box;">
                     <p style="font-weight: 800; margin-bottom: 10px; color: var(--text);">Front ID:</p>
                     <img id="acc-id-display" src="" alt="Front ID" style="width: 100%; height: 200px; object-fit: cover; border-radius: 12px; border: 2px solid var(--primary); cursor: zoom-in; box-shadow: 0 4px 15px rgba(0,0,0,0.05);" onclick="viewFullImage(this.src)">
                     
@@ -231,7 +233,7 @@
                         <p style="font-weight: 800; margin-bottom: 10px; color: var(--text);">Back ID:</p>
                         <img id="acc-id-back-display" src="" alt="Back ID" style="display: none; width: 100%; height: 200px; object-fit: cover; border-radius: 12px; border: 2px solid var(--primary); cursor: zoom-in; box-shadow: 0 4px 15px rgba(0,0,0,0.05);" onclick="viewFullImage(this.src)">
                         
-                        <div id="upload-back-id-box" class="file-box" style="display: none; background: white; padding: 20px; border-radius: 12px; border: 2px dashed #cbd5e1; text-align: center;">
+                        <div id="upload-back-id-box" class="file-box" style="display: none; background: var(--card-bg); padding: 20px; border-radius: 12px; border: 2px dashed var(--border); text-align: center;">
                             <label style="font-size: 0.95rem; font-weight: 800; color: var(--primary); display: block; margin-bottom: 10px;">Upload Back ID (Optional)</label>
                             <input type="file" id="profile-upload-back-id" accept="image/*" style="border: none; padding: 0; width: auto;">
                             <button id="btn-save-back-id" class="btn-primary" style="margin-top: 15px; padding: 10px 20px; font-size: 0.9rem; width: auto;">Upload & Save</button>
@@ -240,8 +242,8 @@
                 </div>
 
                 <div style="margin-top: 30px; width: 100%; text-align: left;">
-                    <h3 style="border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; margin-bottom: 15px; color: var(--primary);">My Listings & History</h3>
-                    <div id="user-history-list" style="max-height: 350px; overflow-y: auto; background: white; border-radius: 12px; border: 1px solid #e2e8f0; padding: 10px;">
+                    <h3 style="border-bottom: 2px solid var(--border); padding-bottom: 10px; margin-bottom: 15px; color: var(--primary);">My Listings & History</h3>
+                    <div id="user-history-list" style="max-height: 350px; overflow-y: auto; background: var(--bg); border-radius: 12px; border: 1px solid var(--border); padding: 10px;">
                         <p style="color: var(--light); text-align: center;">No history yet.</p>
                     </div>
                 </div>
@@ -254,7 +256,7 @@
             <div class="glass-card" style="max-width: 700px;">
                 <h2 style="margin-top:0;">Admin Dashboard</h2>
                 
-                <div style="background: white; padding: 30px; border-radius: 20px; text-align: center; margin-bottom: 20px; border: 1px solid #e2e8f0; box-shadow: 0 10px 30px rgba(0,0,0,0.03);">
+                <div style="background: var(--bg); padding: 30px; border-radius: 20px; text-align: center; margin-bottom: 20px; border: 1px solid var(--border); box-shadow: 0 10px 30px rgba(0,0,0,0.03);">
                     <h3 style="margin:0; color: var(--light); font-size: 1rem; text-transform: uppercase; letter-spacing: 1px;">Available Escrow Profit (5%)</h3>
                     <h1 style="margin:15px 0; color: #10b981; font-size: 3.5rem; letter-spacing: -1px;" id="admin-total-profit">₱0.00</h1>
                     <button id="btn-withdraw" class="btn-primary" style="background: var(--text); width: auto; padding: 12px 25px; border-radius: 30px; font-size: 1rem;">🏦 Withdraw Funds to Bank</button>
@@ -280,17 +282,17 @@
                 </div>
 
                 <h3 style="margin-bottom: 15px; color: var(--primary); font-size: 1.2rem;">Pending Account Approvals</h3>
-                <div id="admin-pending-users" style="max-height: 400px; overflow-y: auto; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 15px; margin-bottom: 25px;">
+                <div id="admin-pending-users" style="max-height: 400px; overflow-y: auto; background: var(--bg); border: 1px solid var(--border); border-radius: 16px; padding: 15px; margin-bottom: 25px;">
                     <p style="color: var(--light); text-align: center; margin: 20px 0;">No pending accounts.</p>
                 </div>
 
                 <h3 style="margin-bottom: 15px; color: #ef4444; font-size: 1.2rem;">🚩 Reported Listings</h3>
-                <div id="admin-reports" style="max-height: 300px; overflow-y: auto; background: #fff1f2; border: 1px solid #fecdd3; border-radius: 16px; padding: 15px; margin-bottom: 25px;">
+                <div id="admin-reports" style="max-height: 300px; overflow-y: auto; background: rgba(239, 68, 68, 0.1); border: 1px solid #fecdd3; border-radius: 16px; padding: 15px; margin-bottom: 25px;">
                     <p style="color: var(--light); text-align: center; margin: 20px 0;">No reported listings.</p>
                 </div>
 
                 <h3 style="margin-bottom: 15px; font-size: 1.2rem;">System Ledger</h3>
-                <div id="admin-logs" style="max-height: 350px; overflow-y: auto; background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 15px;">
+                <div id="admin-logs" style="max-height: 350px; overflow-y: auto; background: var(--bg); border: 1px solid var(--border); border-radius: 16px; padding: 15px;">
                 </div>
             </div>
         </section>
@@ -305,7 +307,7 @@
 
     <div id="product-modal" class="modal hidden">
         <div class="modal-content glass-card" style="max-width: 650px; padding: 0; overflow-y: auto; display: flex; flex-direction: column; border: none; max-height: 90vh;">
-            <span class="close-btn" onclick="document.getElementById('product-modal').classList.add('hidden')" style="cursor: pointer; position: absolute; right: 20px; top: 15px; z-index: 50; background: rgba(255,255,255,0.95); box-shadow: 0 4px 10px rgba(0,0,0,0.1); border-radius: 50%; width: 36px; height: 36px; text-align: center; line-height: 36px; font-weight: bold; color: var(--text);">&times;</span>
+            <span class="close-btn" onclick="document.getElementById('product-modal').classList.add('hidden')" style="cursor: pointer; position: absolute; right: 20px; top: 15px; z-index: 50; background: rgba(255,255,255,0.95); box-shadow: 0 4px 10px rgba(0,0,0,0.1); border-radius: 50%; width: 36px; height: 36px; text-align: center; line-height: 36px; font-weight: bold; color: #0f172a;">&times;</span>
             
             <div style="background: #0f172a; text-align: center; position: relative; display: flex; align-items: center; justify-content: center; height: 35vh; min-height: 200px; width: 100%;">
                 <button class="gallery-nav-btn" style="left: 15px;" onclick="prevGalleryImage(event)">&#10094;</button>
@@ -315,7 +317,7 @@
             
             <div id="pm-thumbnails"></div>
 
-            <div style="padding: 20px; text-align: left; background: white;">
+            <div style="padding: 20px; text-align: left; background: var(--card-bg);">
                 <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                     <h2 id="pm-price" style="color: #10b981; margin: 0 0 5px 0; font-size: 2rem; letter-spacing: -1px;">₱0</h2>
                     <button onclick="reportCurrentListing()" style="background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #ef4444;" title="Report this listing">🚩 Report</button>
@@ -323,8 +325,8 @@
                 <h3 id="pm-title" style="margin: 0 0 10px 0; font-size: 1.5rem; color: var(--text);">Product Title</h3>
                 <p id="pm-desc" style="color: var(--light); white-space: pre-wrap; line-height: 1.6; max-height: 150px; overflow-y: auto; padding-right: 10px; font-size: 0.95rem;">Description...</p>
                 
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 15px; padding-top: 15px; border-top: 1px solid #e2e8f0; flex-wrap: wrap; gap: 10px;">
-                    <div style="display: flex; align-items: center; gap: 12px; background: #f8fafc; padding: 10px 20px; border-radius: 30px; border: 1px solid #e2e8f0;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border); flex-wrap: wrap; gap: 10px;">
+                    <div style="display: flex; align-items: center; gap: 12px; background: var(--bg); padding: 10px 20px; border-radius: 30px; border: 1px solid var(--border);">
                         <span style="font-size: 1.3rem;">👤</span>
                         <strong id="pm-seller-name" style="font-size: 1rem; color: var(--primary);">Seller Name</strong>
                     </div>
@@ -341,7 +343,7 @@
             <h2 style="margin-top:0;">Contact Seller</h2>
             <img id="modal-seller-avatar" src="" alt="Seller ID" style="width: 100%; height: 200px; object-fit: cover; border-radius: 16px; margin: 15px 0; border: 2px solid var(--border);">
             <h3 id="modal-seller-name" style="font-size: 1.5rem; margin-bottom: 5px;">Seller Name</h3>
-            <p id="modal-seller-address" style="color: #666; font-size: 14px; margin-bottom: 25px;">Location</p>
+            <p id="modal-seller-address" style="color: var(--light); font-size: 14px; margin-bottom: 25px;">Location</p>
             
             <div class="modal-actions" style="display: flex; flex-direction: column; gap: 12px;">
                 <a id="modal-seller-phone" href="#" class="btn-primary" style="text-decoration: none; display: block; padding: 15px;">📞 Call / SMS</a>
@@ -355,24 +357,24 @@
             <div style="background: var(--primary-gradient); color: white; padding: 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1); z-index: 10;">
                 <div style="display: flex; align-items: center; gap: 10px;">
                     <span style="font-size: 1.5rem;">💬</span>
-                    <h3 id="chat-target-name" style="margin: 0; font-size: 1.2rem;">Live Chat</h3>
+                    <h3 id="chat-target-name" style="margin: 0; font-size: 1.2rem; color: white;">Live Chat</h3>
                 </div>
                 <span class="close-btn" onclick="closeChatModal()" style="cursor: pointer; color: white; position: static; transform: none; font-size: 2rem;">&times;</span>
             </div>
             
-            <div id="chat-messages" style="flex: 1; padding: 20px; overflow-y: auto; background: #f8fafc; display: flex; flex-direction: column; gap: 12px;"></div>
+            <div id="chat-messages" style="flex: 1; padding: 20px; overflow-y: auto; background: var(--bg); display: flex; flex-direction: column; gap: 12px;"></div>
 
-            <div id="chat-img-preview-container" style="display: none; padding: 15px; background: white; border-top: 1px solid #e2e8f0; text-align: left; box-shadow: 0 -4px 10px rgba(0,0,0,0.02);">
+            <div id="chat-img-preview-container" style="display: none; padding: 15px; background: var(--card-bg); border-top: 1px solid var(--border); text-align: left; box-shadow: 0 -4px 10px rgba(0,0,0,0.02);">
                 <span style="font-size: 0.85rem; font-weight: 800; color: var(--primary);">Attached Image:</span>
-                <img id="chat-img-preview" src="" style="height: 70px; border-radius: 8px; margin-left: 15px; vertical-align: middle; border: 1px solid #cbd5e1; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                <img id="chat-img-preview" src="" style="height: 70px; border-radius: 8px; margin-left: 15px; vertical-align: middle; border: 1px solid var(--border); box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
                 <span style="cursor: pointer; color: white; background: #ef4444; padding: 5px 10px; border-radius: 20px; font-size: 0.8rem; margin-left: 15px; font-weight: bold; transition: 0.2s;" onclick="removeChatImg()">✖ Remove</span>
             </div>
 
-            <form id="form-chat" style="display: flex; padding: 15px; background: white; border-top: 1px solid #e2e8f0; align-items: center; gap: 12px;">
+            <form id="form-chat" style="display: flex; padding: 15px; background: var(--card-bg); border-top: 1px solid var(--border); align-items: center; gap: 12px;">
                 <input type="file" id="chat-img-input" accept="image/*" style="display: none;">
-                <button type="button" onclick="document.getElementById('chat-img-input').click()" style="background: #f1f5f9; color: var(--primary); border: 1px solid #cbd5e1; padding: 14px; border-radius: 50%; cursor: pointer; font-size: 1.2rem; transition: 0.2s;" title="Attach Image">📎</button>
-                <input type="text" id="chat-input" placeholder="Type a message..." style="flex: 1; margin: 0;">
-                <button type="submit" class="btn-primary" style="width: auto;">Send Message</button>
+                <button type="button" onclick="document.getElementById('chat-img-input').click()" style="background: var(--bg); color: var(--primary); border: 1px solid var(--border); padding: 14px; border-radius: 50%; cursor: pointer; font-size: 1.2rem; transition: 0.2s;" title="Attach Image">📎</button>
+                <input type="text" id="chat-input" placeholder="Type a message..." style="flex: 1; margin: 0; background: var(--bg); color: var(--text);">
+                <button type="submit" class="btn-primary" style="width: auto;">Send</button>
             </form>
         </div>
     </div>
@@ -384,25 +386,25 @@
             <h3 id="reserve-item-title" style="margin-bottom: 5px; font-size: 1.4rem;">Item Name</h3>
             <p style="color: var(--light); margin-top: 0; font-size: 1rem;">Full Price: ₱<span id="reserve-full-price">0</span></p>
             
-            <div style="background: #ecfdf5; padding: 20px; border-radius: 16px; margin: 20px 0; border: 1px solid #10b981; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.1);">
-                <p style="margin: 0; font-weight: 800; color: #065f46; text-transform: uppercase; font-size: 0.85rem; letter-spacing: 1px;">Required Downpayment (5%)</p>
+            <div style="background: rgba(16, 185, 129, 0.1); padding: 20px; border-radius: 16px; margin: 20px 0; border: 1px solid #10b981; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.1);">
+                <p style="margin: 0; font-weight: 800; color: #10b981; text-transform: uppercase; font-size: 0.85rem; letter-spacing: 1px;">Required Downpayment (5%)</p>
                 <h2 style="margin: 10px 0 0 0; color: #10b981; font-size: 2.5rem; letter-spacing: -1px;">₱<span id="reserve-fee-amount">0</span></h2>
             </div>
             
             <div style="text-align: left; margin-bottom: 20px;">
                 <h4 style="margin-bottom: 15px; text-align: center; color: var(--text);">Send payment to VehiSell Escrow</h4>
                 
-                <div id="dynamic-gcash" style="text-align: center; margin-bottom: 15px; padding: 20px; border: 1px solid #cbd5e1; border-radius: 16px; background: white; box-shadow: 0 4px 10px rgba(0,0,0,0.02);"></div>
+                <div id="dynamic-gcash" style="text-align: center; margin-bottom: 15px; padding: 20px; border: 1px solid var(--border); border-radius: 16px; background: var(--bg); box-shadow: 0 4px 10px rgba(0,0,0,0.02);"></div>
 
-                <div style="border: 1px solid #cbd5e1; padding: 15px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; background: white;">
+                <div style="border: 1px solid var(--border); padding: 15px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; background: var(--bg);">
                     <strong style="color: var(--text);">🏦 Bank Transfer</strong>
                     <span style="font-family: monospace; font-size: 1.1rem; color: var(--primary); font-weight: bold;">0012 3456 7890</span>
                 </div>
             </div>
 
-            <div class="file-box" style="text-align: left; margin-bottom: 25px; background: #e0e7ff; padding: 15px; border-radius: 12px; border: 2px dashed var(--primary);">
+            <div class="file-box" style="text-align: left; margin-bottom: 25px; background: var(--bg); padding: 15px; border-radius: 12px; border: 2px dashed var(--primary);">
                 <label style="font-size: 0.95rem; font-weight: 800; color: var(--primary); display: block; margin-bottom: 10px;">Upload Proof of Payment (Receipt) *</label>
-                <input type="file" id="reserve-receipt" accept="image/*" style="border: none; padding: 0; background: transparent;">
+                <input type="file" id="reserve-receipt" accept="image/*" style="border: none; padding: 0; background: transparent; color: var(--text);">
             </div>
             
             <button id="btn-confirm-reservation" class="btn-primary" style="background: #10b981; padding: 15px; font-size: 1.1rem;" onclick="confirmReservation()">Submit Payment Proof</button>
