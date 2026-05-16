@@ -444,7 +444,7 @@ function renderFilteredListings(filterTerm = '', filterCat = 'all') {
             </div>
             
             ${item.sellerIdPhoto ? `
-            <div class="id-badge" onclick="viewFullImage('${item.sellerIdPhoto}')" title="Click to view ID">
+            <div class="id-badge">
                 <img src="${item.sellerIdPhoto}" class="id-preview">
                 <span>Verified</span>
             </div>` : ''}
@@ -474,6 +474,10 @@ function renderFilteredListings(filterTerm = '', filterCat = 'all') {
     });
 }
 
+// --- NEW GALLERY SLIDER LOGIC ---
+window.currentGalleryImages = [];
+window.currentGalleryIndex = 0;
+
 window.openProductModal = function(docId) {
     const item = allListings.find(i => i.docId === docId);
     if (!item) return;
@@ -483,24 +487,11 @@ window.openProductModal = function(docId) {
     document.getElementById('pm-desc').innerText = item.desc;
     document.getElementById('pm-seller-name').innerText = item.seller;
     
-    const imageArray = item.images && item.images.length > 0 ? item.images : [item.image];
-    document.getElementById('pm-main-img').src = imageArray[0];
+    // Load array of images
+    window.currentGalleryImages = item.images && item.images.length > 0 ? item.images : [item.image];
+    window.currentGalleryIndex = 0;
     
-    const thumbsContainer = document.getElementById('pm-thumbnails');
-    thumbsContainer.innerHTML = '';
-    
-    if(imageArray.length > 1) {
-        imageArray.forEach(imgSrc => {
-            const img = document.createElement('img');
-            img.src = imgSrc;
-            // FIX: Added flex-shrink: 0 to stop thumbnails from squishing
-            img.style = "height: 80px; width: 80px; object-fit: cover; border-radius: 8px; cursor: pointer; border: 2px solid transparent; flex-shrink: 0;";
-            img.onmouseover = () => img.style.borderColor = "var(--primary)";
-            img.onmouseout = () => img.style.borderColor = "transparent";
-            img.onclick = () => document.getElementById('pm-main-img').src = imgSrc; 
-            thumbsContainer.appendChild(img);
-        });
-    }
+    renderGallery();
 
     const isOwner = currentUser && currentUser.username === item.seller;
     const actionsDiv = document.getElementById('pm-actions');
@@ -517,6 +508,44 @@ window.openProductModal = function(docId) {
     }
 
     document.getElementById('product-modal').classList.remove('hidden');
+};
+
+window.renderGallery = function() {
+    document.getElementById('pm-main-img').src = window.currentGalleryImages[window.currentGalleryIndex];
+    
+    const thumbsContainer = document.getElementById('pm-thumbnails');
+    thumbsContainer.innerHTML = '';
+    
+    if(window.currentGalleryImages.length > 1) {
+        window.currentGalleryImages.forEach((imgSrc, idx) => {
+            const img = document.createElement('img');
+            img.src = imgSrc;
+            const isActive = idx === window.currentGalleryIndex;
+            
+            // LARGER THUMBNAILS & ACTIVE STATE BORDERS
+            img.style = `height: 90px; width: 90px; object-fit: cover; border-radius: 8px; cursor: pointer; border: 3px solid ${isActive ? 'var(--primary)' : 'transparent'}; flex-shrink: 0; opacity: ${isActive ? '1' : '0.6'}; transition: 0.2s;`;
+            
+            img.onclick = () => {
+                window.currentGalleryIndex = idx;
+                renderGallery();
+            };
+            thumbsContainer.appendChild(img);
+        });
+    }
+};
+
+window.prevGalleryImage = function(e) {
+    e.stopPropagation();
+    if(window.currentGalleryImages.length <= 1) return;
+    window.currentGalleryIndex = (window.currentGalleryIndex - 1 + window.currentGalleryImages.length) % window.currentGalleryImages.length;
+    renderGallery();
+};
+
+window.nextGalleryImage = function(e) {
+    e.stopPropagation();
+    if(window.currentGalleryImages.length <= 1) return;
+    window.currentGalleryIndex = (window.currentGalleryIndex + 1) % window.currentGalleryImages.length;
+    renderGallery();
 };
 
 window.deleteItem = async function(docId) {
