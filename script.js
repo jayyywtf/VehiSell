@@ -19,9 +19,9 @@ const storage = getStorage(app);
 let currentUser = JSON.parse(localStorage.getItem('user_session')) || null;
 let allListings = []; 
 let isLoginMode = true;
-let currentTab = 'buy';
+let currentTab = 'home'; // UPDATED DEFAULT
 let currentLimit = 12; 
-let userFavorites = JSON.parse(localStorage.getItem('user_favorites')) || []; // Wishlist
+let userFavorites = JSON.parse(localStorage.getItem('user_favorites')) || []; 
 
 const navButtons = document.querySelectorAll('.nav-btn');
 const sections = document.querySelectorAll('.tab-content');
@@ -35,15 +35,23 @@ function showTab(tabId) {
     currentTab = tabId;
     sections.forEach(s => s.classList.add('hidden'));
     navButtons.forEach(b => b.classList.remove('active'));
-    document.getElementById(`sec-${tabId}`).classList.remove('hidden');
+    
+    const targetSec = document.getElementById(`sec-${tabId}`);
+    if(targetSec) targetSec.classList.remove('hidden');
+    
     const activeBtn = Array.from(navButtons).find(b => b.getAttribute('data-tab') === tabId);
     if (activeBtn) activeBtn.classList.add('active');
 
     if(tabId === 'buy' || tabId === 'saved') {
-        currentLimit = 12;
+        currentLimit = 12; 
         renderFilteredListings();
     }
 }
+
+// Attach to window so HTML buttons can use it easily
+window.switchTab = function(tabId) {
+    showTab(tabId);
+};
 
 navButtons.forEach(btn => {
     btn.onclick = () => {
@@ -161,7 +169,7 @@ document.getElementById('form-auth').addEventListener('submit', async function (
         const email = document.getElementById('auth-email').value.trim(); 
         const phone = document.getElementById('auth-phone').value.trim();
         const fbLink = document.getElementById('auth-fb').value.trim();
-        const isDealer = document.getElementById('auth-is-dealer').checked; // DEALER CHECK
+        const isDealer = document.getElementById('auth-is-dealer').checked; 
         const idFileInput = document.getElementById('auth-id-img');
         const idBackFileInput = document.getElementById('auth-id-back-img');
         
@@ -243,7 +251,7 @@ function login(user) {
     localStorage.setItem('user_session', JSON.stringify(user));
     currentUser = user;
     updateNav();
-    showTab('buy');
+    showTab('buy'); // Go straight to marketplace after login
     fetchAndRenderListings();
     listenForLiveAlerts(); 
 }
@@ -252,7 +260,7 @@ function updateNav() {
     if (currentUser) {
         document.getElementById('nav-auth').classList.add('hidden');
         document.getElementById('nav-acc').classList.remove('hidden');
-        document.getElementById('nav-saved').classList.remove('hidden'); // Show Saved Tab
+        document.getElementById('nav-saved').classList.remove('hidden'); 
         
         document.getElementById('acc-name').innerText = currentUser.username;
         document.getElementById('acc-id-display').src = currentUser.idPhoto;
@@ -391,8 +399,8 @@ sellForm.onsubmit = async (e) => {
             seller: currentUser.username,
             sellerKey: currentUser.username.toLowerCase(),
             sellerIdPhoto: currentUser.idPhoto, 
-            isDealer: currentUser.isDealer || false, // Label dealer items
-            boosted: isBoosted, // Boost logic
+            isDealer: currentUser.isDealer || false, 
+            boosted: isBoosted, 
             images: compressedImagesArray, 
             status: 'available', 
             timestamp: Date.now()
@@ -511,7 +519,7 @@ async function fetchAndRenderListings() {
         querySnapshot.forEach((doc) => {
             const data = doc.data();
             data.docId = doc.id; 
-            if(!data.status) data.status = 'available'; // fallback
+            if(!data.status) data.status = 'available'; 
             allListings.push(data);
         });
         
@@ -549,12 +557,10 @@ function renderFilteredListings() {
     let filtered = allListings.filter(item => {
         if (item.status === 'sold') return false; 
         
-        // If on "Saved" tab, strictly only show favorites
         if (currentTab === 'saved') {
             return userFavorites.includes(item.docId);
         }
 
-        // Apply normal Marketplace filters
         if (filterCat !== 'all' && item.category !== filterCat) return false;
         if (filterTerm && !item.title.toLowerCase().includes(filterTerm)) return false;
         if (item.price < minP || item.price > maxP) return false;
@@ -567,7 +573,7 @@ function renderFilteredListings() {
     } else if (sortOrder === 'price-desc') {
         filtered.sort((a,b) => b.price - a.price);
     } else {
-        filtered.sort((a,b) => b.timestamp - a.timestamp); // Newest
+        filtered.sort((a,b) => b.timestamp - a.timestamp); 
     }
 
     filtered.sort((a, b) => (b.boosted ? 1 : 0) - (a.boosted ? 1 : 0));
@@ -635,7 +641,6 @@ function renderFilteredListings() {
         grid.appendChild(card);
     });
 
-    // Toggle Load More Button visibility
     if (filtered.length > currentLimit && currentTab !== 'saved') {
         document.getElementById('load-more-container').style.display = 'block';
     } else {
@@ -645,7 +650,7 @@ function renderFilteredListings() {
 
 window.currentGalleryImages = [];
 window.currentGalleryIndex = 0;
-window.currentActiveListing = null; // Used for Reporting
+window.currentActiveListing = null; 
 
 window.openProductModal = function(docId) {
     const item = allListings.find(i => i.docId === docId);
@@ -1411,6 +1416,18 @@ window.onclick = (event) => {
     }
 };
 
+document.getElementById('search-input').oninput = (e) => {
+    currentLimit = 12;
+    renderFilteredListings();
+};
+
+document.getElementById('category-filter').onchange = (e) => {
+    currentLimit = 12;
+    renderFilteredListings();
+};
+
+// Force initialization to start on home page
+showTab('home');
 updateNav();
 fetchAndRenderListings();
 if (currentUser) listenForLiveAlerts();
