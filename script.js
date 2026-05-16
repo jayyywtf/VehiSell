@@ -23,6 +23,7 @@ let isLoginMode = true;
 const navButtons = document.querySelectorAll('.nav-btn');
 const sections = document.querySelectorAll('.tab-content');
 
+// --- GLOBAL IMAGE VIEWER ---
 window.viewFullImage = function(url) {
     document.getElementById('full-image-viewer').src = url;
     document.getElementById('image-modal').classList.remove('hidden');
@@ -48,7 +49,6 @@ navButtons.forEach(btn => {
     };
 });
 
-// --- NOTIFICATION BELL DROPDOWN LOGIC ---
 document.getElementById('bell-btn').onclick = (e) => {
     e.stopPropagation(); 
     document.getElementById('notif-dropdown').classList.toggle('hidden');
@@ -431,8 +431,8 @@ function renderFilteredListings(filterTerm = '', filterCat = 'all') {
 
     filtered.forEach(item => {
         const isOwner = currentUser && currentUser.username === item.seller;
-
         const thumbnailSrc = item.images && item.images.length > 0 ? item.images[0] : item.image;
+        const datePosted = new Date(item.timestamp).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 
         const card = document.createElement('div');
         card.className = 'product-card';
@@ -451,7 +451,8 @@ function renderFilteredListings(filterTerm = '', filterCat = 'all') {
                 <div class="product-body" style="padding-bottom: 0;">
                     <p class="price">₱${Number(item.price).toLocaleString()}</p>
                     <h3>${item.title}</h3>
-                    <p class="desc">${item.desc}</p>
+                    <p class="desc" style="margin-bottom: 5px;">${item.desc}</p>
+                    <p style="font-size: 0.75rem; color: var(--light); margin: 0 0 10px 0;">📅 Posted: ${datePosted}</p>
                 </div>
             </div>
             
@@ -684,6 +685,8 @@ window.openChatModal = function(sellerKey, sellerName) {
             const div = document.createElement('div');
             div.className = 'chat-bubble ' + (m.sender === currentUser.usernameKey ? 'sent' : 'received');
             
+            const timeString = new Date(m.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+            
             let innerHtml = '';
             if (m.imageUrl) {
                 innerHtml += `<img src="${m.imageUrl}" style="max-width: 100%; border-radius: 8px; margin-bottom: 5px; cursor: pointer;" onclick="viewFullImage('${m.imageUrl}')"><br>`;
@@ -691,8 +694,10 @@ window.openChatModal = function(sellerKey, sellerName) {
             if (m.text) {
                 innerHtml += `<span style="display: block;">${m.text}</span>`;
             }
-            div.innerHTML = innerHtml;
             
+            innerHtml += `<span style="display: block; font-size: 0.65rem; opacity: 0.7; margin-top: 5px; text-align: right;">${timeString}</span>`;
+            
+            div.innerHTML = innerHtml;
             chatBox.appendChild(div);
         });
         
@@ -825,16 +830,12 @@ function triggerToastPopup(data) {
     setTimeout(() => { if(container.contains(toast)) toast.remove(); }, 8000);
 }
 
-// --- UPDATED INBOX: FILLS BOTH PROFILE & NEW HEADER DROPDOWN ---
 function loadInbox() {
     if (!currentUser || currentUser.usernameKey === 'admin') return;
     
     const q = query(collection(db, "notifications"), where("targetUser", "==", currentUser.usernameKey));
     onSnapshot(q, (snapshot) => {
-        const inboxBox = document.getElementById('inbox-list');
         const dropdownBox = document.getElementById('dropdown-list');
-        
-        inboxBox.innerHTML = '';
         dropdownBox.innerHTML = '';
         
         let interactors = new Map();
@@ -853,7 +854,6 @@ function loadInbox() {
         const notifBadge = document.getElementById('notif-badge');
 
         if(interactors.size === 0) {
-            inboxBox.innerHTML = '<p style="color: var(--light); text-align: center;">No messages yet.</p>';
             dropdownBox.innerHTML = '<p style="color: var(--light); text-align: center; margin: 15px 0; font-size: 0.85rem;">No messages yet.</p>';
             notifBadge.classList.add('hidden');
             return;
@@ -865,26 +865,13 @@ function loadInbox() {
         interactors.forEach((data, user) => {
             let actionText = data.type === 'reserve' ? 'reserved your item.' : 'sent you a message.';
             
-            // 1. Fill the Profile Page Inbox
-            const div = document.createElement('div');
-            div.style = "display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 10px 15px; border-radius: 8px; border: 1px solid #e2e8f0;";
-            div.innerHTML = `
-                <div>
-                    <strong style="color: var(--primary); font-size: 1.1rem;">${user}</strong>
-                    <p style="margin: 3px 0 0 0; font-size: 0.85rem; color: var(--light);">${actionText}</p>
-                </div>
-                <button class="btn-primary" style="width: auto; padding: 8px 15px; font-size: 0.85rem;" onclick="openChatModal('${user.toLowerCase()}', '${user}')">Reply / Chat</button>
-            `;
-            inboxBox.appendChild(div);
-
-            // 2. Fill the Bell Dropdown Menu
             const dropDiv = document.createElement('div');
             dropDiv.style = "display: flex; justify-content: space-between; align-items: center; padding: 12px 10px; border-bottom: 1px solid #f1f5f9; cursor: pointer; transition: background 0.2s;";
             dropDiv.onmouseover = () => dropDiv.style.background = '#f8fafc';
             dropDiv.onmouseout = () => dropDiv.style.background = 'transparent';
             dropDiv.onclick = () => {
-                document.getElementById('notif-dropdown').classList.add('hidden'); // Close dropdown
-                openChatModal(user.toLowerCase(), user); // Open Chat
+                document.getElementById('notif-dropdown').classList.add('hidden'); 
+                openChatModal(user.toLowerCase(), user); 
             };
             dropDiv.innerHTML = `
                 <div>
@@ -898,40 +885,87 @@ function loadInbox() {
     });
 }
 
+// --- UPGRADED ADMIN DASHBOARD LOGIC ---
+let currentTotalAdminProfit = 0;
+let adminReserves = [];
+let adminWithdrawals = [];
+
 async function loadAdminDashboard() {
-    
     const resQuery = query(collection(db, "reservations"));
     const withQuery = query(collection(db, "withdrawals"));
     
-    onSnapshot(resQuery, async (snapshot) => {
+    // Helper function to beautifully combine and render the ledger
+    const updateDashboardUI = () => {
         let grossProfit = 0;
-        const logsBox = document.getElementById('admin-logs');
-        logsBox.innerHTML = '';
-        
-        let reserves = [];
-        snapshot.forEach(doc => {
-            const data = doc.data();
-            grossProfit += Number(data.fee);
-            reserves.push(data);
-        });
+        adminReserves.forEach(r => grossProfit += Number(r.fee));
 
         let totalWithdrawn = 0;
-        const wSnap = await getDocs(withQuery);
-        wSnap.forEach(d => totalWithdrawn += Number(d.data().amount));
+        adminWithdrawals.forEach(w => totalWithdrawn += Number(w.amount));
 
         currentTotalAdminProfit = grossProfit - totalWithdrawn;
         document.getElementById('admin-total-profit').innerText = currentTotalAdminProfit.toLocaleString(undefined, {minimumFractionDigits: 2});
 
-        reserves.sort((a,b) => b.timestamp - a.timestamp);
-        reserves.forEach(r => {
-            const logItem = document.createElement('div');
-            logItem.style = "padding: 10px; border-bottom: 1px solid #e2e8f0; font-size: 0.9rem;";
-            logItem.innerHTML = `
-                <strong>${r.buyer}</strong> reserved <em>${r.item}</em> from <strong>${r.seller}</strong> (+₱${r.fee.toLocaleString()})
-                ${r.receipt ? `<br><span onclick="viewFullImage('${r.receipt}')" style="color:var(--primary); font-size:0.8rem; font-weight:bold; cursor: pointer;">🔍 View Receipt</span>` : ''}
-            `;
-            logsBox.appendChild(logItem);
-        });
+        const logsBox = document.getElementById('admin-logs');
+        logsBox.innerHTML = '';
+        
+        let allLogs = [];
+        adminReserves.forEach(r => allLogs.push({ type: 'reserve', data: r, time: r.timestamp }));
+        adminWithdrawals.forEach(w => allLogs.push({ type: 'withdraw', data: w, time: w.timestamp }));
+
+        // Sort everything chronologically!
+        allLogs.sort((a, b) => b.time - a.time);
+
+        if (allLogs.length === 0) {
+            logsBox.innerHTML = '<p style="color: var(--light); text-align: center; margin: 15px 0;">No system transactions yet.</p>';
+        } else {
+            allLogs.forEach(log => {
+                const logItem = document.createElement('div');
+                logItem.style = "padding: 10px; border-bottom: 1px solid #e2e8f0; font-size: 0.9rem;";
+                
+                const timeString = new Date(log.time).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+                if (log.type === 'reserve') {
+                    const r = log.data;
+                    logItem.innerHTML = `
+                        <div style="display:flex; justify-content: space-between;">
+                            <span><strong>${r.buyer}</strong> reserved <em>${r.item}</em> from <strong>${r.seller}</strong></span>
+                            <span style="color: #10b981; font-weight: bold;">+₱${Number(r.fee).toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                        </div>
+                        <div style="display:flex; justify-content: space-between; margin-top: 5px; font-size: 0.8rem;">
+                            <span style="color: var(--light);">${timeString}</span>
+                            ${r.receipt ? `<span onclick="viewFullImage('${r.receipt}')" style="color:var(--primary); font-weight:bold; cursor: pointer;">🔍 View Receipt</span>` : ''}
+                        </div>
+                    `;
+                } else {
+                    const w = log.data;
+                    logItem.innerHTML = `
+                        <div style="display:flex; justify-content: space-between;">
+                            <span><strong>Bank Withdrawal</strong></span>
+                            <span style="color: #ef4444; font-weight: bold;">-₱${Number(w.amount).toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                        </div>
+                        <div style="display:flex; justify-content: space-between; margin-top: 5px; font-size: 0.8rem;">
+                            <span style="color: var(--light);">${timeString}</span>
+                            <span style="color: var(--light); font-weight:bold;">🏦 Processed</span>
+                        </div>
+                    `;
+                }
+                logsBox.appendChild(logItem);
+            });
+        }
+    };
+
+    // Listen for new Reservations in real-time
+    onSnapshot(resQuery, (snapshot) => {
+        adminReserves = [];
+        snapshot.forEach(doc => adminReserves.push(doc.data()));
+        updateDashboardUI();
+    });
+
+    // Listen for new Withdrawals in real-time
+    onSnapshot(withQuery, (snapshot) => {
+        adminWithdrawals = [];
+        snapshot.forEach(doc => adminWithdrawals.push(doc.data()));
+        updateDashboardUI();
     });
 
     try {
@@ -1018,21 +1052,49 @@ window.rejectUser = async function(docId) {
     }
 };
 
+// --- UPDATED CUSTOM WITHDRAWAL PROMPT ---
 document.getElementById('btn-withdraw').onclick = async () => {
     if(currentTotalAdminProfit <= 0) {
         alert("You have no funds available to withdraw.");
         return;
     }
 
-    if(confirm(`Withdraw ₱${currentTotalAdminProfit.toLocaleString()} to your registered Admin Bank Account?`)) {
+    const amountStr = prompt(`You have ₱${currentTotalAdminProfit.toLocaleString(undefined, {minimumFractionDigits: 2})} available.\n\nHow much would you like to withdraw?`, currentTotalAdminProfit);
+    
+    if (amountStr === null) return; 
+
+    const amountToWithdraw = Number(amountStr.replace(/,/g, ''));
+
+    if (isNaN(amountToWithdraw) || amountToWithdraw <= 0) {
+        alert("⚠️ Invalid amount entered.");
+        return;
+    }
+
+    if (amountToWithdraw > currentTotalAdminProfit) {
+        alert("⚠️ Insufficient funds! You cannot withdraw more than your available profit.");
+        return;
+    }
+
+    if(confirm(`Confirm withdrawal of ₱${amountToWithdraw.toLocaleString(undefined, {minimumFractionDigits: 2})} to your bank account?`)) {
         try {
+            const btn = document.getElementById('btn-withdraw');
+            btn.disabled = true;
+            btn.textContent = "Processing...";
+
             await addDoc(collection(db, "withdrawals"), {
-                amount: currentTotalAdminProfit,
+                amount: amountToWithdraw,
                 timestamp: Date.now()
             });
-            alert("✅ Withdrawal Requested! Funds will reflect in your account within 2-3 business days.");
+
+            alert(`✅ ₱${amountToWithdraw.toLocaleString()} Withdrawal Requested! Funds will reflect in your bank account within 2-3 business days.`);
+            
+            btn.disabled = false;
+            btn.textContent = "🏦 Withdraw Funds to Bank";
+
         } catch(err) {
             alert("Error processing withdrawal.");
+            document.getElementById('btn-withdraw').disabled = false;
+            document.getElementById('btn-withdraw').textContent = "🏦 Withdraw Funds to Bank";
         }
     }
 };
@@ -1067,7 +1129,6 @@ async function sendEmailNotification(targetUsernameKey, subjectTitle, bodyMessag
     }
 }
 
-// Ensure ALL modals and the new dropdown close when clicking off of them!
 window.onclick = (event) => {
     const sellerModal = document.getElementById('seller-modal');
     const reserveModal = document.getElementById('reserve-modal');
@@ -1080,7 +1141,6 @@ window.onclick = (event) => {
     if (event.target === imageModal) imageModal.classList.add('hidden');
     if (event.target === productModal) productModal.classList.add('hidden');
 
-    // Close the notification dropdown if you click anywhere else on the screen
     if (notifDropdown && !notifDropdown.classList.contains('hidden')) {
         if (!event.target.closest('#quick-icons')) {
             notifDropdown.classList.add('hidden');
