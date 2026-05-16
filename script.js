@@ -23,7 +23,6 @@ let isLoginMode = true;
 const navButtons = document.querySelectorAll('.nav-btn');
 const sections = document.querySelectorAll('.tab-content');
 
-// --- GLOBAL IMAGE VIEWER ---
 window.viewFullImage = function(url) {
     document.getElementById('full-image-viewer').src = url;
     document.getElementById('image-modal').classList.remove('hidden');
@@ -270,6 +269,7 @@ function updateNav() {
         } else {
             document.querySelector('[data-tab="sell"]').classList.remove('hidden'); 
             loadInbox();
+            loadUserHistory(); // NEW: Loads seller's item history
         }
     } else {
         document.getElementById('quick-icons').style.display = 'none';
@@ -371,6 +371,7 @@ sellForm.onsubmit = async (e) => {
             sellerKey: currentUser.username.toLowerCase(),
             sellerIdPhoto: currentUser.idPhoto, 
             images: compressedImagesArray, 
+            status: 'available', // NEW: Defines market status
             timestamp: Date.now()
         };
         
@@ -381,6 +382,7 @@ sellForm.onsubmit = async (e) => {
         document.getElementById('sell-img-previews').innerHTML = ''; 
         alert("✅ Item listed successfully!");
         fetchAndRenderListings();
+        loadUserHistory();
         showTab('buy');
 
     } catch (error) {
@@ -390,6 +392,78 @@ sellForm.onsubmit = async (e) => {
 
     submitBtn.disabled = false;
     submitBtn.textContent = "Post Item";
+};
+
+// --- NEW: USER LISTING HISTORY LOGIC ---
+function loadUserHistory() {
+    if (!currentUser || currentUser.usernameKey === 'admin') return;
+
+    const q = query(collection(db, "listings"), where("sellerKey", "==", currentUser.usernameKey));
+    onSnapshot(q, (snapshot) => {
+        const historyBox = document.getElementById('user-history-list');
+        historyBox.innerHTML = '';
+        
+        let items = [];
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            data.docId = doc.id;
+            items.push(data);
+        });
+
+        items.sort((a, b) => b.timestamp - a.timestamp);
+
+        if (items.length === 0) {
+            historyBox.innerHTML = '<p style="color: var(--light); text-align: center;">No history yet.</p>';
+            return;
+        }
+
+        items.forEach(item => {
+            const div = document.createElement('div');
+            div.style = "display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #f1f5f9;";
+            
+            const thumb = item.images && item.images.length > 0 ? item.images[0] : item.image;
+            
+            let statusBadge = '';
+            let actionButton = '';
+
+            if (item.status === 'sold') {
+                statusBadge = `<span style="background: #ef4444; color: white; padding: 3px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: bold;">SOLD</span>`;
+                actionButton = `<button class="btn-del" style="background:#cbd5e1;color:white;padding:5px 10px;border:none;border-radius:6px;cursor:not-allowed;" disabled>Closed</button>`;
+            } else if (item.status === 'reserved') {
+                statusBadge = `<span style="background: #f59e0b; color: white; padding: 3px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: bold;">RESERVED</span>`;
+                // Seller can mark the item as fully sold once they receive the rest of the payment!
+                actionButton = `<button class="btn-primary" style="background:#10b981;padding:5px 10px;border:none;border-radius:6px;cursor:pointer;font-size:0.85rem;" onclick="markAsSold('${item.docId}')">Mark as Sold</button>`;
+            } else {
+                statusBadge = `<span style="background: #10b981; color: white; padding: 3px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: bold;">AVAILABLE</span>`;
+                actionButton = `<button class="btn-del" style="background:#ef4444;color:white;padding:5px 10px;border:none;border-radius:6px;cursor:pointer;font-size:0.85rem;" onclick="deleteItem('${item.docId}')">Delete</button>`;
+            }
+
+            div.innerHTML = `
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <img src="${thumb}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 6px;">
+                    <div>
+                        <strong style="color: var(--text); font-size: 0.95rem; display: block; margin-bottom: 3px;">${item.title}</strong>
+                        ${statusBadge}
+                    </div>
+                </div>
+                <div>${actionButton}</div>
+            `;
+            historyBox.appendChild(div);
+        });
+    });
+}
+
+window.markAsSold = async function(docId) {
+    if(confirm("Marking this item as SOLD will permanently remove it from the marketplace. Ensure you have received full payment. Continue?")) {
+        try {
+            await updateDoc(doc(db, "listings", docId), { status: 'sold' });
+            alert("✅ Item successfully marked as SOLD!");
+            fetchAndRenderListings(); 
+        } catch(e) {
+            alert("Error updating status.");
+            console.error(e);
+        }
+    }
 };
 
 async function fetchAndRenderListings() {
@@ -402,6 +476,8 @@ async function fetchAndRenderListings() {
         querySnapshot.forEach((doc) => {
             const data = doc.data();
             data.docId = doc.id; 
+            // Fix old items without a status
+            if(!data.status) data.status = 'available';
             allListings.push(data);
         });
         
@@ -419,13 +495,16 @@ function renderFilteredListings(filterTerm = '', filterCat = 'all') {
     grid.innerHTML = '';
 
     const filtered = allListings.filter(item => {
+        // HIDE SOLD ITEMS FROM THE MARKETPLACE completely
+        if (item.status === 'sold') return false;
+
         const matchesSearch = item.title.toLowerCase().includes(filterTerm.toLowerCase());
         const matchesCat = filterCat === 'all' || item.category === filterCat;
         return matchesSearch && matchesCat;
     });
 
     if (filtered.length === 0) {
-        grid.innerHTML = '<p style="text-align:center; grid-column:1/-1; padding: 3rem; color: var(--light); font-size:1.1rem;">No items found. Be the first to post!</p>';
+        grid.innerHTML = '<p style="text-align:center; grid-column:1/-1; padding: 3rem; color: var(--light); font-size:1.1rem;">No active items found.</p>';
         return;
     }
 
@@ -434,11 +513,17 @@ function renderFilteredListings(filterTerm = '', filterCat = 'all') {
         const thumbnailSrc = item.images && item.images.length > 0 ? item.images[0] : item.image;
         const datePosted = new Date(item.timestamp).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 
+        // Add Reserved Overlay Badge
+        const reservedBadge = item.status === 'reserved' 
+            ? `<div class="status-badge status-reserved">Reserved</div>` 
+            : '';
+
         const card = document.createElement('div');
         card.className = 'product-card';
         card.innerHTML = `
             <div onclick="openProductModal('${item.docId}')" style="cursor: pointer;">
                 <div class="img-wrapper">
+                    ${reservedBadge}
                     <img src="${thumbnailSrc}" class="product-img" alt="${item.title}">
                 </div>
             </div>
@@ -461,12 +546,7 @@ function renderFilteredListings(filterTerm = '', filterCat = 'all') {
             <div class="product-body" style="padding-top: 0; flex: 0;">
                 <div class="card-footer" style="flex-direction: column; align-items: stretch; gap: 10px; border-top: none;">
                     <span style="font-weight: 800; color: var(--text);">👤 ${item.seller}</span>
-                    ${isOwner ?
-                `<button class="btn-del" style="background:#ef4444;color:white;padding:0.8rem;border:none;border-radius:12px;cursor:pointer;font-weight:800;" onclick="deleteItem('${item.docId}')">Remove Listing</button>` :
-                `
-                <button class="btn-primary" style="padding:0.8rem;border-radius:12px;cursor:pointer;flex:1;" onclick="openProductModal('${item.docId}')">View Details & Chat</button>
-                `
-            }
+                    <button class="btn-primary" style="padding:0.8rem;border-radius:12px;cursor:pointer;flex:1;" onclick="openProductModal('${item.docId}')">View Details</button>
                 </div>
             </div>
         `;
@@ -498,10 +578,16 @@ window.openProductModal = function(docId) {
     if (isOwner) {
         actionsDiv.innerHTML = `<button class="btn-del" style="background:#ef4444;color:white;padding:1rem 2rem;border:none;border-radius:12px;cursor:pointer;font-weight:800;" onclick="deleteItem('${item.docId}')">Remove Listing</button>`;
     } else {
+        // If the item is already reserved, disable the reserve button!
+        const isReserved = item.status === 'reserved';
+        const reserveBtnHtml = isReserved 
+            ? `<button class="btn-contact" style="background:#94a3b8;color:white;padding:1rem 1.5rem;border:none;border-radius:12px;cursor:not-allowed;font-weight:800;" disabled>Item is Reserved</button>`
+            : `<button class="btn-contact" style="background:#10b981;color:white;padding:1rem 1.5rem;border:none;border-radius:12px;cursor:pointer;font-weight:800;" onclick="openReserveModal('${item.docId}', '${item.title.replace(/'/g, "\\'")}', ${item.price}, '${item.sellerKey}', '${item.seller}')">Reserve</button>`;
+
         actionsDiv.innerHTML = `
             <button class="btn-contact" style="background:#64748b;color:white;padding:1rem 1.5rem;border:none;border-radius:12px;cursor:pointer;font-weight:700;" onclick="contactSeller('${item.sellerKey}')">Contact</button>
             <button class="btn-contact" style="background:var(--primary);color:white;padding:1rem 1.5rem;border:none;border-radius:12px;cursor:pointer;font-weight:700;" onclick="openChatModal('${item.sellerKey}', '${item.seller}')">Live Chat</button>
-            <button class="btn-contact" style="background:#10b981;color:white;padding:1rem 1.5rem;border:none;border-radius:12px;cursor:pointer;font-weight:800;" onclick="openReserveModal('${item.title.replace(/'/g, "\\'")}', ${item.price}, '${item.sellerKey}', '${item.seller}')">Reserve</button>
+            ${reserveBtnHtml}
         `;
     }
 
@@ -520,7 +606,6 @@ window.renderGallery = function() {
             img.src = imgSrc;
             const isActive = idx === window.currentGalleryIndex;
             
-            // STRICT BOX SIZING & MIN WIDTH TO PREVENT SQUISHING
             img.style = `height: 60px; width: 60px; min-width: 60px; object-fit: cover; border-radius: 6px; cursor: pointer; box-sizing: border-box; border: 3px solid ${isActive ? 'var(--primary)' : 'transparent'}; opacity: ${isActive ? '1' : '0.5'}; transition: all 0.2s ease; margin: 0;`;
             
             img.onclick = () => {
@@ -592,7 +677,8 @@ window.contactSeller = async function(sellerKey) {
 
 let pendingReservation = null;
 
-window.openReserveModal = function(title, price, sellerKey, sellerName) {
+// NEW: Accepts docId so we know exactly which item to flag!
+window.openReserveModal = function(docId, title, price, sellerKey, sellerName) {
     if (!currentUser) {
         alert("You must be logged in to reserve an item.");
         showTab('auth');
@@ -602,7 +688,7 @@ window.openReserveModal = function(title, price, sellerKey, sellerName) {
     const numericPrice = Number(price);
     const reserveFee = numericPrice * 0.05; 
     
-    pendingReservation = { title, sellerKey, sellerName, price: numericPrice, fee: reserveFee }; 
+    pendingReservation = { docId, title, sellerKey, sellerName, price: numericPrice, fee: reserveFee }; 
 
     document.getElementById('reserve-item-title').innerText = title;
     document.getElementById('reserve-full-price').innerText = numericPrice.toLocaleString();
@@ -642,6 +728,7 @@ window.confirmReservation = async function() {
 
     compressImage(receiptFile, 800, 800, 0.7, async function (compressedReceipt) {
         try {
+            // 1. Notify Seller
             await addDoc(collection(db, "notifications"), {
                 targetUser: pendingReservation.sellerKey,
                 type: 'reserve',
@@ -650,6 +737,7 @@ window.confirmReservation = async function() {
                 timestamp: Date.now()
             });
 
+            // 2. Log Admin Ledger
             await addDoc(collection(db, "reservations"), {
                 item: pendingReservation.title,
                 buyer: currentUser.username,
@@ -659,6 +747,12 @@ window.confirmReservation = async function() {
                 timestamp: Date.now()
             });
 
+            // 3. SECURE THE ITEM: Update the listing status to 'reserved'!
+            await updateDoc(doc(db, "listings", pendingReservation.docId), {
+                status: 'reserved'
+            });
+
+            // 4. Send Email
             sendEmailNotification(
                 pendingReservation.sellerKey, 
                 "Item Reserved!", 
@@ -666,7 +760,10 @@ window.confirmReservation = async function() {
             );
 
             document.getElementById('reserve-modal').classList.add('hidden');
-            alert("✅ Payment submitted successfully! The seller has been notified.");
+            alert("✅ Payment submitted successfully! The item is now reserved and the seller has been notified.");
+
+            // Refresh the grid to show the new orange tag
+            fetchAndRenderListings();
 
         } catch(err) {
             console.error("Error", err);
@@ -915,6 +1012,7 @@ function loadInbox() {
     });
 }
 
+// --- UPDATED ADMIN DASHBOARD LOGIC ---
 let currentTotalAdminProfit = 0;
 let adminReserves = [];
 let adminWithdrawals = [];
@@ -997,8 +1095,21 @@ async function loadAdminDashboard() {
         const usersSnap = await getDocs(collection(db, "users"));
         document.getElementById('admin-total-users').innerText = usersSnap.size.toLocaleString();
 
+        // Admin needs to loop manually to count active vs reserved vs sold
         const listingsSnap = await getDocs(collection(db, "listings"));
-        document.getElementById('admin-total-listings').innerText = listingsSnap.size.toLocaleString();
+        let active = 0, reserved = 0, sold = 0;
+        
+        listingsSnap.forEach(doc => {
+            const status = doc.data().status || 'available';
+            if(status === 'sold') sold++;
+            else if(status === 'reserved') reserved++;
+            else active++;
+        });
+
+        document.getElementById('admin-total-listings').innerText = active.toLocaleString();
+        document.getElementById('admin-total-reserved').innerText = reserved.toLocaleString();
+        document.getElementById('admin-total-sold').innerText = sold.toLocaleString();
+
     } catch(err) {
         console.error("Could not fetch counts", err);
     }
