@@ -188,13 +188,15 @@
 
     <div id="product-modal" class="modal hidden">
         <div class="modal-content glass-card" style="max-width: 800px; padding: 0; overflow-y: auto; display: flex; flex-direction: column; border: none;">
-            <span class="close-btn" onclick="document.getElementById('product-modal').classList.add('hidden')" style="cursor: pointer; position: absolute; right: 20px; top: 15px; z-index: 10; background: rgba(255,255,255,0.95); box-shadow: 0 4px 10px rgba(0,0,0,0.1); border-radius: 50%; width: 36px; height: 36px; text-align: center; line-height: 36px; font-weight: bold; color: var(--text);">&times;</span>
+            <span class="close-btn" onclick="document.getElementById('product-modal').classList.add('hidden')" style="cursor: pointer; position: absolute; right: 20px; top: 15px; z-index: 50; background: rgba(255,255,255,0.95); box-shadow: 0 4px 10px rgba(0,0,0,0.1); border-radius: 50%; width: 36px; height: 36px; text-align: center; line-height: 36px; font-weight: bold; color: var(--text);">&times;</span>
             
-            <div style="background: #0f172a; text-align: center; position: relative;">
+            <div style="background: #0f172a; text-align: center; position: relative; display: flex; align-items: center; justify-content: center;">
+                <button class="gallery-nav-btn" style="left: 15px;" onclick="prevGalleryImage(event)">&#10094;</button>
                 <img id="pm-main-img" src="" style="height: 400px; max-width: 100%; object-fit: contain; cursor: zoom-in;" onclick="viewFullImage(this.src)">
+                <button class="gallery-nav-btn" style="right: 15px;" onclick="nextGalleryImage(event)">&#10095;</button>
             </div>
             
-            <div id="pm-thumbnails" style="display: flex; gap: 12px; padding: 15px; background: #1e293b; overflow-x: auto; justify-content: center; overflow-y: hidden;"></div>
+            <div id="pm-thumbnails"></div>
 
             <div style="padding: 30px; text-align: left; background: white;">
                 <h2 id="pm-price" style="color: #10b981; margin: 0 0 10px 0; font-size: 2.5rem; letter-spacing: -1px;">₱0</h2>
