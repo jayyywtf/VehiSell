@@ -122,7 +122,7 @@
         </section>
 
         <section id="sec-acc" class="tab-content hidden">
-            <div class="glass-card acc-view" style="max-width: 500px; text-align: center;">
+            <div class="glass-card acc-view" style="max-width: 600px; text-align: center;">
                 <div style="font-size: 4rem; margin-bottom: 10px;">👤</div>
                 <h2 id="acc-name" style="margin-top: 0;">User</h2>
                 
@@ -142,28 +142,43 @@
                     </div>
                 </div>
 
+                <div style="margin-top: 30px; width: 100%; text-align: left;">
+                    <h3 style="border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; margin-bottom: 15px; color: var(--primary);">My Listings & History</h3>
+                    <div id="user-history-list" style="max-height: 350px; overflow-y: auto; background: white; border-radius: 12px; border: 1px solid #e2e8f0; padding: 10px;">
+                        <p style="color: var(--light); text-align: center;">No history yet.</p>
+                    </div>
+                </div>
+
                 <button class="btn-secondary" id="logout-btn" style="margin-top: 30px; background: #ef4444; color: white; border: none;">Secure Logout</button>
             </div>
         </section>
 
         <section id="sec-admin" class="tab-content hidden">
-            <div class="glass-card" style="max-width: 600px;">
+            <div class="glass-card" style="max-width: 700px;">
                 <h2 style="margin-top:0;">Admin Dashboard</h2>
                 
                 <div style="background: white; padding: 30px; border-radius: 20px; text-align: center; margin-bottom: 20px; border: 1px solid #e2e8f0; box-shadow: 0 10px 30px rgba(0,0,0,0.03);">
                     <h3 style="margin:0; color: var(--light); font-size: 1rem; text-transform: uppercase; letter-spacing: 1px;">Available Escrow Profit (5%)</h3>
-                    <h1 style="margin:15px 0; color: #10b981; font-size: 3.5rem; letter-spacing: -1px;">₱<span id="admin-total-profit">0.00</span></h1>
+                    <h1 style="margin:15px 0; color: #10b981; font-size: 3.5rem; letter-spacing: -1px;" id="admin-total-profit">₱0.00</h1>
                     <button id="btn-withdraw" class="btn-primary" style="background: var(--text); width: auto; padding: 12px 25px; border-radius: 30px; font-size: 1rem;">🏦 Withdraw Funds to Bank</button>
                 </div>
 
-                <div style="display: flex; gap: 15px; margin-bottom: 25px;">
-                    <div style="flex: 1; background: white; padding: 20px; border-radius: 16px; text-align: center; border: 1px solid #e2e8f0; box-shadow: 0 4px 15px rgba(0,0,0,0.02);">
-                        <h4 style="margin:0; color: var(--light);">Total Users</h4>
-                        <h2 style="margin:10px 0 0 0; color: var(--primary); font-size: 2rem;" id="admin-total-users">0</h2>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h4 style="margin:0; color: var(--light); font-size:0.9rem;">Total Users</h4>
+                        <h2 style="margin:10px 0 0 0; color: var(--primary); font-size: 1.8rem;" id="admin-total-users">0</h2>
                     </div>
-                    <div style="flex: 1; background: white; padding: 20px; border-radius: 16px; text-align: center; border: 1px solid #e2e8f0; box-shadow: 0 4px 15px rgba(0,0,0,0.02);">
-                        <h4 style="margin:0; color: var(--light);">Active Listings</h4>
-                        <h2 style="margin:10px 0 0 0; color: var(--primary); font-size: 2rem;" id="admin-total-listings">0</h2>
+                    <div class="stat-card">
+                        <h4 style="margin:0; color: var(--light); font-size:0.9rem;">Active Listings</h4>
+                        <h2 style="margin:10px 0 0 0; color: #10b981; font-size: 1.8rem;" id="admin-total-listings">0</h2>
+                    </div>
+                    <div class="stat-card">
+                        <h4 style="margin:0; color: var(--light); font-size:0.9rem;">Reserved Items</h4>
+                        <h2 style="margin:10px 0 0 0; color: #f59e0b; font-size: 1.8rem;" id="admin-total-reserved">0</h2>
+                    </div>
+                    <div class="stat-card">
+                        <h4 style="margin:0; color: var(--light); font-size:0.9rem;">Items Sold</h4>
+                        <h2 style="margin:10px 0 0 0; color: #ef4444; font-size: 1.8rem;" id="admin-total-sold">0</h2>
                     </div>
                 </div>
 
