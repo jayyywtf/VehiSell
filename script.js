@@ -26,7 +26,8 @@ const sections = document.querySelectorAll('.tab-content');
 function showTab(tabId) {
     sections.forEach(s => s.classList.add('hidden'));
     navButtons.forEach(b => b.classList.remove('active'));
-    document.getElementById(`sec-${tabId}`).classList.remove('hidden');
+    const section = document.getElementById(`sec-${tabId}`);
+    if (section) section.classList.remove('hidden');
     const activeBtn = Array.from(navButtons).find(b => b.getAttribute('data-tab') === tabId);
     if (activeBtn) activeBtn.classList.add('active');
 }
@@ -114,15 +115,12 @@ document.getElementById('form-auth').addEventListener('submit', async function (
 
             if (!querySnapshot.empty) {
                 const userData = querySnapshot.docs[0].data();
-                
-                // NEW: Block login if the account hasn't been approved by the admin yet
                 if (userData.isVerified === false) {
                     alert("⏳ Account still pending! Please wait for the admin to verify your ID.");
                     authBtn.textContent = "Login";
                     authBtn.disabled = false;
                     return;
                 }
-                
                 login(userData);
             } else {
                 alert("❌ Invalid username or password.");
@@ -157,8 +155,6 @@ document.getElementById('form-auth').addEventListener('submit', async function (
         authBtn.textContent = "Processing Front ID...";
         
         compressImage(idFile, 800, 800, 0.8, async function (compressedFrontPhoto) {
-            
-            // Sub-function to save everything once photos are ready
             const finishRegistration = async (compressedBackPhoto) => {
                 authBtn.textContent = "Submitting Review...";
                 try {
@@ -170,8 +166,8 @@ document.getElementById('form-auth').addEventListener('submit', async function (
                         phone: phone,
                         fb: fbLink,
                         idPhoto: compressedFrontPhoto, 
-                        idPhotoBack: compressedBackPhoto, // Can be null if skipped
-                        isVerified: safeUserKey === 'admin' ? true : false // Admin auto-approves
+                        idPhotoBack: compressedBackPhoto, 
+                        isVerified: safeUserKey === 'admin' ? true : false
                     };
                     await addDoc(collection(db, "users"), newUser);
 
@@ -180,21 +176,18 @@ document.getElementById('form-auth').addEventListener('submit', async function (
                         document.getElementById('form-auth').reset();
                         login(newUser);
                     } else {
-                        // Regular users are NOT logged in yet. They must wait.
                         alert("✅ Account submitted! The admin will review your ID to protect the community. You will receive an email once you are verified.");
                         document.getElementById('form-auth').reset();
-                        toggleAuthMode(); // Flip back to login screen
+                        toggleAuthMode();
                         authBtn.textContent = "Login";
                         authBtn.disabled = false;
                     }
-
                 } catch (error) {
                     console.error(error);
                     resetBtn("❌ Error saving to cloud.", "Create Verified Account");
                 }
             };
 
-            // Check if they uploaded an optional Back ID
             if (idBackFile) {
                 authBtn.textContent = "Processing Back ID...";
                 compressImage(idBackFile, 800, 800, 0.8, function(compressedBackPhoto) {
@@ -203,9 +196,8 @@ document.getElementById('form-auth').addEventListener('submit', async function (
                     resetBtn("❌ Error reading Back ID.", "Create Verified Account");
                 });
             } else {
-                finishRegistration(null); // No back ID uploaded, skip to save
+                finishRegistration(null);
             }
-
         }, function(errorMessage) {
             resetBtn("❌ " + errorMessage, "Create Verified Account");
         });
@@ -232,7 +224,24 @@ function updateNav() {
         document.getElementById('nav-auth').classList.add('hidden');
         document.getElementById('nav-acc').classList.remove('hidden');
         document.getElementById('acc-name').innerText = currentUser.username;
-        document.getElementById('acc-id-display').src = currentUser.idPhoto;
+        
+        // Display Front ID with Click-to-View link
+        const frontDisplay = document.getElementById('acc-id-display');
+        const frontLink = document.getElementById('id-front-link');
+        frontDisplay.src = currentUser.idPhoto;
+        frontLink.href = currentUser.idPhoto;
+
+        // NEW: Display Back ID if it exists
+        const backContainer = document.getElementById('acc-id-back-container');
+        if (currentUser.idPhotoBack) {
+            const backDisplay = document.getElementById('acc-id-back-display');
+            const backLink = document.getElementById('id-back-link');
+            backDisplay.src = currentUser.idPhotoBack;
+            backLink.href = currentUser.idPhotoBack;
+            backContainer.classList.remove('hidden');
+        } else {
+            backContainer.classList.add('hidden');
+        }
 
         if (currentUser.usernameKey === 'admin') {
             document.getElementById('nav-admin').classList.remove('hidden');
@@ -281,7 +290,6 @@ sellForm.onsubmit = (e) => {
             alert("✅ Item listed successfully!");
             fetchAndRenderListings();
             showTab('buy');
-
         } catch (error) {
             console.error(error);
             alert("❌ Failed to list item.");
@@ -310,7 +318,6 @@ async function fetchAndRenderListings() {
         
         allListings.sort((a, b) => b.timestamp - a.timestamp);
         renderFilteredListings('', 'all');
-
     } catch (error) {
         console.error(error);
         grid.innerHTML = '<p style="text-align:center; grid-column:1/-1; color: red;">Error loading items.</p>';
@@ -344,7 +351,7 @@ function renderFilteredListings(filterTerm = '', filterCat = 'all') {
             
             ${item.sellerIdPhoto ? `
             <div class="id-badge">
-                <img src="${item.sellerIdPhoto}" class="id-preview" title="Hover to view Seller ID">
+                <a href="${item.sellerIdPhoto}" target="_blank"><img src="${item.sellerIdPhoto}" class="id-preview" title="View Seller ID"></a>
                 <span>Verified</span>
             </div>` : ''}
 
@@ -491,7 +498,6 @@ window.confirmReservation = async function() {
 
             document.getElementById('reserve-modal').classList.add('hidden');
             alert("✅ Payment submitted successfully! The seller has been notified.");
-
         } catch(err) {
             console.error("Error", err);
             alert("Error submitting reservation.");
@@ -499,7 +505,6 @@ window.confirmReservation = async function() {
         
         submitBtn.disabled = false;
         submitBtn.textContent = "Submit Payment Proof";
-
     }, function(err) {
         alert("Failed to process receipt image.");
         submitBtn.disabled = false;
@@ -680,8 +685,6 @@ function loadInbox() {
 let currentTotalAdminProfit = 0;
 
 async function loadAdminDashboard() {
-    
-    // 1. Dashboard Financials
     const resQuery = query(collection(db, "reservations"));
     const withQuery = query(collection(db, "withdrawals"));
     
@@ -716,7 +719,6 @@ async function loadAdminDashboard() {
         });
     });
 
-    // 2. Total Users & Listings
     try {
         const usersSnap = await getDocs(collection(db, "users"));
         document.getElementById('admin-total-users').innerText = usersSnap.size.toLocaleString();
@@ -727,7 +729,6 @@ async function loadAdminDashboard() {
         console.error("Could not fetch counts", err);
     }
 
-    // 3. PENDING ID APPROVALS
     const qPending = query(collection(db, "users"), where("isVerified", "==", false));
     onSnapshot(qPending, (snapshot) => {
         const pendingBox = document.getElementById('admin-pending-users');
@@ -772,18 +773,15 @@ async function loadAdminDashboard() {
     });
 }
 
-// Global functions for Admin to Approve or Reject users
 window.approveUser = async function(docId, username, usernameKey) {
     if(confirm(`Approve ${username}'s ID and send them an email?`)) {
         try {
             await updateDoc(doc(db, "users", docId), { isVerified: true });
-            
             sendEmailNotification(
                 usernameKey, 
                 "Account Verified: Welcome to VehiSell!", 
                 `Hello ${username}! Great news, the admin has successfully verified your ID. Your account is now fully active. You can log in, post listings, and safely interact with buyers!`
             );
-            
             alert(`✅ ${username} has been approved and notified.`);
         } catch(e) {
             alert("Error approving user.");
