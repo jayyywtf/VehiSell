@@ -26,6 +26,7 @@ let userFavorites = JSON.parse(localStorage.getItem('user_favorites')) || [];
 const navButtons = document.querySelectorAll('.nav-btn');
 const sections = document.querySelectorAll('.tab-content');
 
+// --- DARK MODE TOGGLE LOGIC ---
 const themeToggleBtn = document.getElementById('theme-toggle');
 let currentTheme = localStorage.getItem('theme') || 'light';
 
@@ -79,6 +80,7 @@ navButtons.forEach(btn => {
     };
 });
 
+// Safe Bell Button Hook
 const bellBtn = document.getElementById('bell-btn');
 if(bellBtn) {
     bellBtn.onclick = (e) => {
@@ -147,7 +149,8 @@ function compressImageAsync(file, maxWidth, maxHeight, quality) {
     });
 }
 
-function openPaymentModal(type, title, itemName, feeAmount, callback) {
+// --- FIX: MADE UNIVERSAL PAYMENT MODAL GLOBAL ---
+window.openPaymentModal = function(type, title, itemName, feeAmount, callback) {
     document.getElementById('payment-modal-title').innerText = title;
     document.getElementById('payment-item-title').innerText = itemName;
     document.getElementById('payment-fee-amount').innerText = Number(feeAmount).toLocaleString(undefined, {minimumFractionDigits: 2});
@@ -204,7 +207,7 @@ function openPaymentModal(type, title, itemName, feeAmount, callback) {
             btn.textContent = "Submit Payment Proof";
         });
     };
-}
+};
 
 document.getElementById('form-auth').addEventListener('submit', async function (e) {
     e.preventDefault();
@@ -496,7 +499,7 @@ sellForm.onsubmit = async (e) => {
 
         if(isBoosted) {
             submitBtn.disabled = false;
-            openPaymentModal('boost', 'Hot List Boost', document.getElementById('p-title').value, 150, async (receiptStr) => {
+            window.openPaymentModal('boost', 'Hot List Boost', document.getElementById('p-title').value, 150, async (receiptStr) => {
                 await addDoc(collection(db, "reservations"), {
                     item: "Listing Boost Fee",
                     buyer: currentUser.username,
@@ -533,7 +536,7 @@ window.toggleFavorite = (e, docId) => {
 };
 
 window.boostExistingItem = function(docId, title) {
-    openPaymentModal('boost', 'Hot List Boost', title, 150, async (receiptStr) => {
+    window.openPaymentModal('boost', 'Hot List Boost', title, 150, async (receiptStr) => {
         await addDoc(collection(db, "reservations"), {
             item: "Listing Boost Fee",
             buyer: currentUser.username,
@@ -927,6 +930,7 @@ window.contactSeller = async function(sellerKey) {
     }
 };
 
+// Tied to Universal Payment Modal
 window.processReservation = async function(compressedReceipt) {
     await addDoc(collection(db, "notifications"), {
         targetUser: window.pendingReservation.sellerKey,
