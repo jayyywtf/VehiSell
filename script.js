@@ -270,7 +270,7 @@ function login(user) {
     localStorage.setItem('user_session', JSON.stringify(user));
     currentUser = user;
     updateNav();
-    showTab('buy'); 
+    showTab('buy'); // Go straight to marketplace after login
     fetchAndRenderListings();
     listenForLiveAlerts(); 
 }
