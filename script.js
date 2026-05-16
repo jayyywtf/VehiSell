@@ -103,7 +103,6 @@ function compressImage(file, maxWidth, maxHeight, quality, onSuccess, onError) {
     reader.readAsDataURL(file);
 }
 
-// Wrapper to make compressImage async so we can map over multiple files
 function compressImageAsync(file, maxWidth, maxHeight, quality) {
     return new Promise((resolve, reject) => {
         compressImage(file, maxWidth, maxHeight, quality, resolve, reject);
@@ -243,6 +242,11 @@ function updateNav() {
         document.getElementById('acc-name').innerText = currentUser.username;
         document.getElementById('acc-id-display').src = currentUser.idPhoto;
 
+        // Ensure the header quick-icons are visible
+        if(currentUser.usernameKey !== 'admin') {
+            document.getElementById('quick-icons').style.display = 'flex';
+        }
+
         const backIdImg = document.getElementById('acc-id-back-display');
         const backIdUploadBox = document.getElementById('upload-back-id-box');
         
@@ -263,6 +267,8 @@ function updateNav() {
             document.querySelector('[data-tab="sell"]').classList.remove('hidden'); 
             loadInbox();
         }
+    } else {
+        document.getElementById('quick-icons').style.display = 'none';
     }
 }
 
@@ -306,35 +312,51 @@ document.getElementById('logout-btn').onclick = () => {
     location.reload();
 };
 
-// --- MULTIPLE IMAGE PREVIEW LOGIC ---
+// --- MULTIPLE IMAGE PREVIEW LOGIC (APPEND FIX) ---
+let pendingProductImages = [];
+
 document.getElementById('p-img').addEventListener('change', function(e) {
+    Array.from(this.files).forEach(file => {
+        if(file.type.startsWith('image/')) pendingProductImages.push(file);
+    });
+    renderImagePreviews();
+    this.value = ''; // Reset input so user can click and add more freely!
+});
+
+window.removePendingImage = function(index) {
+    pendingProductImages.splice(index, 1);
+    renderImagePreviews();
+};
+
+function renderImagePreviews() {
     const container = document.getElementById('sell-img-previews');
     container.innerHTML = ''; 
-    Array.from(this.files).forEach(file => {
+    pendingProductImages.forEach((file, index) => {
         const reader = new FileReader();
         reader.onload = (ev) => {
-            const img = document.createElement('img');
-            img.src = ev.target.result;
-            img.style = "width: 60px; height: 60px; object-fit: cover; border-radius: 5px; border: 1px solid #cbd5e1;";
-            container.appendChild(img);
+            const div = document.createElement('div');
+            div.style = "position: relative; display: inline-block;";
+            div.innerHTML = `
+                <img src="${ev.target.result}" style="width: 65px; height: 65px; object-fit: cover; border-radius: 8px; border: 1px solid #cbd5e1;">
+                <span onclick="removePendingImage(${index})" style="position: absolute; top: -5px; right: -5px; background: #ef4444; color: white; border-radius: 50%; width: 20px; height: 20px; text-align: center; line-height: 18px; font-size: 14px; cursor: pointer; font-weight: bold; border: 2px solid white;">&times;</span>
+            `;
+            container.appendChild(div);
         };
         reader.readAsDataURL(file);
     });
-});
+}
 
 const sellForm = document.getElementById('form-sell');
 sellForm.onsubmit = async (e) => {
     e.preventDefault();
-    const files = Array.from(document.getElementById('p-img').files);
-    if (files.length === 0) return alert("Please select at least one image.");
+    if (pendingProductImages.length === 0) return alert("Please select at least one image.");
 
     const submitBtn = sellForm.querySelector('button');
     submitBtn.disabled = true;
     submitBtn.textContent = "Uploading Photos to Cloud...";
 
     try {
-        // Compress all selected images simultaneously
-        const compressedImagesArray = await Promise.all(files.map(f => compressImageAsync(f, 1200, 1200, 0.8)));
+        const compressedImagesArray = await Promise.all(pendingProductImages.map(f => compressImageAsync(f, 1200, 1200, 0.8)));
 
         submitBtn.textContent = "Saving Listing...";
         const newItem = {
@@ -345,13 +367,14 @@ sellForm.onsubmit = async (e) => {
             seller: currentUser.username,
             sellerKey: currentUser.username.toLowerCase(),
             sellerIdPhoto: currentUser.idPhoto, 
-            images: compressedImagesArray, // Array of HD images!
+            images: compressedImagesArray, 
             timestamp: Date.now()
         };
         
         await addDoc(collection(db, "listings"), newItem);
 
         sellForm.reset();
+        pendingProductImages = []; // Clear memory
         document.getElementById('sell-img-previews').innerHTML = ''; // Clear previews
         alert("✅ Item listed successfully!");
         fetchAndRenderListings();
@@ -436,10 +459,7 @@ function renderFilteredListings(filterTerm = '', filterCat = 'all') {
                     ${isOwner ?
                 `<button class="btn-del" style="background:#ef4444;color:white;padding:0.5rem;border:none;border-radius:6px;cursor:pointer;" onclick="deleteItem('${item.docId}')">Remove Listing</button>` :
                 `
-                <div style="display: flex; gap: 5px; justify-content: space-between;">
-                    <button class="btn-contact" style="background:#10b981;color:white;padding:0.5rem;border:none;border-radius:6px;cursor:pointer;font-weight:bold;flex:1;" onclick="openReserveModal('${item.title.replace(/'/g, "\\'")}', ${item.price}, '${item.sellerKey}', '${item.seller}')">Reserve</button>
-                    <button class="btn-contact" style="background:var(--primary);color:white;padding:0.5rem;border:none;border-radius:6px;cursor:pointer;flex:1;" onclick="openChatModal('${item.sellerKey}', '${item.seller}')">Live Chat</button>
-                </div>
+                <button class="btn-contact" style="background:var(--primary);color:white;padding:0.5rem;border:none;border-radius:6px;cursor:pointer;flex:1;" onclick="openProductModal('${item.docId}')">View Details & Chat</button>
                 `
             }
                 </div>
@@ -449,7 +469,6 @@ function renderFilteredListings(filterTerm = '', filterCat = 'all') {
     });
 }
 
-// --- NEW BIG PRODUCT MODAL ---
 window.openProductModal = function(docId) {
     const item = allListings.find(i => i.docId === docId);
     if (!item) return;
@@ -465,7 +484,6 @@ window.openProductModal = function(docId) {
     const thumbsContainer = document.getElementById('pm-thumbnails');
     thumbsContainer.innerHTML = '';
     
-    // Only show thumbnail bar if there are multiple images
     if(imageArray.length > 1) {
         imageArray.forEach(imgSrc => {
             const img = document.createElement('img');
@@ -473,7 +491,7 @@ window.openProductModal = function(docId) {
             img.style = "height: 60px; width: 60px; object-fit: cover; border-radius: 5px; cursor: pointer; border: 2px solid transparent;";
             img.onmouseover = () => img.style.borderColor = "var(--primary)";
             img.onmouseout = () => img.style.borderColor = "transparent";
-            img.onclick = () => document.getElementById('pm-main-img').src = imgSrc; // Swap main image
+            img.onclick = () => document.getElementById('pm-main-img').src = imgSrc; 
             thumbsContainer.appendChild(img);
         });
     }
@@ -485,9 +503,11 @@ window.openProductModal = function(docId) {
     if (isOwner) {
         actionsDiv.innerHTML = `<button class="btn-del" style="background:#ef4444;color:white;padding:0.8rem 1.5rem;border:none;border-radius:6px;cursor:pointer;" onclick="deleteItem('${item.docId}')">Remove Listing</button>`;
     } else {
+        // --- RESTORED CONTACT BUTTON HERE! ---
         actionsDiv.innerHTML = `
-            <button class="btn-contact" style="background:#10b981;color:white;padding:0.8rem 1.5rem;border:none;border-radius:6px;cursor:pointer;font-weight:bold;" onclick="openReserveModal('${item.title.replace(/'/g, "\\'")}', ${item.price}, '${item.sellerKey}', '${item.seller}')">Reserve</button>
-            <button class="btn-contact" style="background:var(--primary);color:white;padding:0.8rem 1.5rem;border:none;border-radius:6px;cursor:pointer;" onclick="openChatModal('${item.sellerKey}', '${item.seller}')">Live Chat</button>
+            <button class="btn-contact" style="background:#64748b;color:white;padding:0.8rem 1.2rem;border:none;border-radius:6px;cursor:pointer;" onclick="contactSeller('${item.sellerKey}')">Contact</button>
+            <button class="btn-contact" style="background:var(--primary);color:white;padding:0.8rem 1.2rem;border:none;border-radius:6px;cursor:pointer;" onclick="openChatModal('${item.sellerKey}', '${item.seller}')">Live Chat</button>
+            <button class="btn-contact" style="background:#10b981;color:white;padding:0.8rem 1.2rem;border:none;border-radius:6px;cursor:pointer;font-weight:bold;" onclick="openReserveModal('${item.title.replace(/'/g, "\\'")}', ${item.price}, '${item.sellerKey}', '${item.seller}')">Reserve</button>
         `;
     }
 
@@ -498,12 +518,43 @@ window.deleteItem = async function(docId) {
     if (confirm("Delete this listing from the cloud?")) {
         try {
             await deleteDoc(doc(db, "listings", docId));
-            document.getElementById('product-modal').classList.add('hidden'); // Close modal if open
+            document.getElementById('product-modal').classList.add('hidden'); 
             alert("Deleted!");
             fetchAndRenderListings();
         } catch (error) {
             alert("Error deleting item.");
         }
+    }
+};
+
+window.contactSeller = async function(sellerKey) {
+    try {
+        const q = query(collection(db, "users"), where("usernameKey", "==", sellerKey));
+        const querySnapshot = await getDocs(q);
+        
+        if (querySnapshot.empty) {
+            alert("Sorry, seller details could not be found in the database.");
+            return;
+        }
+
+        const sellerData = querySnapshot.docs[0].data();
+
+        document.getElementById('modal-seller-name').innerText = sellerData.username;
+        document.getElementById('modal-seller-avatar').src = sellerData.idPhoto;
+
+        const phoneBtn = document.getElementById('modal-seller-phone');
+        phoneBtn.href = `tel:${sellerData.phone}`; 
+        phoneBtn.innerText = `📞 Call / SMS: ${sellerData.phone}`;
+
+        const fbBtn = document.getElementById('modal-seller-fb');
+        let cleanFbLink = sellerData.fb.startsWith('http') ? sellerData.fb : `https://${sellerData.fb}`;
+        fbBtn.href = cleanFbLink;
+
+        document.getElementById('modal-seller-address').style.display = 'none';
+
+        document.getElementById('seller-modal').classList.remove('hidden');
+    } catch (error) {
+        alert("Error loading seller info.");
     }
 };
 
@@ -542,7 +593,7 @@ window.openReserveModal = function(title, price, sellerKey, sellerName) {
     }
 
     document.getElementById('reserve-receipt').value = ""; 
-    document.getElementById('product-modal').classList.add('hidden'); // Close product modal so this is clearly on top
+    document.getElementById('product-modal').classList.add('hidden'); 
     document.getElementById('reserve-modal').classList.remove('hidden');
 };
 
@@ -612,7 +663,7 @@ window.openChatModal = function(sellerKey, sellerName) {
     
     activeChatUserId = sellerKey;
     document.getElementById('chat-target-name').innerText = "Chat with " + sellerName;
-    document.getElementById('product-modal').classList.add('hidden'); // Close product modal if open
+    document.getElementById('product-modal').classList.add('hidden'); 
     document.getElementById('chat-modal').classList.remove('hidden');
 
     const chatId = getChatId(currentUser.usernameKey, sellerKey);
@@ -632,7 +683,6 @@ window.openChatModal = function(sellerKey, sellerName) {
             const div = document.createElement('div');
             div.className = 'chat-bubble ' + (m.sender === currentUser.usernameKey ? 'sent' : 'received');
             
-            // Allow images to render beautifully inside chat bubbles!
             let innerHtml = '';
             if (m.imageUrl) {
                 innerHtml += `<img src="${m.imageUrl}" style="max-width: 100%; border-radius: 8px; margin-bottom: 5px; cursor: pointer;" onclick="viewFullImage('${m.imageUrl}')"><br>`;
@@ -654,7 +704,6 @@ window.closeChatModal = function() {
     activeChatUserId = null; 
 };
 
-// --- CHAT IMAGE PREVIEW & REMOVAL LOGIC ---
 window.removeChatImg = function() {
     document.getElementById('chat-img-input').value = '';
     document.getElementById('chat-img-preview-container').style.display = 'none';
@@ -688,7 +737,7 @@ document.getElementById('form-chat').onsubmit = async (e) => {
     try {
         let imgBase64 = null;
         if (file) {
-            imgBase64 = await compressImageAsync(file, 800, 800, 0.7); // Compress chat images
+            imgBase64 = await compressImageAsync(file, 800, 800, 0.7); 
         }
 
         input.value = '';
@@ -700,7 +749,7 @@ document.getElementById('form-chat').onsubmit = async (e) => {
             chatId: chatId,
             sender: currentUser.usernameKey,
             text: text,
-            imageUrl: imgBase64, // Save the image string!
+            imageUrl: imgBase64, 
             timestamp: Date.now()
         });
 
@@ -796,9 +845,15 @@ function loadInbox() {
             }
         });
 
+        // Update Notification Badge Icon
+        const notifBadge = document.getElementById('notif-badge');
         if(interactors.size === 0) {
             inboxBox.innerHTML = '<p style="color: var(--light); text-align: center;">No messages yet.</p>';
+            notifBadge.classList.add('hidden');
             return;
+        } else {
+            notifBadge.innerText = interactors.size;
+            notifBadge.classList.remove('hidden');
         }
 
         interactors.forEach((data, user) => {
@@ -818,9 +873,6 @@ function loadInbox() {
         });
     });
 }
-
-// --- ADMIN DASHBOARD LOGIC ---
-let currentTotalAdminProfit = 0;
 
 async function loadAdminDashboard() {
     
@@ -899,13 +951,11 @@ async function loadAdminDashboard() {
                     <div style="flex: 1;">
                         <p style="font-size: 0.8rem; margin: 0 0 5px 0; font-weight: bold;">Front ID</p>
                         <img src="${u.idPhoto}" onclick="viewFullImage('${u.idPhoto}')" style="width: 100%; height: 100px; object-fit: cover; border-radius: 6px; border: 1px solid #cbd5e1; cursor: zoom-in;">
-                        <p style="font-size: 0.7rem; color: var(--primary); margin: 2px 0 0 0; cursor: pointer;" onclick="viewFullImage('${u.idPhoto}')">🔍 Click to enlarge</p>
                     </div>
                     ${u.idPhotoBack ? `
                     <div style="flex: 1;">
                         <p style="font-size: 0.8rem; margin: 0 0 5px 0; font-weight: bold;">Back ID</p>
                         <img src="${u.idPhotoBack}" onclick="viewFullImage('${u.idPhotoBack}')" style="width: 100%; height: 100px; object-fit: cover; border-radius: 6px; border: 1px solid #cbd5e1; cursor: zoom-in;">
-                        <p style="font-size: 0.7rem; color: var(--primary); margin: 2px 0 0 0; cursor: pointer;" onclick="viewFullImage('${u.idPhotoBack}')">🔍 Click to enlarge</p>
                     </div>` : '<div style="flex: 1;"><p style="font-size: 0.8rem; margin: 0 0 5px 0; color:var(--light);">No Back ID</p></div>'}
                 </div>
             `;
@@ -997,7 +1047,7 @@ window.onclick = (event) => {
     const sellerModal = document.getElementById('seller-modal');
     const reserveModal = document.getElementById('reserve-modal');
     const imageModal = document.getElementById('image-modal');
-    const productModal = document.getElementById('product-modal'); // Ensures clicking off the big gallery closes it
+    const productModal = document.getElementById('product-modal'); 
     
     if (event.target === sellerModal) sellerModal.classList.add('hidden');
     if (event.target === reserveModal) reserveModal.classList.add('hidden');
