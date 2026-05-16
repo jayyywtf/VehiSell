@@ -15,7 +15,8 @@ body {
 
 header {
     background: white;
-    padding: 1rem;
+    /* REDUCED SPACING HERE */
+    padding: 0.5rem 1rem; 
     border-bottom: 1px solid #e2e8f0;
     position: sticky;
     top: 0;
@@ -33,6 +34,39 @@ header {
 
 .logo span {
     color: var(--primary);
+}
+
+/* --- NEW UPPER LEFT ICONS --- */
+.icon-btn {
+    background: #f1f5f9;
+    border: none;
+    border-radius: 50%;
+    width: 38px;
+    height: 38px;
+    cursor: pointer;
+    position: relative;
+    font-size: 1.1rem;
+    transition: 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.icon-btn:hover {
+    background: #e2e8f0;
+}
+
+.badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    background: #ef4444;
+    color: white;
+    font-size: 0.65rem;
+    border-radius: 50%;
+    padding: 2px 6px;
+    font-weight: bold;
+    border: 2px solid white;
 }
 
 .nav-btn {
@@ -62,7 +96,8 @@ header {
 
 main {
     max-width: 1100px;
-    margin: 2rem auto;
+    /* REDUCED SPACING HERE */
+    margin: 1rem auto; 
     padding: 0 1rem;
 }
 
@@ -72,11 +107,10 @@ main {
     gap: 1.5rem;
 }
 
-/* --- UPDATED PRODUCT CARD --- */
 .product-card {
     background: white;
     border-radius: 16px;
-    position: relative; /* Allows badge to position safely */
+    position: relative; 
     border: 1px solid #e2e8f0;
     transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
     animation: fadeIn 0.5s ease-out forwards;
@@ -97,7 +131,7 @@ main {
     position: relative;
     height: 200px;
     overflow: hidden; 
-    border-radius: 15px 15px 0 0; /* Keeps top corners round without clipping badge */
+    border-radius: 15px 15px 0 0; 
 }
 
 .product-img {
@@ -111,10 +145,9 @@ main {
     transform: scale(1.05);
 }
 
-/* --- UPDATED ID BADGE OVERLAY --- */
 .id-badge {
     position: absolute;
-    top: 155px; /* Sits right on the bottom edge of the image */
+    top: 155px; 
     left: 8px;
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(4px);
@@ -125,7 +158,7 @@ main {
     gap: 6px;
     border: 1px solid var(--primary);
     box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-    z-index: 50; /* Sits completely above the image wrapper */
+    z-index: 50; 
 }
 
 .id-preview {
@@ -135,11 +168,11 @@ main {
     border-radius: 3px;
     cursor: zoom-in;
     transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    transform-origin: bottom left; /* Grows outward properly */
+    transform-origin: bottom left; 
 }
 
 .id-preview:hover {
-    transform: scale(8) translate(15px, -10px); /* Massive, readable zoom */
+    transform: scale(8) translate(15px, -10px); 
     z-index: 999;
     box-shadow: 0 10px 30px rgba(0,0,0,0.4);
 }
@@ -321,6 +354,7 @@ input:focus, textarea:focus {
     align-items: center;
 }
 
+/* --- MOBILE RESPONSIVE RESERVE MODAL --- */
 .modal-content {
     background: white;
     padding: 2rem;
@@ -330,6 +364,11 @@ input:focus, textarea:focus {
     position: relative;
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3);
     animation: modalScaleUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    
+    /* NEW: Auto adjusts without needing to zoom out */
+    max-height: 90vh;
+    overflow-y: auto;
+    box-sizing: border-box;
 }
 
 @keyframes modalScaleUp {
