@@ -23,7 +23,6 @@ let isLoginMode = true;
 const navButtons = document.querySelectorAll('.nav-btn');
 const sections = document.querySelectorAll('.tab-content');
 
-// --- GLOBAL IMAGE VIEWER ---
 window.viewFullImage = function(url) {
     document.getElementById('full-image-viewer').src = url;
     document.getElementById('image-modal').classList.remove('hidden');
@@ -48,6 +47,12 @@ navButtons.forEach(btn => {
         showTab(target);
     };
 });
+
+// --- NOTIFICATION BELL DROPDOWN LOGIC ---
+document.getElementById('bell-btn').onclick = (e) => {
+    e.stopPropagation(); 
+    document.getElementById('notif-dropdown').classList.toggle('hidden');
+};
 
 const switchBtn = document.getElementById('switch-auth');
 const signupExtra = document.getElementById('signup-extra');
@@ -242,7 +247,6 @@ function updateNav() {
         document.getElementById('acc-name').innerText = currentUser.username;
         document.getElementById('acc-id-display').src = currentUser.idPhoto;
 
-        // Ensure the header quick-icons are visible
         if(currentUser.usernameKey !== 'admin') {
             document.getElementById('quick-icons').style.display = 'flex';
         }
@@ -312,7 +316,6 @@ document.getElementById('logout-btn').onclick = () => {
     location.reload();
 };
 
-// --- MULTIPLE IMAGE PREVIEW LOGIC (APPEND FIX) ---
 let pendingProductImages = [];
 
 document.getElementById('p-img').addEventListener('change', function(e) {
@@ -320,7 +323,7 @@ document.getElementById('p-img').addEventListener('change', function(e) {
         if(file.type.startsWith('image/')) pendingProductImages.push(file);
     });
     renderImagePreviews();
-    this.value = ''; // Reset input so user can click and add more freely!
+    this.value = ''; 
 });
 
 window.removePendingImage = function(index) {
@@ -374,8 +377,8 @@ sellForm.onsubmit = async (e) => {
         await addDoc(collection(db, "listings"), newItem);
 
         sellForm.reset();
-        pendingProductImages = []; // Clear memory
-        document.getElementById('sell-img-previews').innerHTML = ''; // Clear previews
+        pendingProductImages = []; 
+        document.getElementById('sell-img-previews').innerHTML = ''; 
         alert("✅ Item listed successfully!");
         fetchAndRenderListings();
         showTab('buy');
@@ -429,7 +432,6 @@ function renderFilteredListings(filterTerm = '', filterCat = 'all') {
     filtered.forEach(item => {
         const isOwner = currentUser && currentUser.username === item.seller;
 
-        // Fallback for old items with only one image
         const thumbnailSrc = item.images && item.images.length > 0 ? item.images[0] : item.image;
 
         const card = document.createElement('div');
@@ -503,7 +505,6 @@ window.openProductModal = function(docId) {
     if (isOwner) {
         actionsDiv.innerHTML = `<button class="btn-del" style="background:#ef4444;color:white;padding:0.8rem 1.5rem;border:none;border-radius:6px;cursor:pointer;" onclick="deleteItem('${item.docId}')">Remove Listing</button>`;
     } else {
-        // --- RESTORED CONTACT BUTTON HERE! ---
         actionsDiv.innerHTML = `
             <button class="btn-contact" style="background:#64748b;color:white;padding:0.8rem 1.2rem;border:none;border-radius:6px;cursor:pointer;" onclick="contactSeller('${item.sellerKey}')">Contact</button>
             <button class="btn-contact" style="background:var(--primary);color:white;padding:0.8rem 1.2rem;border:none;border-radius:6px;cursor:pointer;" onclick="openChatModal('${item.sellerKey}', '${item.seller}')">Live Chat</button>
@@ -824,13 +825,17 @@ function triggerToastPopup(data) {
     setTimeout(() => { if(container.contains(toast)) toast.remove(); }, 8000);
 }
 
+// --- UPDATED INBOX: FILLS BOTH PROFILE & NEW HEADER DROPDOWN ---
 function loadInbox() {
     if (!currentUser || currentUser.usernameKey === 'admin') return;
     
     const q = query(collection(db, "notifications"), where("targetUser", "==", currentUser.usernameKey));
     onSnapshot(q, (snapshot) => {
         const inboxBox = document.getElementById('inbox-list');
+        const dropdownBox = document.getElementById('dropdown-list');
+        
         inboxBox.innerHTML = '';
+        dropdownBox.innerHTML = '';
         
         let interactors = new Map();
         
@@ -845,10 +850,11 @@ function loadInbox() {
             }
         });
 
-        // Update Notification Badge Icon
         const notifBadge = document.getElementById('notif-badge');
+
         if(interactors.size === 0) {
             inboxBox.innerHTML = '<p style="color: var(--light); text-align: center;">No messages yet.</p>';
+            dropdownBox.innerHTML = '<p style="color: var(--light); text-align: center; margin: 15px 0; font-size: 0.85rem;">No messages yet.</p>';
             notifBadge.classList.add('hidden');
             return;
         } else {
@@ -857,11 +863,11 @@ function loadInbox() {
         }
 
         interactors.forEach((data, user) => {
-            const div = document.createElement('div');
-            div.style = "display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 10px 15px; border-radius: 8px; border: 1px solid #e2e8f0;";
-            
             let actionText = data.type === 'reserve' ? 'reserved your item.' : 'sent you a message.';
             
+            // 1. Fill the Profile Page Inbox
+            const div = document.createElement('div');
+            div.style = "display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 10px 15px; border-radius: 8px; border: 1px solid #e2e8f0;";
             div.innerHTML = `
                 <div>
                     <strong style="color: var(--primary); font-size: 1.1rem;">${user}</strong>
@@ -870,6 +876,24 @@ function loadInbox() {
                 <button class="btn-primary" style="width: auto; padding: 8px 15px; font-size: 0.85rem;" onclick="openChatModal('${user.toLowerCase()}', '${user}')">Reply / Chat</button>
             `;
             inboxBox.appendChild(div);
+
+            // 2. Fill the Bell Dropdown Menu
+            const dropDiv = document.createElement('div');
+            dropDiv.style = "display: flex; justify-content: space-between; align-items: center; padding: 12px 10px; border-bottom: 1px solid #f1f5f9; cursor: pointer; transition: background 0.2s;";
+            dropDiv.onmouseover = () => dropDiv.style.background = '#f8fafc';
+            dropDiv.onmouseout = () => dropDiv.style.background = 'transparent';
+            dropDiv.onclick = () => {
+                document.getElementById('notif-dropdown').classList.add('hidden'); // Close dropdown
+                openChatModal(user.toLowerCase(), user); // Open Chat
+            };
+            dropDiv.innerHTML = `
+                <div>
+                    <strong style="color: var(--text); font-size: 0.95rem;">${user}</strong>
+                    <p style="margin: 3px 0 0 0; font-size: 0.8rem; color: var(--light);">${actionText}</p>
+                </div>
+                <span style="font-size: 1.2rem; color: var(--primary);">💬</span>
+            `;
+            dropdownBox.appendChild(dropDiv);
         });
     });
 }
@@ -1043,16 +1067,25 @@ async function sendEmailNotification(targetUsernameKey, subjectTitle, bodyMessag
     }
 }
 
+// Ensure ALL modals and the new dropdown close when clicking off of them!
 window.onclick = (event) => {
     const sellerModal = document.getElementById('seller-modal');
     const reserveModal = document.getElementById('reserve-modal');
     const imageModal = document.getElementById('image-modal');
     const productModal = document.getElementById('product-modal'); 
+    const notifDropdown = document.getElementById('notif-dropdown');
     
     if (event.target === sellerModal) sellerModal.classList.add('hidden');
     if (event.target === reserveModal) reserveModal.classList.add('hidden');
     if (event.target === imageModal) imageModal.classList.add('hidden');
     if (event.target === productModal) productModal.classList.add('hidden');
+
+    // Close the notification dropdown if you click anywhere else on the screen
+    if (notifDropdown && !notifDropdown.classList.contains('hidden')) {
+        if (!event.target.closest('#quick-icons')) {
+            notifDropdown.classList.add('hidden');
+        }
+    }
 };
 
 document.getElementById('search-input').oninput = (e) => {
