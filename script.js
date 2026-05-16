@@ -26,7 +26,6 @@ let userFavorites = JSON.parse(localStorage.getItem('user_favorites')) || [];
 const navButtons = document.querySelectorAll('.nav-btn');
 const sections = document.querySelectorAll('.tab-content');
 
-// --- DARK MODE TOGGLE LOGIC ---
 const themeToggleBtn = document.getElementById('theme-toggle');
 let currentTheme = localStorage.getItem('theme') || 'light';
 
@@ -80,7 +79,6 @@ navButtons.forEach(btn => {
     };
 });
 
-// Safe Bell Button Hook
 const bellBtn = document.getElementById('bell-btn');
 if(bellBtn) {
     bellBtn.onclick = (e) => {
@@ -149,6 +147,70 @@ function compressImageAsync(file, maxWidth, maxHeight, quality) {
     });
 }
 
+// --- UNIVERSAL PAYMENT UI GENERATOR ---
+function openPaymentModal(type, title, itemName, feeAmount, callback) {
+    document.getElementById('payment-modal-title').innerText = title;
+    document.getElementById('payment-item-title').innerText = itemName;
+    document.getElementById('payment-fee-amount').innerText = Number(feeAmount).toLocaleString(undefined, {minimumFractionDigits: 2});
+    
+    let label = 'Required Fee';
+    if(type === 'reserve') label = 'Required Downpayment (5%)';
+    if(type === 'dealer') label = 'Instant Verification Fee';
+    if(type === 'boost') label = 'Hot List Boost Fee';
+    document.getElementById('payment-fee-label').innerText = label;
+
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    const gcashDiv = document.getElementById('dynamic-gcash');
+    
+    if (isMobile) {
+        gcashDiv.innerHTML = `
+            <a href="intent://#Intent;package=com.globe.gcash.android;scheme=gcash;end" style="background:#005ce6; color:white; font-weight:800; text-decoration:none; display:inline-block; padding:15px 25px; border-radius:12px; box-shadow: 0 4px 15px rgba(0,92,230,0.3); font-size: 1.1rem;">📱 Open GCash App</a>
+            <p style="font-size:0.95rem; color:var(--text); margin-top:15px; margin-bottom:0;">Account Number: <strong style="color:var(--primary); font-family:monospace; font-size:1.1rem;">0912 345 6789</strong></p>
+        `;
+    } else {
+        const gcashNumber = "09123456789"; 
+        gcashDiv.innerHTML = `
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${gcashNumber}" alt="GCash QR Code" style="border-radius:12px; box-shadow: 0 5px 20px rgba(0,0,0,0.1);">
+            <p style="font-size:0.95rem; color:var(--text); margin-top:15px; margin-bottom:0; font-weight:600;">Scan code with your GCash App</p>
+        `;
+    }
+
+    document.getElementById('payment-receipt').value = ""; 
+    document.getElementById('product-modal').classList.add('hidden'); 
+    document.getElementById('payment-modal').classList.remove('hidden');
+
+    // Override the click logic dynamically
+    const btn = document.getElementById('btn-confirm-payment');
+    btn.onclick = async () => {
+        const receiptFile = document.getElementById('payment-receipt').files[0];
+        if (!receiptFile) {
+            alert("⚠️ Please upload a screenshot of your payment receipt before submitting.");
+            return;
+        }
+
+        btn.disabled = true;
+        btn.textContent = "Verifying Payment...";
+
+        compressImage(receiptFile, 800, 800, 0.7, async function (compressedReceipt) {
+            try {
+                await callback(compressedReceipt);
+                document.getElementById('payment-modal').classList.add('hidden');
+            } catch(e) {
+                console.error(e);
+                alert("Error submitting payment.");
+            }
+            btn.disabled = false;
+            btn.textContent = "Submit Payment Proof";
+        }, function(err) {
+            alert("Failed to process receipt image.");
+            btn.disabled = false;
+            btn.textContent = "Submit Payment Proof";
+        });
+    };
+}
+
+
+// --- AUTHENTICATION WITH DEALER PAYMENT ---
 document.getElementById('form-auth').addEventListener('submit', async function (e) {
     e.preventDefault();
 
@@ -204,55 +266,69 @@ document.getElementById('form-auth').addEventListener('submit', async function (
         const userExists = await getDocs(q);
         if (!userExists.empty) return resetBtn("❌ Username already taken!", "Create Verified Account");
 
-        authBtn.textContent = "Processing Front ID...";
+        // Helper to finalize creation
+        const submitToFirebase = async (frontId, backId, verifyNow) => {
+            const newUser = {
+                username: rawUser,
+                usernameKey: safeUserKey,
+                password: pass, 
+                email: email, 
+                phone: phone,
+                fb: fbLink,
+                isDealer: isDealer, 
+                idPhoto: frontId, 
+                idPhotoBack: backId, 
+                isVerified: verifyNow || safeUserKey === 'admin' 
+            };
+            await addDoc(collection(db, "users"), newUser);
+            return newUser;
+        };
+
+        authBtn.textContent = "Processing ID...";
         
         compressImage(idFile, 800, 800, 0.8, async function (compressedFrontPhoto) {
             
-            const finishRegistration = async (compressedBackPhoto) => {
-                authBtn.textContent = "Submitting Review...";
-                try {
-                    const newUser = {
-                        username: rawUser,
-                        usernameKey: safeUserKey,
-                        password: pass, 
-                        email: email, 
-                        phone: phone,
-                        fb: fbLink,
-                        isDealer: isDealer, 
-                        idPhoto: compressedFrontPhoto, 
-                        idPhotoBack: compressedBackPhoto, 
-                        isVerified: safeUserKey === 'admin' ? true : false 
-                    };
-                    await addDoc(collection(db, "users"), newUser);
+            const processBackAndSave = async () => {
+                let compressedBackPhoto = null;
+                if (idBackFile) {
+                    compressedBackPhoto = await compressImageAsync(idBackFile, 800, 800, 0.8);
+                }
 
-                    if (safeUserKey === 'admin') {
-                        alert("✅ Admin Account created! Logging you in...");
+                // If Dealer, open payment modal to instantly verify
+                if(isDealer) {
+                    authBtn.textContent = "Proceed to Payment";
+                    authBtn.disabled = false;
+                    
+                    openPaymentModal('dealer', 'Premium Dealer Registration', `Account: ${rawUser}`, 499, async (receiptStr) => {
+                        // Log payment for Admin
+                        await addDoc(collection(db, "reservations"), {
+                            item: "Premium Dealer Registration",
+                            buyer: rawUser,
+                            seller: "VehiSell Admin", 
+                            fee: 499,
+                            receipt: receiptStr, 
+                            timestamp: Date.now()
+                        });
+                        
+                        const newUser = await submitToFirebase(compressedFrontPhoto, compressedBackPhoto, true); // true = instant verify
+                        alert("✅ Payment accepted! You are now an Instantly Verified Premium Dealer!");
                         document.getElementById('form-auth').reset();
                         login(newUser);
-                    } else {
-                        alert("✅ Account submitted! The admin will review your ID to protect the community. You will receive an email once you are verified.");
-                        document.getElementById('form-auth').reset();
-                        toggleAuthMode(); 
-                        authBtn.textContent = "Login";
-                        authBtn.disabled = false;
-                    }
+                    });
 
-                } catch (error) {
-                    console.error(error);
-                    resetBtn("❌ Error saving to cloud.", "Create Verified Account");
+                } else {
+                    // Normal free flow (requires admin approval)
+                    authBtn.textContent = "Submitting Review...";
+                    await submitToFirebase(compressedFrontPhoto, compressedBackPhoto, false);
+                    alert("✅ Account submitted! The admin will review your ID to protect the community.");
+                    document.getElementById('form-auth').reset();
+                    toggleAuthMode(); 
+                    authBtn.textContent = "Login";
+                    authBtn.disabled = false;
                 }
             };
-
-            if (idBackFile) {
-                authBtn.textContent = "Processing Back ID...";
-                compressImage(idBackFile, 800, 800, 0.8, function(compressedBackPhoto) {
-                    finishRegistration(compressedBackPhoto);
-                }, function(err) {
-                    resetBtn("❌ Error reading Back ID.", "Create Verified Account");
-                });
-            } else {
-                finishRegistration(null); 
-            }
+            
+            processBackAndSave();
 
         }, function(errorMessage) {
             resetBtn("❌ " + errorMessage, "Create Verified Account");
@@ -270,7 +346,7 @@ function login(user) {
     localStorage.setItem('user_session', JSON.stringify(user));
     currentUser = user;
     updateNav();
-    showTab('buy'); // Go straight to marketplace after login
+    showTab('buy'); 
     fetchAndRenderListings();
     listenForLiveAlerts(); 
 }
@@ -399,52 +475,81 @@ function renderImagePreviews() {
     });
 }
 
+// Checkbox logic for Submit button
+const boostCheck = document.getElementById('p-boost');
+if(boostCheck) {
+    boostCheck.onchange = function() {
+        document.getElementById('submit-sell-btn').textContent = this.checked ? 'Proceed to Payment (₱150)' : 'Post Item';
+    };
+}
+
 const sellForm = document.getElementById('form-sell');
 sellForm.onsubmit = async (e) => {
     e.preventDefault();
     if (pendingProductImages.length === 0) return alert("Please select at least one image.");
 
-    const submitBtn = sellForm.querySelector('button');
+    const submitBtn = document.getElementById('submit-sell-btn');
     submitBtn.disabled = true;
-    submitBtn.textContent = "Uploading Photos to Cloud...";
+    submitBtn.textContent = "Compressing Photos...";
 
     try {
         const compressedImagesArray = await Promise.all(pendingProductImages.map(f => compressImageAsync(f, 1200, 1200, 0.8)));
         const isBoosted = currentUser.isDealer ? document.getElementById('p-boost').checked : false;
 
-        submitBtn.textContent = "Saving Listing...";
-        const newItem = {
-            title: document.getElementById('p-title').value,
-            price: Number(document.getElementById('p-price').value),
-            category: document.getElementById('p-category').value,
-            desc: document.getElementById('p-desc').value,
-            seller: currentUser.username,
-            sellerKey: currentUser.username.toLowerCase(),
-            sellerIdPhoto: currentUser.idPhoto, 
-            isDealer: currentUser.isDealer || false, 
-            boosted: isBoosted, 
-            images: compressedImagesArray, 
-            status: 'available', 
-            timestamp: Date.now()
-        };
-        
-        await addDoc(collection(db, "listings"), newItem);
+        const publishToCloud = async () => {
+            submitBtn.textContent = "Saving Listing...";
+            const newItem = {
+                title: document.getElementById('p-title').value,
+                price: Number(document.getElementById('p-price').value),
+                category: document.getElementById('p-category').value,
+                desc: document.getElementById('p-desc').value,
+                seller: currentUser.username,
+                sellerKey: currentUser.username.toLowerCase(),
+                sellerIdPhoto: currentUser.idPhoto, 
+                isDealer: currentUser.isDealer || false, 
+                boosted: isBoosted, 
+                status: 'available', 
+                timestamp: Date.now()
+            };
+            
+            // Wait to add images until here so the object doesn't hit size limits early
+            newItem.images = compressedImagesArray; 
+            
+            await addDoc(collection(db, "listings"), newItem);
 
-        sellForm.reset();
-        pendingProductImages = []; 
-        document.getElementById('sell-img-previews').innerHTML = ''; 
-        alert("✅ Item listed successfully!");
-        fetchAndRenderListings();
-        loadUserHistory();
-        showTab('buy');
+            sellForm.reset();
+            pendingProductImages = []; 
+            document.getElementById('sell-img-previews').innerHTML = ''; 
+            document.getElementById('submit-sell-btn').textContent = "Post Item";
+            alert(isBoosted ? "🌟 Boost successful! Item posted to Hot List." : "✅ Item listed successfully!");
+            fetchAndRenderListings();
+            loadUserHistory();
+            showTab('buy');
+        };
+
+        if(isBoosted) {
+            submitBtn.disabled = false;
+            openPaymentModal('boost', 'Hot List Boost', document.getElementById('p-title').value, 150, async (receiptStr) => {
+                await addDoc(collection(db, "reservations"), {
+                    item: "Listing Boost Fee",
+                    buyer: currentUser.username,
+                    seller: "VehiSell Admin", 
+                    fee: 150,
+                    receipt: receiptStr, 
+                    timestamp: Date.now()
+                });
+                await publishToCloud();
+            });
+        } else {
+            await publishToCloud();
+        }
 
     } catch (error) {
         console.error(error);
         alert("❌ Failed to list item.");
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Post Item";
     }
-
-    submitBtn.disabled = false;
-    submitBtn.textContent = "Post Item";
 };
 
 window.toggleFavorite = (e, docId) => {
@@ -459,6 +564,32 @@ window.toggleFavorite = (e, docId) => {
     localStorage.setItem('user_favorites', JSON.stringify(userFavorites));
     renderFilteredListings(); 
 };
+
+// --- BOOST EXISTING ITEM FROM HISTORY ---
+window.boostExistingItem = function(docId, title) {
+    openPaymentModal('boost', 'Hot List Boost', title, 150, async (receiptStr) => {
+        // Log payment
+        await addDoc(collection(db, "reservations"), {
+            item: "Listing Boost Fee",
+            buyer: currentUser.username,
+            seller: "VehiSell Admin", 
+            fee: 150,
+            receipt: receiptStr, 
+            timestamp: Date.now()
+        });
+
+        // Update existing listing to front!
+        await updateDoc(doc(db, "listings", docId), { 
+            boosted: true, 
+            timestamp: Date.now() // Refreshes it to the very top
+        });
+
+        alert("🌟 Boost successful! Your listing has been bumped to the top of the Hot List.");
+        fetchAndRenderListings();
+        loadUserHistory();
+    });
+};
+
 
 function loadUserHistory() {
     if (!currentUser || currentUser.usernameKey === 'admin') return;
@@ -484,33 +615,47 @@ function loadUserHistory() {
 
         items.forEach(item => {
             const div = document.createElement('div');
-            div.style = "display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid var(--border);";
+            div.style = "display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid var(--border); flex-wrap: wrap; gap: 10px;";
             
             const thumb = item.images && item.images.length > 0 ? item.images[0] : item.image;
             
             let statusBadge = '';
-            let actionButton = '';
+            let actionButtons = '';
+
+            // Allow boosting of active, non-boosted items if dealer
+            const canBoost = currentUser.isDealer && item.status === 'available' && !item.boosted;
+            const boostBtnHtml = canBoost 
+                ? `<button class="btn-boost" onclick="boostExistingItem('${item.docId}', '${item.title.replace(/'/g, "\\'")}')">🚀 Boost (₱150)</button>` 
+                : '';
 
             if (item.status === 'sold') {
-                statusBadge = `<span style="background: #ef4444; color: white; padding: 3px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: bold;">SOLD</span>`;
-                actionButton = `<button class="btn-del" style="background:var(--border);color:var(--text);padding:5px 10px;border:none;border-radius:6px;cursor:not-allowed;" disabled>Closed</button>`;
+                statusBadge = `<span style="background: #ef4444; color: white; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: bold;">SOLD</span>`;
+                actionButtons = `<button class="btn-del" style="background:var(--border);color:var(--text);padding:8px 15px;border:none;border-radius:8px;cursor:not-allowed;" disabled>Closed</button>`;
             } else if (item.status === 'reserved') {
-                statusBadge = `<span style="background: #f59e0b; color: white; padding: 3px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: bold;">RESERVED</span>`;
-                actionButton = `<button class="btn-primary" style="background:#10b981;padding:5px 10px;border:none;border-radius:6px;cursor:pointer;font-size:0.85rem;" onclick="markAsSold('${item.docId}')">Mark as Sold</button>`;
+                statusBadge = `<span style="background: #f59e0b; color: white; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: bold;">RESERVED</span>`;
+                actionButtons = `<button class="btn-primary" style="background:#10b981;padding:8px 15px;border:none;border-radius:8px;cursor:pointer;font-size:0.9rem;" onclick="markAsSold('${item.docId}')">Mark as Sold</button>`;
             } else {
-                statusBadge = `<span style="background: #10b981; color: white; padding: 3px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: bold;">AVAILABLE</span>`;
-                actionButton = `<button class="btn-del" style="background:#ef4444;color:white;padding:5px 10px;border:none;border-radius:6px;cursor:pointer;font-size:0.85rem;" onclick="deleteItem('${item.docId}')">Delete</button>`;
+                statusBadge = item.boosted 
+                    ? `<span style="background: linear-gradient(135deg, #f59e0b, #fbbf24); color: white; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; box-shadow: 0 2px 10px rgba(245,158,11,0.3);">🌟 BOOSTED</span>`
+                    : `<span style="background: #10b981; color: white; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: bold;">AVAILABLE</span>`;
+                
+                actionButtons = `
+                    <div style="display: flex; gap: 8px; flex-direction: column;">
+                        ${boostBtnHtml}
+                        <button class="btn-del" style="background:#ef4444;color:white;padding:8px 15px;border:none;border-radius:8px;cursor:pointer;font-size:0.9rem; width:100%;" onclick="deleteItem('${item.docId}')">Delete</button>
+                    </div>
+                `;
             }
 
             div.innerHTML = `
-                <div style="display: flex; gap: 10px; align-items: center;">
-                    <img src="${thumb}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border);">
+                <div style="display: flex; gap: 15px; align-items: center; flex: 1; min-width: 200px;">
+                    <img src="${thumb}" style="width: 70px; height: 70px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border);">
                     <div>
-                        <strong style="color: var(--text); font-size: 0.95rem; display: block; margin-bottom: 3px;">${item.title}</strong>
+                        <strong style="color: var(--text); font-size: 1.1rem; display: block; margin-bottom: 5px;">${item.title}</strong>
                         ${statusBadge}
                     </div>
                 </div>
-                <div>${actionButton}</div>
+                <div style="min-width: 120px;">${actionButtons}</div>
             `;
             historyBox.appendChild(div);
         });
@@ -554,20 +699,27 @@ async function fetchAndRenderListings() {
 }
 
 ['search-input', 'category-filter', 'min-price', 'max-price', 'sort-filter'].forEach(id => {
-    document.getElementById(id).addEventListener('input', () => {
-        currentLimit = 12;
-        renderFilteredListings();
-    });
+    const el = document.getElementById(id);
+    if(el) {
+        el.addEventListener('input', () => {
+            currentLimit = 12;
+            renderFilteredListings();
+        });
+    }
 });
 
-document.getElementById('btn-load-more').onclick = () => {
-    currentLimit += 12;
-    renderFilteredListings();
-};
+const loadMoreBtn = document.getElementById('btn-load-more');
+if(loadMoreBtn) {
+    loadMoreBtn.onclick = () => {
+        currentLimit += 12;
+        renderFilteredListings();
+    };
+}
 
 function renderFilteredListings() {
     const targetGridId = currentTab === 'saved' ? 'saved-grid' : 'listings-grid';
     const grid = document.getElementById(targetGridId);
+    if(!grid) return;
     grid.innerHTML = '';
 
     const filterTerm = document.getElementById('search-input').value.toLowerCase();
@@ -702,7 +854,10 @@ window.openProductModal = function(docId) {
         const isReserved = item.status === 'reserved';
         const reserveBtnHtml = isReserved 
             ? `<button class="btn-contact" style="background:#94a3b8;color:white;padding:1rem 1.5rem;border:none;border-radius:12px;cursor:not-allowed;font-weight:800;" disabled>Item is Reserved</button>`
-            : `<button class="btn-contact" style="background:#10b981;color:white;padding:1rem 1.5rem;border:none;border-radius:12px;cursor:pointer;font-weight:800;" onclick="openReserveModal('${item.docId}', '${item.title.replace(/'/g, "\\'")}', ${item.price}, '${item.sellerKey}', '${item.seller}')">Reserve</button>`;
+            : `<button class="btn-contact" style="background:#10b981;color:white;padding:1rem 1.5rem;border:none;border-radius:12px;cursor:pointer;font-weight:800;" onclick="openPaymentModal('reserve', 'Reserve Item', '${item.title.replace(/'/g, "\\'")}', ${item.price * 0.05}, processReservation)">Reserve (5%)</button>`;
+
+        // Pass globals for processReservation
+        window.pendingReservation = { docId: item.docId, title: item.title, sellerKey: item.sellerKey, sellerName: item.seller, fee: item.price * 0.05 };
 
         actionsDiv.innerHTML = `
             <button class="btn-contact" style="background:#64748b;color:white;padding:1rem 1.5rem;border:none;border-radius:12px;cursor:pointer;font-weight:700;" onclick="contactSeller('${item.sellerKey}')">Contact</button>
@@ -812,100 +967,35 @@ window.contactSeller = async function(sellerKey) {
     }
 };
 
-let pendingReservation = null;
-
-window.openReserveModal = function(docId, title, price, sellerKey, sellerName) {
-    if (!currentUser) {
-        alert("You must be logged in to reserve an item.");
-        showTab('auth');
-        return;
-    }
-
-    const numericPrice = Number(price);
-    const reserveFee = numericPrice * 0.05; 
-    
-    pendingReservation = { docId, title, sellerKey, sellerName, price: numericPrice, fee: reserveFee }; 
-
-    document.getElementById('reserve-item-title').innerText = title;
-    document.getElementById('reserve-full-price').innerText = numericPrice.toLocaleString();
-    document.getElementById('reserve-fee-amount').innerText = reserveFee.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    const gcashDiv = document.getElementById('dynamic-gcash');
-    
-    if (isMobile) {
-        gcashDiv.innerHTML = `
-            <a href="intent://#Intent;package=com.globe.gcash.android;scheme=gcash;end" style="background:#005ce6; color:white; font-weight:800; text-decoration:none; display:inline-block; padding:15px 25px; border-radius:12px; box-shadow: 0 4px 15px rgba(0,92,230,0.3); font-size: 1.1rem;">📱 Open GCash App</a>
-            <p style="font-size:0.95rem; color:var(--text); margin-top:15px; margin-bottom:0;">Account Number: <strong style="color:var(--primary); font-family:monospace; font-size:1.1rem;">0912 345 6789</strong></p>
-        `;
-    } else {
-        const gcashNumber = "09123456789"; 
-        gcashDiv.innerHTML = `
-            <img src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${gcashNumber}" alt="GCash QR Code" style="border-radius:12px; box-shadow: 0 5px 20px rgba(0,0,0,0.1);">
-            <p style="font-size:0.95rem; color:var(--text); margin-top:15px; margin-bottom:0; font-weight:600;">Scan code with your GCash App</p>
-        `;
-    }
-
-    document.getElementById('reserve-receipt').value = ""; 
-    document.getElementById('product-modal').classList.add('hidden'); 
-    document.getElementById('reserve-modal').classList.remove('hidden');
-};
-
-window.confirmReservation = async function() {
-    const receiptFile = document.getElementById('reserve-receipt').files[0];
-    if (!receiptFile) {
-        alert("⚠️ Please upload a screenshot of your payment receipt before submitting.");
-        return;
-    }
-
-    const submitBtn = document.getElementById('btn-confirm-reservation');
-    submitBtn.disabled = true;
-    submitBtn.textContent = "Verifying Payment...";
-
-    compressImage(receiptFile, 800, 800, 0.7, async function (compressedReceipt) {
-        try {
-            await addDoc(collection(db, "notifications"), {
-                targetUser: pendingReservation.sellerKey,
-                type: 'reserve',
-                fromUser: currentUser.username,
-                itemName: pendingReservation.title,
-                timestamp: Date.now()
-            });
-
-            await addDoc(collection(db, "reservations"), {
-                item: pendingReservation.title,
-                buyer: currentUser.username,
-                seller: pendingReservation.sellerName, 
-                fee: pendingReservation.fee,
-                receipt: compressedReceipt, 
-                timestamp: Date.now()
-            });
-
-            await updateDoc(doc(db, "listings", pendingReservation.docId), { status: 'reserved' });
-
-            sendEmailNotification(
-                pendingReservation.sellerKey, 
-                "Item Reserved!", 
-                `Great news! Your item ${pendingReservation.title} was just reserved by ${currentUser.username}. Log in to chat with them to complete the sale.`
-            );
-
-            document.getElementById('reserve-modal').classList.add('hidden');
-            alert("✅ Payment submitted successfully! The item is now reserved and the seller has been notified.");
-            fetchAndRenderListings();
-
-        } catch(err) {
-            console.error("Error", err);
-            alert("Error submitting reservation.");
-        }
-        
-        submitBtn.disabled = false;
-        submitBtn.textContent = "Submit Payment Proof";
-
-    }, function(err) {
-        alert("Failed to process receipt image.");
-        submitBtn.disabled = false;
-        submitBtn.textContent = "Submit Payment Proof";
+// Tied to Universal Payment Modal
+window.processReservation = async function(compressedReceipt) {
+    await addDoc(collection(db, "notifications"), {
+        targetUser: pendingReservation.sellerKey,
+        type: 'reserve',
+        fromUser: currentUser.username,
+        itemName: pendingReservation.title,
+        timestamp: Date.now()
     });
+
+    await addDoc(collection(db, "reservations"), {
+        item: pendingReservation.title,
+        buyer: currentUser.username,
+        seller: pendingReservation.sellerName, 
+        fee: pendingReservation.fee,
+        receipt: compressedReceipt, 
+        timestamp: Date.now()
+    });
+
+    await updateDoc(doc(db, "listings", pendingReservation.docId), { status: 'reserved' });
+
+    sendEmailNotification(
+        pendingReservation.sellerKey, 
+        "Item Reserved!", 
+        `Great news! Your item ${pendingReservation.title} was just reserved by ${currentUser.username}. Log in to chat with them to complete the sale.`
+    );
+
+    alert("✅ Payment submitted successfully! The item is now reserved and the seller has been notified.");
+    fetchAndRenderListings();
 };
 
 let currentChatUnsubscribe = null;
@@ -1178,9 +1268,13 @@ async function loadAdminDashboard() {
 
                 if (log.type === 'reserve') {
                     const r = log.data;
+                    let logText = `<strong>${r.buyer}</strong> reserved <em>${r.item}</em> from <strong>${r.seller}</strong>`;
+                    if (r.item.includes("Dealer Registration") || r.item.includes("Listing Boost")) {
+                        logText = `<strong>${r.buyer}</strong> paid for <em>${r.item}</em>`;
+                    }
                     logItem.innerHTML = `
                         <div style="display:flex; justify-content: space-between; align-items: center;">
-                            <span style="color: var(--text);"><strong>${r.buyer}</strong> reserved <em>${r.item}</em> from <strong>${r.seller}</strong></span>
+                            <span style="color: var(--text);">${logText}</span>
                             <span style="color: #10b981; font-weight: 800; font-size: 1.1rem;">+₱${Number(r.fee).toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
                         </div>
                         <div style="display:flex; justify-content: space-between; margin-top: 8px; font-size: 0.85rem;">
@@ -1421,13 +1515,13 @@ async function sendEmailNotification(targetUsernameKey, subjectTitle, bodyMessag
 
 window.onclick = (event) => {
     const sellerModal = document.getElementById('seller-modal');
-    const reserveModal = document.getElementById('reserve-modal');
+    const paymentModal = document.getElementById('payment-modal');
     const imageModal = document.getElementById('image-modal');
     const productModal = document.getElementById('product-modal'); 
     const notifDropdown = document.getElementById('notif-dropdown');
     
     if (event.target === sellerModal) sellerModal.classList.add('hidden');
-    if (event.target === reserveModal) reserveModal.classList.add('hidden');
+    if (event.target === paymentModal) paymentModal.classList.add('hidden');
     if (event.target === imageModal) imageModal.classList.add('hidden');
     if (event.target === productModal) productModal.classList.add('hidden');
 
