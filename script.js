@@ -128,6 +128,7 @@ document.getElementById('form-auth').addEventListener('submit', async function (
 
     } else {
         const confirmPass = document.getElementById('auth-pass-confirm').value;
+        const email = document.getElementById('auth-email').value.trim(); // NEW EMAIL FIELD
         const phone = document.getElementById('auth-phone').value.trim();
         const fbLink = document.getElementById('auth-fb').value.trim();
         const idFileInput = document.getElementById('auth-id-img');
@@ -135,7 +136,7 @@ document.getElementById('form-auth').addEventListener('submit', async function (
 
         if (!rawUser) return resetBtn("❌ Username required", "Create Verified Account");
         if (pass !== confirmPass) return resetBtn("❌ Passwords don't match", "Create Verified Account");
-        if (!phone || !fbLink) return resetBtn("❌ Phone and Facebook link are required", "Create Verified Account");
+        if (!email) return resetBtn("❌ Email required", "Create Verified Account");
         if (!idFile) return resetBtn("❌ ID photo required", "Create Verified Account");
 
         const q = query(collection(db, "users"), where("usernameKey", "==", safeUserKey));
@@ -152,6 +153,7 @@ document.getElementById('form-auth').addEventListener('submit', async function (
                     username: rawUser,
                     usernameKey: safeUserKey,
                     password: pass, 
+                    email: email, // SAVE EMAIL TO DB
                     phone: phone,
                     fb: fbLink,
                     idPhoto: compressedIdPhoto 
@@ -184,7 +186,7 @@ function login(user) {
     updateNav();
     showTab('buy');
     fetchAndRenderListings();
-    listenForLiveAlerts(); // TURN ON THE NOTIFICATION RADAR!
+    listenForLiveAlerts(); 
 }
 
 function updateNav() {
@@ -193,6 +195,12 @@ function updateNav() {
         document.getElementById('nav-acc').classList.remove('hidden');
         document.getElementById('acc-name').innerText = currentUser.username;
         document.getElementById('acc-id-display').src = currentUser.idPhoto;
+
+        // SECRET ADMIN UNLOCK
+        if (currentUser.usernameKey === 'admin') {
+            document.getElementById('nav-admin').classList.remove('hidden');
+            loadAdminDashboard();
+        }
     }
 }
 
@@ -235,7 +243,7 @@ sellForm.onsubmit = (e) => {
 
         } catch (error) {
             console.error(error);
-            alert("❌ Failed to list item. Check console.");
+            alert("❌ Failed to list item.");
             submitBtn.disabled = false;
             submitBtn.textContent = "Post Item";
         }
@@ -364,7 +372,6 @@ window.contactSeller = async function(sellerKey) {
     }
 };
 
-// --- RESERVATION LOGIC ---
 let pendingReservation = null;
 
 window.openReserveModal = function(title, price, sellerKey) {
@@ -374,10 +381,10 @@ window.openReserveModal = function(title, price, sellerKey) {
         return;
     }
 
-    pendingReservation = { title, sellerKey }; 
-
     const numericPrice = Number(price);
     const reserveFee = numericPrice * 0.05; 
+    
+    pendingReservation = { title, sellerKey, price: numericPrice, fee: reserveFee }; 
 
     document.getElementById('reserve-item-title').innerText = title;
     document.getElementById('reserve-full-price').innerText = numericPrice.toLocaleString();
@@ -390,8 +397,8 @@ window.confirmReservation = async function() {
     document.getElementById('reserve-modal').classList.add('hidden');
     alert("Payment submitted! The seller has been notified.");
 
-    // Fire off the real-time notification to the seller
     try {
+        // 1. Notify the seller
         await addDoc(collection(db, "notifications"), {
             targetUser: pendingReservation.sellerKey,
             type: 'reserve',
@@ -399,12 +406,28 @@ window.confirmReservation = async function() {
             itemName: pendingReservation.title,
             timestamp: Date.now()
         });
+
+        // 2. Log to reservations so Admin can calculate profit
+        await addDoc(collection(db, "reservations"), {
+            item: pendingReservation.title,
+            buyer: currentUser.username,
+            seller: pendingReservation.sellerKey,
+            fee: pendingReservation.fee,
+            timestamp: Date.now()
+        });
+
+        // 3. Send "Email" (Simulated)
+        sendEmailNotification(
+            pendingReservation.sellerKey, 
+            "VehiSell Escrow: Item Reserved!", 
+            `Good news! ${currentUser.username} has paid the 5% downpayment (₱${pendingReservation.fee}) to reserve your ${pendingReservation.title}.`
+        );
+
     } catch(err) {
-        console.error("Failed to send notification", err);
+        console.error("Error", err);
     }
 };
 
-// --- LIVE CHAT LOGIC ---
 let currentChatUnsubscribe = null;
 let activeChatUserId = null;
 
@@ -424,7 +447,6 @@ window.openChatModal = function(sellerKey, sellerName) {
 
     if (currentChatUnsubscribe) currentChatUnsubscribe();
 
-    // Turn on the Live Radar for this specific chat
     currentChatUnsubscribe = onSnapshot(q, (snapshot) => {
         let msgs = [];
         snapshot.forEach(doc => msgs.push(doc.data()));
@@ -440,7 +462,7 @@ window.openChatModal = function(sellerKey, sellerName) {
             chatBox.appendChild(div);
         });
         
-        chatBox.scrollTop = chatBox.scrollHeight; // Auto-scroll
+        chatBox.scrollTop = chatBox.scrollHeight; 
     });
 };
 
@@ -449,7 +471,6 @@ window.closeChatModal = function() {
     activeChatUserId = null; 
 };
 
-// Sending a message
 document.getElementById('form-chat').onsubmit = async (e) => {
     e.preventDefault();
     const input = document.getElementById('chat-input');
@@ -459,7 +480,6 @@ document.getElementById('form-chat').onsubmit = async (e) => {
 
     const chatId = getChatId(currentUser.usernameKey, activeChatUserId);
 
-    // Save message to database
     await addDoc(collection(db, "messages"), {
         chatId: chatId,
         sender: currentUser.usernameKey,
@@ -467,7 +487,6 @@ document.getElementById('form-chat').onsubmit = async (e) => {
         timestamp: Date.now()
     });
 
-    // Fire off notification to the other person
     await addDoc(collection(db, "notifications"), {
         targetUser: activeChatUserId,
         type: 'message',
@@ -475,9 +494,15 @@ document.getElementById('form-chat').onsubmit = async (e) => {
         text: text,
         timestamp: Date.now()
     });
+
+    // Send simulated email
+    sendEmailNotification(
+        activeChatUserId, 
+        "VehiSell: New Message!", 
+        `You have a new message from ${currentUser.username}: "${text}"`
+    );
 };
 
-// --- REAL-TIME ALERTS (The "Radar") ---
 let alertsUnsubscribe = null;
 let seenAlerts = new Set();
 
@@ -495,7 +520,6 @@ function listenForLiveAlerts() {
                 
                 if (!seenAlerts.has(docId)) {
                     seenAlerts.add(docId);
-                    // Only show popups for recent alerts (last 10 seconds)
                     if (Date.now() - data.timestamp < 10000) {
                         triggerToastPopup(data);
                     }
@@ -506,14 +530,12 @@ function listenForLiveAlerts() {
 }
 
 function triggerToastPopup(data) {
-    // If they are already staring at the chat with this person, don't show a popup
     if (data.type === 'message' && activeChatUserId === data.fromUser.toLowerCase()) return;
 
     const container = document.getElementById('toast-container');
     const toast = document.createElement('div');
     toast.className = data.type === 'reserve' ? 'toast reserve-toast' : 'toast';
     
-    // NEW: Make the popup visually clickable
     toast.style.cursor = 'pointer';
     toast.title = "Click to reply!";
 
@@ -523,21 +545,66 @@ function triggerToastPopup(data) {
         toast.innerHTML = `<h4>💬 New Message</h4><p><strong>${data.fromUser}:</strong> ${data.text}</p>`;
     }
 
-    // NEW: When the seller clicks the popup, instantly open the chat!
     toast.onclick = () => {
         window.openChatModal(data.fromUser.toLowerCase(), data.fromUser);
         toast.remove();
     };
 
     container.appendChild(toast);
-    
-    // Delete popup after 8 seconds
-    setTimeout(() => { 
-        if(container.contains(toast)) toast.remove(); 
-    }, 8000);
+    setTimeout(() => { if(container.contains(toast)) toast.remove(); }, 8000);
 }
 
-// Global modal close logic
+// --- ADMIN DASHBOARD LOGIC ---
+async function loadAdminDashboard() {
+    const q = query(collection(db, "reservations"));
+    
+    onSnapshot(q, (snapshot) => {
+        let totalProfit = 0;
+        const logsBox = document.getElementById('admin-logs');
+        logsBox.innerHTML = '';
+        
+        let reserves = [];
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            totalProfit += Number(data.fee);
+            reserves.push(data);
+        });
+
+        document.getElementById('admin-total-profit').innerText = totalProfit.toLocaleString(undefined, {minimumFractionDigits: 2});
+
+        reserves.sort((a,b) => b.timestamp - a.timestamp);
+        reserves.forEach(r => {
+            const logItem = document.createElement('div');
+            logItem.style = "padding: 10px; border-bottom: 1px solid #e2e8f0; font-size: 0.9rem;";
+            logItem.innerHTML = `<strong>${r.buyer}</strong> reserved <em>${r.item}</em> from <strong>${r.seller}</strong> (+₱${r.fee})`;
+            logsBox.appendChild(logItem);
+        });
+    });
+}
+
+// --- EMAIL NOTIFICATION WORKAROUND ---
+async function sendEmailNotification(targetUsernameKey, subject, body) {
+    /* NOTE: To make this send REAL emails to a user's Gmail/Yahoo, 
+       you must sign up for a free account at EmailJS.com.
+       Once you have an account, replace this console.log with the EmailJS send() function.
+    */
+    try {
+        const q = query(collection(db, "users"), where("usernameKey", "==", targetUsernameKey));
+        const userDoc = await getDocs(q);
+        if(!userDoc.empty) {
+            const userEmail = userDoc.docs[0].data().email;
+            
+            console.log("-----------------------------------------");
+            console.log(`[SIMULATED ADMIN EMAIL SENT TO: ${userEmail}]`);
+            console.log(`SUBJECT: ${subject}`);
+            console.log(`BODY: ${body}`);
+            console.log("-----------------------------------------");
+        }
+    } catch(err) {
+        console.error("Could not fetch user email", err);
+    }
+}
+
 window.onclick = (event) => {
     const sellerModal = document.getElementById('seller-modal');
     const reserveModal = document.getElementById('reserve-modal');
