@@ -444,7 +444,7 @@ function renderFilteredListings(filterTerm = '', filterCat = 'all') {
             </div>
             
             ${item.sellerIdPhoto ? `
-            <div class="id-badge">
+            <div class="id-badge" onclick="viewFullImage('${item.sellerIdPhoto}')" title="Click to view ID">
                 <img src="${item.sellerIdPhoto}" class="id-preview">
                 <span>Verified</span>
             </div>` : ''}
@@ -522,8 +522,8 @@ window.renderGallery = function() {
             img.src = imgSrc;
             const isActive = idx === window.currentGalleryIndex;
             
-            // LARGER THUMBNAILS & ACTIVE STATE BORDERS
-            img.style = `height: 90px; width: 90px; object-fit: cover; border-radius: 8px; cursor: pointer; border: 3px solid ${isActive ? 'var(--primary)' : 'transparent'}; flex-shrink: 0; opacity: ${isActive ? '1' : '0.6'}; transition: 0.2s;`;
+            // FIX: Added min-width and box-sizing to perfectly stop squishing
+            img.style = `height: 80px; width: 80px; min-width: 80px; object-fit: cover; border-radius: 8px; cursor: pointer; box-sizing: border-box; border: 3px solid ${isActive ? 'var(--primary)' : 'transparent'}; opacity: ${isActive ? '1' : '0.5'}; transition: all 0.3s ease;`;
             
             img.onclick = () => {
                 window.currentGalleryIndex = idx;
