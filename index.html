@@ -187,26 +187,26 @@
     </div>
 
     <div id="product-modal" class="modal hidden">
-        <div class="modal-content glass-card" style="max-width: 800px; padding: 0; overflow-y: auto; display: flex; flex-direction: column; border: none;">
+        <div class="modal-content glass-card" style="max-width: 650px; padding: 0; overflow-y: auto; display: flex; flex-direction: column; border: none; max-height: 90vh;">
             <span class="close-btn" onclick="document.getElementById('product-modal').classList.add('hidden')" style="cursor: pointer; position: absolute; right: 20px; top: 15px; z-index: 50; background: rgba(255,255,255,0.95); box-shadow: 0 4px 10px rgba(0,0,0,0.1); border-radius: 50%; width: 36px; height: 36px; text-align: center; line-height: 36px; font-weight: bold; color: var(--text);">&times;</span>
             
-            <div style="background: #0f172a; text-align: center; position: relative; display: flex; align-items: center; justify-content: center;">
+            <div style="background: #0f172a; text-align: center; position: relative; display: flex; align-items: center; justify-content: center; height: 35vh; min-height: 200px; width: 100%;">
                 <button class="gallery-nav-btn" style="left: 15px;" onclick="prevGalleryImage(event)">&#10094;</button>
-                <img id="pm-main-img" src="" style="height: 400px; max-width: 100%; object-fit: contain; cursor: zoom-in;" onclick="viewFullImage(this.src)">
+                <img id="pm-main-img" src="" style="max-height: 100%; max-width: 100%; object-fit: contain; cursor: zoom-in;" onclick="viewFullImage(this.src)">
                 <button class="gallery-nav-btn" style="right: 15px;" onclick="nextGalleryImage(event)">&#10095;</button>
             </div>
             
             <div id="pm-thumbnails"></div>
 
-            <div style="padding: 30px; text-align: left; background: white;">
-                <h2 id="pm-price" style="color: #10b981; margin: 0 0 10px 0; font-size: 2.5rem; letter-spacing: -1px;">₱0</h2>
-                <h3 id="pm-title" style="margin: 0 0 15px 0; font-size: 1.8rem; color: var(--text);">Product Title</h3>
-                <p id="pm-desc" style="color: var(--light); white-space: pre-wrap; line-height: 1.7; max-height: 200px; overflow-y: auto; padding-right: 10px; font-size: 1.05rem;">Description...</p>
+            <div style="padding: 20px; text-align: left; background: white;">
+                <h2 id="pm-price" style="color: #10b981; margin: 0 0 5px 0; font-size: 2rem; letter-spacing: -1px;">₱0</h2>
+                <h3 id="pm-title" style="margin: 0 0 10px 0; font-size: 1.5rem; color: var(--text);">Product Title</h3>
+                <p id="pm-desc" style="color: var(--light); white-space: pre-wrap; line-height: 1.6; max-height: 150px; overflow-y: auto; padding-right: 10px; font-size: 0.95rem;">Description...</p>
                 
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 25px; padding-top: 25px; border-top: 1px solid #e2e8f0; flex-wrap: wrap; gap: 15px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 15px; padding-top: 15px; border-top: 1px solid #e2e8f0; flex-wrap: wrap; gap: 10px;">
                     <div style="display: flex; align-items: center; gap: 12px; background: #f8fafc; padding: 10px 20px; border-radius: 30px; border: 1px solid #e2e8f0;">
-                        <span style="font-size: 1.5rem;">👤</span>
-                        <strong id="pm-seller-name" style="font-size: 1.1rem; color: var(--primary);">Seller Name</strong>
+                        <span style="font-size: 1.3rem;">👤</span>
+                        <strong id="pm-seller-name" style="font-size: 1rem; color: var(--primary);">Seller Name</strong>
                     </div>
                     <div id="pm-actions" style="display: flex; gap: 10px; flex-wrap: wrap; flex: 1; justify-content: flex-end;">
                     </div>
