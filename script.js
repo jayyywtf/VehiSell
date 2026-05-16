@@ -147,7 +147,6 @@ function compressImageAsync(file, maxWidth, maxHeight, quality) {
     });
 }
 
-// --- UNIVERSAL PAYMENT UI GENERATOR ---
 function openPaymentModal(type, title, itemName, feeAmount, callback) {
     document.getElementById('payment-modal-title').innerText = title;
     document.getElementById('payment-item-title').innerText = itemName;
@@ -155,7 +154,6 @@ function openPaymentModal(type, title, itemName, feeAmount, callback) {
     
     let label = 'Required Fee';
     if(type === 'reserve') label = 'Required Downpayment (5%)';
-    if(type === 'dealer') label = 'Instant Verification Fee';
     if(type === 'boost') label = 'Hot List Boost Fee';
     document.getElementById('payment-fee-label').innerText = label;
 
@@ -179,7 +177,6 @@ function openPaymentModal(type, title, itemName, feeAmount, callback) {
     document.getElementById('product-modal').classList.add('hidden'); 
     document.getElementById('payment-modal').classList.remove('hidden');
 
-    // Override the click logic dynamically
     const btn = document.getElementById('btn-confirm-payment');
     btn.onclick = async () => {
         const receiptFile = document.getElementById('payment-receipt').files[0];
@@ -209,8 +206,6 @@ function openPaymentModal(type, title, itemName, feeAmount, callback) {
     };
 }
 
-
-// --- AUTHENTICATION WITH DEALER PAYMENT ---
 document.getElementById('form-auth').addEventListener('submit', async function (e) {
     e.preventDefault();
 
@@ -250,7 +245,6 @@ document.getElementById('form-auth').addEventListener('submit', async function (
         const email = document.getElementById('auth-email').value.trim(); 
         const phone = document.getElementById('auth-phone').value.trim();
         const fbLink = document.getElementById('auth-fb').value.trim();
-        const isDealer = document.getElementById('auth-is-dealer').checked; 
         const idFileInput = document.getElementById('auth-id-img');
         const idBackFileInput = document.getElementById('auth-id-back-img');
         
@@ -266,69 +260,54 @@ document.getElementById('form-auth').addEventListener('submit', async function (
         const userExists = await getDocs(q);
         if (!userExists.empty) return resetBtn("❌ Username already taken!", "Create Verified Account");
 
-        // Helper to finalize creation
-        const submitToFirebase = async (frontId, backId, verifyNow) => {
-            const newUser = {
-                username: rawUser,
-                usernameKey: safeUserKey,
-                password: pass, 
-                email: email, 
-                phone: phone,
-                fb: fbLink,
-                isDealer: isDealer, 
-                idPhoto: frontId, 
-                idPhotoBack: backId, 
-                isVerified: verifyNow || safeUserKey === 'admin' 
-            };
-            await addDoc(collection(db, "users"), newUser);
-            return newUser;
-        };
-
-        authBtn.textContent = "Processing ID...";
+        authBtn.textContent = "Processing Front ID...";
         
         compressImage(idFile, 800, 800, 0.8, async function (compressedFrontPhoto) {
             
-            const processBackAndSave = async () => {
-                let compressedBackPhoto = null;
-                if (idBackFile) {
-                    compressedBackPhoto = await compressImageAsync(idBackFile, 800, 800, 0.8);
-                }
+            const finishRegistration = async (compressedBackPhoto) => {
+                authBtn.textContent = "Submitting Review...";
+                try {
+                    const newUser = {
+                        username: rawUser,
+                        usernameKey: safeUserKey,
+                        password: pass, 
+                        email: email, 
+                        phone: phone,
+                        fb: fbLink,
+                        idPhoto: compressedFrontPhoto, 
+                        idPhotoBack: compressedBackPhoto, 
+                        isVerified: safeUserKey === 'admin' ? true : false 
+                    };
+                    await addDoc(collection(db, "users"), newUser);
 
-                // If Dealer, open payment modal to instantly verify
-                if(isDealer) {
-                    authBtn.textContent = "Proceed to Payment";
-                    authBtn.disabled = false;
-                    
-                    openPaymentModal('dealer', 'Premium Dealer Registration', `Account: ${rawUser}`, 499, async (receiptStr) => {
-                        // Log payment for Admin
-                        await addDoc(collection(db, "reservations"), {
-                            item: "Premium Dealer Registration",
-                            buyer: rawUser,
-                            seller: "VehiSell Admin", 
-                            fee: 499,
-                            receipt: receiptStr, 
-                            timestamp: Date.now()
-                        });
-                        
-                        const newUser = await submitToFirebase(compressedFrontPhoto, compressedBackPhoto, true); // true = instant verify
-                        alert("✅ Payment accepted! You are now an Instantly Verified Premium Dealer!");
+                    if (safeUserKey === 'admin') {
+                        alert("✅ Admin Account created! Logging you in...");
                         document.getElementById('form-auth').reset();
                         login(newUser);
-                    });
+                    } else {
+                        alert("✅ Account submitted! The admin will review your ID to protect the community. You will receive an email once you are verified.");
+                        document.getElementById('form-auth').reset();
+                        toggleAuthMode(); 
+                        authBtn.textContent = "Login";
+                        authBtn.disabled = false;
+                    }
 
-                } else {
-                    // Normal free flow (requires admin approval)
-                    authBtn.textContent = "Submitting Review...";
-                    await submitToFirebase(compressedFrontPhoto, compressedBackPhoto, false);
-                    alert("✅ Account submitted! The admin will review your ID to protect the community.");
-                    document.getElementById('form-auth').reset();
-                    toggleAuthMode(); 
-                    authBtn.textContent = "Login";
-                    authBtn.disabled = false;
+                } catch (error) {
+                    console.error(error);
+                    resetBtn("❌ Error saving to cloud.", "Create Verified Account");
                 }
             };
-            
-            processBackAndSave();
+
+            if (idBackFile) {
+                authBtn.textContent = "Processing Back ID...";
+                compressImage(idBackFile, 800, 800, 0.8, function(compressedBackPhoto) {
+                    finishRegistration(compressedBackPhoto);
+                }, function(err) {
+                    resetBtn("❌ Error reading Back ID.", "Create Verified Account");
+                });
+            } else {
+                finishRegistration(null); 
+            }
 
         }, function(errorMessage) {
             resetBtn("❌ " + errorMessage, "Create Verified Account");
@@ -359,14 +338,6 @@ function updateNav() {
         
         document.getElementById('acc-name').innerText = currentUser.username;
         document.getElementById('acc-id-display').src = currentUser.idPhoto;
-
-        if (currentUser.isDealer) {
-            document.getElementById('acc-dealer-badge').style.display = 'block';
-            document.getElementById('boost-container').classList.remove('hidden');
-        } else {
-            document.getElementById('acc-dealer-badge').style.display = 'none';
-            document.getElementById('boost-container').classList.add('hidden');
-        }
 
         if(currentUser.usernameKey !== 'admin') {
             document.getElementById('quick-icons').style.display = 'flex';
@@ -475,7 +446,6 @@ function renderImagePreviews() {
     });
 }
 
-// Checkbox logic for Submit button
 const boostCheck = document.getElementById('p-boost');
 if(boostCheck) {
     boostCheck.onchange = function() {
@@ -494,7 +464,7 @@ sellForm.onsubmit = async (e) => {
 
     try {
         const compressedImagesArray = await Promise.all(pendingProductImages.map(f => compressImageAsync(f, 1200, 1200, 0.8)));
-        const isBoosted = currentUser.isDealer ? document.getElementById('p-boost').checked : false;
+        const isBoosted = document.getElementById('p-boost').checked;
 
         const publishToCloud = async () => {
             submitBtn.textContent = "Saving Listing...";
@@ -506,14 +476,11 @@ sellForm.onsubmit = async (e) => {
                 seller: currentUser.username,
                 sellerKey: currentUser.username.toLowerCase(),
                 sellerIdPhoto: currentUser.idPhoto, 
-                isDealer: currentUser.isDealer || false, 
                 boosted: isBoosted, 
                 status: 'available', 
-                timestamp: Date.now()
+                timestamp: Date.now(),
+                images: compressedImagesArray 
             };
-            
-            // Wait to add images until here so the object doesn't hit size limits early
-            newItem.images = compressedImagesArray; 
             
             await addDoc(collection(db, "listings"), newItem);
 
@@ -565,10 +532,8 @@ window.toggleFavorite = (e, docId) => {
     renderFilteredListings(); 
 };
 
-// --- BOOST EXISTING ITEM FROM HISTORY ---
 window.boostExistingItem = function(docId, title) {
     openPaymentModal('boost', 'Hot List Boost', title, 150, async (receiptStr) => {
-        // Log payment
         await addDoc(collection(db, "reservations"), {
             item: "Listing Boost Fee",
             buyer: currentUser.username,
@@ -578,10 +543,9 @@ window.boostExistingItem = function(docId, title) {
             timestamp: Date.now()
         });
 
-        // Update existing listing to front!
         await updateDoc(doc(db, "listings", docId), { 
             boosted: true, 
-            timestamp: Date.now() // Refreshes it to the very top
+            timestamp: Date.now() 
         });
 
         alert("🌟 Boost successful! Your listing has been bumped to the top of the Hot List.");
@@ -589,7 +553,6 @@ window.boostExistingItem = function(docId, title) {
         loadUserHistory();
     });
 };
-
 
 function loadUserHistory() {
     if (!currentUser || currentUser.usernameKey === 'admin') return;
@@ -622,8 +585,7 @@ function loadUserHistory() {
             let statusBadge = '';
             let actionButtons = '';
 
-            // Allow boosting of active, non-boosted items if dealer
-            const canBoost = currentUser.isDealer && item.status === 'available' && !item.boosted;
+            const canBoost = item.status === 'available' && !item.boosted;
             const boostBtnHtml = canBoost 
                 ? `<button class="btn-boost" onclick="boostExistingItem('${item.docId}', '${item.title.replace(/'/g, "\\'")}')">🚀 Boost (₱150)</button>` 
                 : '';
@@ -774,7 +736,6 @@ function renderFilteredListings() {
             : '';
             
         const boostClass = item.boosted ? 'boosted-card' : '';
-        const dealerIcon = item.isDealer ? `<span style="color:#3b82f6; font-size:0.85rem;" title="Verified Dealer">☑️</span>` : '';
         const heartClass = userFavorites.includes(item.docId) ? 'heart-btn active' : 'heart-btn';
 
         const card = document.createElement('div');
@@ -807,7 +768,7 @@ function renderFilteredListings() {
             
             <div class="product-body" style="padding-top: 0; flex: 0;">
                 <div class="card-footer" style="flex-direction: column; align-items: stretch; gap: 10px; border-top: none;">
-                    <span style="font-weight: 800; color: var(--text);">👤 ${item.seller} ${dealerIcon}</span>
+                    <span style="font-weight: 800; color: var(--text);">👤 ${item.seller}</span>
                     <button class="btn-primary" style="padding:0.8rem;border-radius:12px;cursor:pointer;flex:1;" onclick="openProductModal('${item.docId}')">View Details</button>
                 </div>
             </div>
@@ -836,8 +797,7 @@ window.openProductModal = function(docId) {
     document.getElementById('pm-price').innerText = `₱${Number(item.price).toLocaleString()}`;
     document.getElementById('pm-desc').innerText = item.desc;
     
-    const dealerIcon = item.isDealer ? `<span style="color:#3b82f6; font-size:0.95rem;">☑️</span>` : '';
-    document.getElementById('pm-seller-name').innerHTML = `${item.seller} ${dealerIcon}`;
+    document.getElementById('pm-seller-name').innerHTML = `${item.seller}`;
     
     window.currentGalleryImages = item.images && item.images.length > 0 ? item.images : [item.image];
     window.currentGalleryIndex = 0;
@@ -861,7 +821,7 @@ window.openProductModal = function(docId) {
 
         actionsDiv.innerHTML = `
             <button class="btn-contact" style="background:#64748b;color:white;padding:1rem 1.5rem;border:none;border-radius:12px;cursor:pointer;font-weight:700;" onclick="contactSeller('${item.sellerKey}')">Contact</button>
-            <button class="btn-contact" style="background:var(--primary);color:white;padding:1rem 1.5rem;border:none;border-radius:12px;cursor:pointer;font-weight:700;" onclick="openChatModal('${item.sellerKey}', '${item.seller}')">Live Chat</button>
+            <button class="btn-contact" style="background:var(--primary);color:white;padding:1rem 1.5rem;border:none;border-radius:12px;cursor:pointer;font-weight:700;" onclick="openChatModal('${item.sellerKey}', '${item.seller.replace(/'/g, "\\'")}')">Live Chat</button>
             ${reserveBtnHtml}
         `;
     }
@@ -967,31 +927,30 @@ window.contactSeller = async function(sellerKey) {
     }
 };
 
-// Tied to Universal Payment Modal
 window.processReservation = async function(compressedReceipt) {
     await addDoc(collection(db, "notifications"), {
-        targetUser: pendingReservation.sellerKey,
+        targetUser: window.pendingReservation.sellerKey,
         type: 'reserve',
         fromUser: currentUser.username,
-        itemName: pendingReservation.title,
+        itemName: window.pendingReservation.title,
         timestamp: Date.now()
     });
 
     await addDoc(collection(db, "reservations"), {
-        item: pendingReservation.title,
+        item: window.pendingReservation.title,
         buyer: currentUser.username,
-        seller: pendingReservation.sellerName, 
-        fee: pendingReservation.fee,
+        seller: window.pendingReservation.sellerName, 
+        fee: window.pendingReservation.fee,
         receipt: compressedReceipt, 
         timestamp: Date.now()
     });
 
-    await updateDoc(doc(db, "listings", pendingReservation.docId), { status: 'reserved' });
+    await updateDoc(doc(db, "listings", window.pendingReservation.docId), { status: 'reserved' });
 
     sendEmailNotification(
-        pendingReservation.sellerKey, 
+        window.pendingReservation.sellerKey, 
         "Item Reserved!", 
-        `Great news! Your item ${pendingReservation.title} was just reserved by ${currentUser.username}. Log in to chat with them to complete the sale.`
+        `Great news! Your item ${window.pendingReservation.title} was just reserved by ${currentUser.username}. Log in to chat with them to complete the sale.`
     );
 
     alert("✅ Payment submitted successfully! The item is now reserved and the seller has been notified.");
@@ -1269,7 +1228,7 @@ async function loadAdminDashboard() {
                 if (log.type === 'reserve') {
                     const r = log.data;
                     let logText = `<strong>${r.buyer}</strong> reserved <em>${r.item}</em> from <strong>${r.seller}</strong>`;
-                    if (r.item.includes("Dealer Registration") || r.item.includes("Listing Boost")) {
+                    if (r.item.includes("Listing Boost Fee")) {
                         logText = `<strong>${r.buyer}</strong> paid for <em>${r.item}</em>`;
                     }
                     logItem.innerHTML = `
@@ -1542,7 +1501,6 @@ document.getElementById('category-filter').onchange = (e) => {
     renderFilteredListings();
 };
 
-// Force initialization to start on home page
 showTab('home');
 updateNav();
 fetchAndRenderListings();
