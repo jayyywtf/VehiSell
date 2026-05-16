@@ -106,13 +106,20 @@
             <div class="glass-card acc-view" style="max-width: 500px;">
                 <div class="avatar">👤</div>
                 <h2 id="acc-name">User</h2>
-                <div class="id-display-section">
-                    <p>Your Verified ID (Front):</p>
-                    <a id="id-front-link" target="_blank"><img id="acc-id-display" src="" alt="User ID Front"></a>
+                
+                <div class="id-display-section" style="width: 100%; text-align: left;">
+                    <p style="font-weight: bold; margin-bottom: 5px;">Front ID:</p>
+                    <img id="acc-id-display" src="" alt="Front ID" style="width: 100%; border-radius: 10px; border: 2px solid var(--primary); cursor: pointer;" onclick="viewFullImage(this.src)">
                     
-                    <div id="acc-id-back-container" class="hidden" style="margin-top: 15px;">
-                        <p>Your Verified ID (Back):</p>
-                        <a id="id-back-link" target="_blank"><img id="acc-id-back-display" src="" alt="User ID Back" style="width: 100%; border-radius: 10px; border: 2px solid var(--primary);"></a>
+                    <div style="margin-top: 15px;">
+                        <p style="font-weight: bold; margin-bottom: 5px;">Back ID:</p>
+                        <img id="acc-id-back-display" src="" alt="Back ID" style="display: none; width: 100%; border-radius: 10px; border: 2px solid var(--primary); cursor: pointer;" onclick="viewFullImage(this.src)">
+                        
+                        <div id="upload-back-id-box" class="file-box" style="display: none; background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px dashed #cbd5e1;">
+                            <label style="font-size: 0.85rem; font-weight: bold; color: var(--primary);">Upload Back ID (Optional)</label>
+                            <input type="file" id="profile-upload-back-id" accept="image/*" style="margin-top: 5px; border: none; padding: 0;">
+                            <button id="btn-save-back-id" class="btn-primary" style="margin-top: 10px; padding: 8px; font-size: 0.9rem;">Upload & Save</button>
+                        </div>
                     </div>
                 </div>
                 
@@ -160,6 +167,13 @@
         </section>
     </main>
 
+    <div id="image-modal" class="modal hidden" style="z-index: 9999;">
+        <div class="modal-content" style="background: transparent; box-shadow: none; text-align: center; padding: 0; max-width: 90%;">
+            <span class="close-btn" onclick="document.getElementById('image-modal').classList.add('hidden')" style="color: white; font-size: 40px; position: absolute; right: 0; top: -40px;">&times;</span>
+            <img id="full-image-viewer" src="" style="max-width: 100%; max-height: 85vh; border-radius: 10px; box-shadow: 0 10px 40px rgba(0,0,0,0.6);">
+        </div>
+    </div>
+
     <div id="seller-modal" class="modal hidden">
         <div class="modal-content glass-card" style="text-align: center;">
             <span class="close-btn" onclick="document.getElementById('seller-modal').classList.add('hidden')" style="cursor: pointer; float: right; font-size: 24px;">&times;</span>
@@ -206,7 +220,8 @@
             <div style="text-align: left; margin-bottom: 15px;">
                 <h4 style="margin-bottom: 10px; text-align: center;">Send payment to VehiSell Escrow</h4>
                 
-                <div id="dynamic-gcash" style="text-align: center; margin-bottom: 15px; padding: 15px; border: 1px solid #cbd5e1; border-radius: 10px; background: #f8fafc;"></div>
+                <div id="dynamic-gcash" style="text-align: center; margin-bottom: 15px; padding: 15px; border: 1px solid #cbd5e1; border-radius: 10px; background: #f8fafc;">
+                </div>
 
                 <div style="border: 1px solid #cbd5e1; padding: 12px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
                     <strong>🏦 Bank Transfer</strong>
