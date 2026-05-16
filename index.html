@@ -61,8 +61,9 @@
                     <textarea id="p-desc" placeholder="Product details..." rows="4" required></textarea>
                     
                     <div class="file-box">
-                        <label>Product Photo</label>
-                        <input type="file" id="p-img" accept="image/*" required>
+                        <label>Product Photos (Select multiple)</label>
+                        <input type="file" id="p-img" accept="image/*" multiple required>
+                        <div id="sell-img-previews" style="display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap;"></div>
                     </div>
                     <button type="submit" class="btn-primary">Post Item</button>
                 </form>
@@ -174,6 +175,34 @@
         </div>
     </div>
 
+    <div id="product-modal" class="modal hidden">
+        <div class="modal-content glass-card" style="max-width: 700px; padding: 0; overflow: hidden; display: flex; flex-direction: column;">
+            <span class="close-btn" onclick="document.getElementById('product-modal').classList.add('hidden')" style="cursor: pointer; position: absolute; right: 15px; top: 10px; z-index: 10; background: rgba(255,255,255,0.9); border-radius: 50%; width: 32px; height: 32px; text-align: center; line-height: 32px; font-weight: bold;">&times;</span>
+            
+            <div style="background: #0f172a; text-align: center; position: relative;">
+                <img id="pm-main-img" src="" style="height: 350px; max-width: 100%; object-fit: contain; cursor: zoom-in;" onclick="viewFullImage(this.src)">
+            </div>
+            
+            <div id="pm-thumbnails" style="display: flex; gap: 10px; padding: 10px; background: #1e293b; overflow-x: auto; justify-content: center;">
+                </div>
+
+            <div style="padding: 20px; text-align: left;">
+                <h2 id="pm-price" style="color: #10b981; margin: 0 0 5px 0; font-size: 2rem;">₱0</h2>
+                <h3 id="pm-title" style="margin: 0 0 15px 0; font-size: 1.5rem;">Product Title</h3>
+                <p id="pm-desc" style="color: var(--light); white-space: pre-wrap; line-height: 1.6; max-height: 150px; overflow-y: auto; padding-right: 10px;">Description...</p>
+                
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 20px; padding-top: 20px; border-top: 1px solid #e2e8f0; flex-wrap: wrap; gap: 10px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 1.5rem;">👤</span>
+                        <strong id="pm-seller-name" style="font-size: 1.1rem; color: var(--primary);">Seller Name</strong>
+                    </div>
+                    <div id="pm-actions" style="display: flex; gap: 10px;">
+                        </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="seller-modal" class="modal hidden">
         <div class="modal-content glass-card" style="text-align: center;">
             <span class="close-btn" onclick="document.getElementById('seller-modal').classList.add('hidden')" style="cursor: pointer; float: right; font-size: 24px;">&times;</span>
@@ -190,7 +219,7 @@
     </div>
 
     <div id="chat-modal" class="modal hidden">
-        <div class="modal-content glass-card" style="padding: 0; overflow: hidden; display: flex; flex-direction: column; height: 75vh; max-height: 600px;">
+        <div class="modal-content glass-card" style="padding: 0; overflow: hidden; display: flex; flex-direction: column; height: 80vh; max-height: 650px;">
             <div style="background: var(--primary); color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center;">
                 <h3 id="chat-target-name" style="margin: 0;">Live Chat</h3>
                 <span class="close-btn" onclick="closeChatModal()" style="cursor: pointer; color: white; position: static;">&times;</span>
@@ -198,9 +227,17 @@
             
             <div id="chat-messages" style="flex: 1; padding: 15px; overflow-y: auto; background: #f8fafc; display: flex; flex-direction: column; gap: 10px;"></div>
 
-            <form id="form-chat" style="display: flex; padding: 10px; background: white; border-top: 1px solid #e2e8f0;">
-                <input type="text" id="chat-input" placeholder="Type a message..." required style="flex: 1; margin: 0; border-radius: 20px 0 0 20px; border-right: none;">
-                <button type="submit" class="btn-primary" style="width: auto; border-radius: 0 20px 20px 0; padding: 0 20px;">Send</button>
+            <div id="chat-img-preview-container" style="display: none; padding: 10px; background: white; border-top: 1px solid #e2e8f0; text-align: left;">
+                <span style="font-size: 0.8rem; font-weight: bold; color: var(--primary);">Attached Image:</span>
+                <img id="chat-img-preview" src="" style="height: 60px; border-radius: 5px; margin-left: 10px; vertical-align: middle; border: 1px solid #cbd5e1;">
+                <span style="cursor: pointer; color: #ef4444; font-size: 0.8rem; margin-left: 10px; font-weight: bold;" onclick="removeChatImg()">✖ Remove</span>
+            </div>
+
+            <form id="form-chat" style="display: flex; padding: 10px; background: white; border-top: 1px solid #e2e8f0; align-items: center; gap: 8px;">
+                <input type="file" id="chat-img-input" accept="image/*" style="display: none;">
+                <button type="button" onclick="document.getElementById('chat-img-input').click()" style="background: #e2e8f0; border: none; padding: 12px; border-radius: 50%; cursor: pointer;" title="Attach Image">📎</button>
+                <input type="text" id="chat-input" placeholder="Type a message..." style="flex: 1; margin: 0; border-radius: 20px; padding: 12px;">
+                <button type="submit" class="btn-primary" style="width: auto; border-radius: 20px; padding: 0 20px;">Send</button>
             </form>
         </div>
     </div>
