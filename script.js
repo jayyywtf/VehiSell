@@ -19,12 +19,28 @@ const storage = getStorage(app);
 let currentUser = JSON.parse(localStorage.getItem('user_session')) || null;
 let allListings = []; 
 let isLoginMode = true;
-let currentTab = 'home'; // UPDATED DEFAULT
+let currentTab = 'home'; 
 let currentLimit = 12; 
 let userFavorites = JSON.parse(localStorage.getItem('user_favorites')) || []; 
 
 const navButtons = document.querySelectorAll('.nav-btn');
 const sections = document.querySelectorAll('.tab-content');
+
+// --- DARK MODE TOGGLE LOGIC ---
+const themeToggleBtn = document.getElementById('theme-toggle');
+let currentTheme = localStorage.getItem('theme') || 'light';
+
+if (currentTheme === 'dark') {
+    document.documentElement.setAttribute('data-theme', 'dark');
+    themeToggleBtn.innerText = '☀️';
+}
+
+themeToggleBtn.onclick = () => {
+    currentTheme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', currentTheme);
+    localStorage.setItem('theme', currentTheme);
+    themeToggleBtn.innerText = currentTheme === 'dark' ? '☀️' : '🌙';
+};
 
 window.viewFullImage = function(url) {
     document.getElementById('full-image-viewer').src = url;
@@ -48,7 +64,6 @@ function showTab(tabId) {
     }
 }
 
-// Attach to window so HTML buttons can use it easily
 window.switchTab = function(tabId) {
     showTab(tabId);
 };
@@ -65,10 +80,14 @@ navButtons.forEach(btn => {
     };
 });
 
-document.getElementById('bell-btn').onclick = (e) => {
-    e.stopPropagation(); 
-    document.getElementById('notif-dropdown').classList.toggle('hidden');
-};
+// Safe Bell Button Hook
+const bellBtn = document.getElementById('bell-btn');
+if(bellBtn) {
+    bellBtn.onclick = (e) => {
+        e.stopPropagation(); 
+        document.getElementById('notif-dropdown').classList.toggle('hidden');
+    };
+}
 
 const switchBtn = document.getElementById('switch-auth');
 const signupExtra = document.getElementById('signup-extra');
@@ -251,7 +270,7 @@ function login(user) {
     localStorage.setItem('user_session', JSON.stringify(user));
     currentUser = user;
     updateNav();
-    showTab('buy'); // Go straight to marketplace after login
+    showTab('buy'); 
     fetchAndRenderListings();
     listenForLiveAlerts(); 
 }
@@ -275,6 +294,7 @@ function updateNav() {
 
         if(currentUser.usernameKey !== 'admin') {
             document.getElementById('quick-icons').style.display = 'flex';
+            if(bellBtn) bellBtn.style.display = 'flex';
         }
 
         const backIdImg = document.getElementById('acc-id-back-display');
@@ -299,7 +319,9 @@ function updateNav() {
             loadUserHistory(); 
         }
     } else {
-        document.getElementById('quick-icons').style.display = 'none';
+        if(document.getElementById('quick-icons')) {
+            document.getElementById('quick-icons').style.display = 'none';
+        }
         document.getElementById('nav-saved').classList.add('hidden');
     }
 }
@@ -368,7 +390,7 @@ function renderImagePreviews() {
             const div = document.createElement('div');
             div.style = "position: relative; display: inline-block;";
             div.innerHTML = `
-                <img src="${ev.target.result}" style="width: 75px; height: 75px; object-fit: cover; border-radius: 12px; border: 2px solid #cbd5e1; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+                <img src="${ev.target.result}" style="width: 75px; height: 75px; object-fit: cover; border-radius: 12px; border: 2px solid var(--border); box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
                 <span onclick="removePendingImage(${index})" style="position: absolute; top: -8px; right: -8px; background: #ef4444; color: white; border-radius: 50%; width: 24px; height: 24px; text-align: center; line-height: 20px; font-size: 16px; cursor: pointer; font-weight: bold; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">&times;</span>
             `;
             container.appendChild(div);
@@ -462,7 +484,7 @@ function loadUserHistory() {
 
         items.forEach(item => {
             const div = document.createElement('div');
-            div.style = "display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #f1f5f9;";
+            div.style = "display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid var(--border);";
             
             const thumb = item.images && item.images.length > 0 ? item.images[0] : item.image;
             
@@ -471,7 +493,7 @@ function loadUserHistory() {
 
             if (item.status === 'sold') {
                 statusBadge = `<span style="background: #ef4444; color: white; padding: 3px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: bold;">SOLD</span>`;
-                actionButton = `<button class="btn-del" style="background:#cbd5e1;color:white;padding:5px 10px;border:none;border-radius:6px;cursor:not-allowed;" disabled>Closed</button>`;
+                actionButton = `<button class="btn-del" style="background:var(--border);color:var(--text);padding:5px 10px;border:none;border-radius:6px;cursor:not-allowed;" disabled>Closed</button>`;
             } else if (item.status === 'reserved') {
                 statusBadge = `<span style="background: #f59e0b; color: white; padding: 3px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: bold;">RESERVED</span>`;
                 actionButton = `<button class="btn-primary" style="background:#10b981;padding:5px 10px;border:none;border-radius:6px;cursor:pointer;font-size:0.85rem;" onclick="markAsSold('${item.docId}')">Mark as Sold</button>`;
@@ -482,7 +504,7 @@ function loadUserHistory() {
 
             div.innerHTML = `
                 <div style="display: flex; gap: 10px; align-items: center;">
-                    <img src="${thumb}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 6px;">
+                    <img src="${thumb}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border);">
                     <div>
                         <strong style="color: var(--text); font-size: 0.95rem; display: block; margin-bottom: 3px;">${item.title}</strong>
                         ${statusBadge}
@@ -1099,8 +1121,8 @@ function loadInbox() {
             let actionText = data.type === 'reserve' ? 'reserved your item.' : 'sent you a message.';
             
             const dropDiv = document.createElement('div');
-            dropDiv.style = "display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid #f1f5f9; cursor: pointer; transition: background 0.2s;";
-            dropDiv.onmouseover = () => dropDiv.style.background = '#f8fafc';
+            dropDiv.style = "display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.2s;";
+            dropDiv.onmouseover = () => dropDiv.style.background = 'var(--bg)';
             dropDiv.onmouseout = () => dropDiv.style.background = 'transparent';
             dropDiv.onclick = () => {
                 document.getElementById('notif-dropdown').classList.add('hidden'); 
@@ -1150,7 +1172,7 @@ async function loadAdminDashboard() {
         } else {
             allLogs.forEach(log => {
                 const logItem = document.createElement('div');
-                logItem.style = "padding: 15px; border-bottom: 1px solid #e2e8f0; font-size: 0.95rem;";
+                logItem.style = "padding: 15px; border-bottom: 1px solid var(--border); font-size: 0.95rem;";
                 
                 const timeString = new Date(log.time).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 
@@ -1232,7 +1254,7 @@ async function loadAdminDashboard() {
             const uId = docSnap.id;
             
             const div = document.createElement('div');
-            div.style = "padding: 20px; border-bottom: 1px solid #e2e8f0; margin-bottom: 15px; background: white; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.02);";
+            div.style = "padding: 20px; border-bottom: 1px solid var(--border); margin-bottom: 15px; background: var(--card-bg); border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.02);";
             div.innerHTML = `
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                     <div>
@@ -1247,13 +1269,13 @@ async function loadAdminDashboard() {
                 <div style="display: flex; gap: 15px;">
                     <div style="flex: 1;">
                         <p style="font-size: 0.85rem; margin: 0 0 8px 0; font-weight: 800; color: var(--light);">Front ID</p>
-                        <img src="${u.idPhoto}" onclick="viewFullImage('${u.idPhoto}')" style="width: 100%; height: 120px; object-fit: cover; border-radius: 8px; border: 2px solid #e2e8f0; cursor: zoom-in;">
+                        <img src="${u.idPhoto}" onclick="viewFullImage('${u.idPhoto}')" style="width: 100%; height: 120px; object-fit: cover; border-radius: 8px; border: 2px solid var(--border); cursor: zoom-in;">
                     </div>
                     ${u.idPhotoBack ? `
                     <div style="flex: 1;">
                         <p style="font-size: 0.85rem; margin: 0 0 8px 0; font-weight: 800; color: var(--light);">Back ID</p>
-                        <img src="${u.idPhotoBack}" onclick="viewFullImage('${u.idPhotoBack}')" style="width: 100%; height: 120px; object-fit: cover; border-radius: 8px; border: 2px solid #e2e8f0; cursor: zoom-in;">
-                    </div>` : '<div style="flex: 1; display:flex; align-items:center; justify-content:center; background:#f8fafc; border-radius:8px; border:2px dashed #e2e8f0;"><p style="font-size: 0.85rem; margin: 0; color:var(--light); font-weight:600;">No Back ID Provided</p></div>'}
+                        <img src="${u.idPhotoBack}" onclick="viewFullImage('${u.idPhotoBack}')" style="width: 100%; height: 120px; object-fit: cover; border-radius: 8px; border: 2px solid var(--border); cursor: zoom-in;">
+                    </div>` : '<div style="flex: 1; display:flex; align-items:center; justify-content:center; background:var(--bg); border-radius:8px; border:2px dashed var(--border);"><p style="font-size: 0.85rem; margin: 0; color:var(--light); font-weight:600;">No Back ID Provided</p></div>'}
                 </div>
             `;
             pendingBox.appendChild(div);
@@ -1271,7 +1293,7 @@ async function loadAdminDashboard() {
         snapshot.forEach(docSnap => {
             const data = docSnap.data();
             box.innerHTML += `
-                <div style="padding: 15px; background: white; border-radius: 12px; margin-bottom: 10px; border: 1px solid #fecdd3; box-shadow: 0 4px 10px rgba(225,29,72,0.05);">
+                <div style="padding: 15px; background: var(--card-bg); border-radius: 12px; margin-bottom: 10px; border: 1px solid #fecdd3; box-shadow: 0 4px 10px rgba(225,29,72,0.05);">
                     <strong style="color: var(--text); font-size: 1.1rem;">Listing: ${data.title}</strong><br>
                     <span style="color: var(--light); font-size: 0.9rem;">Seller: ${data.seller}</span><br><br>
                     <span style="color: #e11d48; font-size: 0.95rem; font-weight: bold;">Reason: "${data.reason}"</span><br>
