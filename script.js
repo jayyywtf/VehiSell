@@ -145,7 +145,8 @@ document.getElementById('form-auth').addEventListener('submit', async function (
 
         authBtn.textContent = "Uploading ID...";
         
-        compressImage(idFile, 300, 300, 0.4, async function (compressedIdPhoto) {
+        // UPGRADED QUALITY: 800px width, 80% quality for crisp ID readability
+        compressImage(idFile, 800, 800, 0.8, async function (compressedIdPhoto) {
             try {
                 authBtn.textContent = "Creating Account...";
                 
@@ -225,7 +226,8 @@ sellForm.onsubmit = (e) => {
     submitBtn.disabled = true;
     submitBtn.textContent = "Uploading to Cloud...";
 
-    compressImage(file, 400, 400, 0.4, async function (compressedProductPhoto) {
+    // UPGRADED QUALITY: 1200px width, 80% quality for gorgeous product shots
+    compressImage(file, 1200, 1200, 0.8, async function (compressedProductPhoto) {
         try {
             const newItem = {
                 title: document.getElementById('p-title').value,
@@ -305,12 +307,14 @@ function renderFilteredListings(filterTerm = '', filterCat = 'all') {
         card.innerHTML = `
             <div class="img-wrapper">
                 <img src="${item.image}" class="product-img" alt="${item.title}">
-                ${item.sellerIdPhoto ? `
-                <div class="id-badge">
-                    <img src="${item.sellerIdPhoto}" class="id-preview" title="Hover to view Seller ID">
-                    <span>Verified</span>
-                </div>` : ''}
             </div>
+            
+            ${item.sellerIdPhoto ? `
+            <div class="id-badge">
+                <img src="${item.sellerIdPhoto}" class="id-preview" title="Hover to view Seller ID">
+                <span>Verified</span>
+            </div>` : ''}
+
             <div class="product-body">
                 <p class="price">₱${Number(item.price).toLocaleString()}</p>
                 <h3>${item.title}</h3>
@@ -424,7 +428,7 @@ window.confirmReservation = async function() {
         sendEmailNotification(
             pendingReservation.sellerKey, 
             "Item Reserved!", 
-            `Great news! ${currentUser.username} has just paid the 5% escrow downpayment (₱${pendingReservation.fee}) to reserve your ${pendingReservation.title}. Log in to chat with them to complete the sale.`
+            `Great news! Your item ${pendingReservation.title} was just reserved by ${currentUser.username}. Log in to chat with them to complete the sale.`
         );
 
     } catch(err) {
@@ -544,7 +548,7 @@ function triggerToastPopup(data) {
     toast.title = "Click to reply!";
 
     if (data.type === 'reserve') {
-        toast.innerHTML = `<h4>🎉 Item Reserved!</h4><p><strong>${data.fromUser}</strong> paid the downpayment. Click to chat.</p>`;
+        toast.innerHTML = `<h4>🎉 Item Reserved!</h4><p><strong>${data.fromUser}</strong> has reserved your item. Click to chat.</p>`;
     } else if (data.type === 'message') {
         toast.innerHTML = `<h4>💬 New Message</h4><p><strong>${data.fromUser}:</strong> ${data.text}</p>`;
     }

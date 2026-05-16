@@ -72,10 +72,11 @@ main {
     gap: 1.5rem;
 }
 
+/* --- UPDATED PRODUCT CARD --- */
 .product-card {
     background: white;
     border-radius: 16px;
-    overflow: hidden;
+    position: relative; /* Allows badge to position safely */
     border: 1px solid #e2e8f0;
     transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
     animation: fadeIn 0.5s ease-out forwards;
@@ -95,7 +96,8 @@ main {
 .img-wrapper {
     position: relative;
     height: 200px;
-    overflow: hidden;
+    overflow: hidden; 
+    border-radius: 15px 15px 0 0; /* Keeps top corners round without clipping badge */
 }
 
 .product-img {
@@ -109,9 +111,10 @@ main {
     transform: scale(1.05);
 }
 
+/* --- UPDATED ID BADGE OVERLAY --- */
 .id-badge {
     position: absolute;
-    bottom: 8px;
+    top: 155px; /* Sits right on the bottom edge of the image */
     left: 8px;
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(4px);
@@ -122,6 +125,7 @@ main {
     gap: 6px;
     border: 1px solid var(--primary);
     box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    z-index: 50; /* Sits completely above the image wrapper */
 }
 
 .id-preview {
@@ -130,13 +134,14 @@ main {
     object-fit: cover;
     border-radius: 3px;
     cursor: zoom-in;
-    transition: 0.3s;
+    transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transform-origin: bottom left; /* Grows outward properly */
 }
 
 .id-preview:hover {
-    transform: scale(6) translate(30px, -20px);
-    z-index: 50;
-    box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+    transform: scale(8) translate(15px, -10px); /* Massive, readable zoom */
+    z-index: 999;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.4);
 }
 
 .id-badge span {
@@ -348,7 +353,7 @@ input:focus, textarea:focus {
 }
 
 #chat-modal .modal-content {
-    max-width: 800px !important; /* WIDER FOR DESKTOP */
+    max-width: 800px !important;
     border-radius: 24px;
 }
 
@@ -366,7 +371,6 @@ input:focus, textarea:focus {
     }
 }
 
-/* --- TOAST NOTIFICATIONS (Popups) --- */
 .toast-container {
     position: fixed;
     bottom: 20px;
@@ -405,7 +409,6 @@ input:focus, textarea:focus {
     to { transform: translateX(0); }
 }
 
-/* --- LIVE CHAT BUBBLES --- */
 .chat-bubble {
     max-width: 75%;
     padding: 12px 18px;
@@ -440,7 +443,6 @@ input:focus, textarea:focus {
     transform-origin: bottom left;
 }
 
-/* Modernizing the Chat Input Area */
 #form-chat {
     padding: 15px !important;
     background: #f8fafc !important;
