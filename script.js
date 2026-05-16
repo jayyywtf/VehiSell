@@ -23,7 +23,7 @@ let isLoginMode = true;
 const navButtons = document.querySelectorAll('.nav-btn');
 const sections = document.querySelectorAll('.tab-content');
 
-// --- GLOBAL IMAGE VIEWER FUNCTION ---
+// --- GLOBAL IMAGE VIEWER ---
 window.viewFullImage = function(url) {
     document.getElementById('full-image-viewer').src = url;
     document.getElementById('image-modal').classList.remove('hidden');
@@ -101,6 +101,13 @@ function compressImage(file, maxWidth, maxHeight, quality, onSuccess, onError) {
          if(onError) onError("File reading failed.");
     };
     reader.readAsDataURL(file);
+}
+
+// Wrapper to make compressImage async so we can map over multiple files
+function compressImageAsync(file, maxWidth, maxHeight, quality) {
+    return new Promise((resolve, reject) => {
+        compressImage(file, maxWidth, maxHeight, quality, resolve, reject);
+    });
 }
 
 document.getElementById('form-auth').addEventListener('submit', async function (e) {
@@ -236,11 +243,9 @@ function updateNav() {
         document.getElementById('acc-name').innerText = currentUser.username;
         document.getElementById('acc-id-display').src = currentUser.idPhoto;
 
-        // Front ID logic
         const backIdImg = document.getElementById('acc-id-back-display');
         const backIdUploadBox = document.getElementById('upload-back-id-box');
         
-        // Handle Back ID display or the upload box if they missed it during sign up
         if (currentUser.idPhotoBack) {
             backIdImg.src = currentUser.idPhotoBack;
             backIdImg.style.display = 'block';
@@ -261,7 +266,6 @@ function updateNav() {
     }
 }
 
-// --- OPTIONAL BACK ID UPLOAD HANDLER FOR USER PROFILE ---
 document.getElementById('btn-save-back-id').onclick = async () => {
     const fileInput = document.getElementById('profile-upload-back-id');
     const file = fileInput.files[0];
@@ -279,7 +283,6 @@ document.getElementById('btn-save-back-id').onclick = async () => {
                 const docId = snap.docs[0].id;
                 await updateDoc(doc(db, "users", docId), { idPhotoBack: compressedBackPhoto });
                 
-                // Keep the local storage session updated
                 currentUser.idPhotoBack = compressedBackPhoto;
                 localStorage.setItem('user_session', JSON.stringify(currentUser));
                 
@@ -303,49 +306,64 @@ document.getElementById('logout-btn').onclick = () => {
     location.reload();
 };
 
+// --- MULTIPLE IMAGE PREVIEW LOGIC ---
+document.getElementById('p-img').addEventListener('change', function(e) {
+    const container = document.getElementById('sell-img-previews');
+    container.innerHTML = ''; 
+    Array.from(this.files).forEach(file => {
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            const img = document.createElement('img');
+            img.src = ev.target.result;
+            img.style = "width: 60px; height: 60px; object-fit: cover; border-radius: 5px; border: 1px solid #cbd5e1;";
+            container.appendChild(img);
+        };
+        reader.readAsDataURL(file);
+    });
+});
+
 const sellForm = document.getElementById('form-sell');
-sellForm.onsubmit = (e) => {
+sellForm.onsubmit = async (e) => {
     e.preventDefault();
-    const file = document.getElementById('p-img').files[0];
-    if (!file) return alert("Please select an image.");
+    const files = Array.from(document.getElementById('p-img').files);
+    if (files.length === 0) return alert("Please select at least one image.");
 
     const submitBtn = sellForm.querySelector('button');
     submitBtn.disabled = true;
-    submitBtn.textContent = "Uploading to Cloud...";
+    submitBtn.textContent = "Uploading Photos to Cloud...";
 
-    compressImage(file, 1200, 1200, 0.8, async function (compressedProductPhoto) {
-        try {
-            const newItem = {
-                title: document.getElementById('p-title').value,
-                price: document.getElementById('p-price').value,
-                category: document.getElementById('p-category').value,
-                desc: document.getElementById('p-desc').value,
-                seller: currentUser.username,
-                sellerKey: currentUser.username.toLowerCase(),
-                sellerIdPhoto: currentUser.idPhoto, 
-                image: compressedProductPhoto, 
-                timestamp: Date.now()
-            };
-            
-            submitBtn.textContent = "Saving...";
-            await addDoc(collection(db, "listings"), newItem);
+    try {
+        // Compress all selected images simultaneously
+        const compressedImagesArray = await Promise.all(files.map(f => compressImageAsync(f, 1200, 1200, 0.8)));
 
-            sellForm.reset();
-            alert("✅ Item listed successfully!");
-            fetchAndRenderListings();
-            showTab('buy');
+        submitBtn.textContent = "Saving Listing...";
+        const newItem = {
+            title: document.getElementById('p-title').value,
+            price: document.getElementById('p-price').value,
+            category: document.getElementById('p-category').value,
+            desc: document.getElementById('p-desc').value,
+            seller: currentUser.username,
+            sellerKey: currentUser.username.toLowerCase(),
+            sellerIdPhoto: currentUser.idPhoto, 
+            images: compressedImagesArray, // Array of HD images!
+            timestamp: Date.now()
+        };
+        
+        await addDoc(collection(db, "listings"), newItem);
 
-        } catch (error) {
-            console.error(error);
-            alert("❌ Failed to list item.");
-            submitBtn.disabled = false;
-            submitBtn.textContent = "Post Item";
-        }
-    }, function(errorMessage) {
-        alert("❌ " + errorMessage);
-        submitBtn.disabled = false;
-        submitBtn.textContent = "Post Item";
-    });
+        sellForm.reset();
+        document.getElementById('sell-img-previews').innerHTML = ''; // Clear previews
+        alert("✅ Item listed successfully!");
+        fetchAndRenderListings();
+        showTab('buy');
+
+    } catch (error) {
+        console.error(error);
+        alert("❌ Failed to list item.");
+    }
+
+    submitBtn.disabled = false;
+    submitBtn.textContent = "Post Item";
 };
 
 async function fetchAndRenderListings() {
@@ -388,25 +406,32 @@ function renderFilteredListings(filterTerm = '', filterCat = 'all') {
     filtered.forEach(item => {
         const isOwner = currentUser && currentUser.username === item.seller;
 
+        // Fallback for old items with only one image
+        const thumbnailSrc = item.images && item.images.length > 0 ? item.images[0] : item.image;
+
         const card = document.createElement('div');
         card.className = 'product-card';
         card.innerHTML = `
-            <div class="img-wrapper">
-                <img src="${item.image}" class="product-img" alt="${item.title}">
+            <div onclick="openProductModal('${item.docId}')" style="cursor: pointer;">
+                <div class="img-wrapper">
+                    <img src="${thumbnailSrc}" class="product-img" alt="${item.title}">
+                </div>
+                
+                ${item.sellerIdPhoto ? `
+                <div class="id-badge">
+                    <img src="${item.sellerIdPhoto}" class="id-preview" title="Hover to view Seller ID">
+                    <span>Verified</span>
+                </div>` : ''}
+
+                <div class="product-body" style="padding-bottom: 0;">
+                    <p class="price">₱${Number(item.price).toLocaleString()}</p>
+                    <h3>${item.title}</h3>
+                    <p class="desc">${item.desc}</p>
+                </div>
             </div>
             
-            ${item.sellerIdPhoto ? `
-            <div class="id-badge">
-                <img src="${item.sellerIdPhoto}" class="id-preview" title="Hover to view Seller ID">
-                <span>Verified</span>
-            </div>` : ''}
-
-            <div class="product-body">
-                <p class="price">₱${Number(item.price).toLocaleString()}</p>
-                <h3>${item.title}</h3>
-                <p class="desc">${item.desc}</p>
-                
-                <div class="card-footer" style="flex-direction: column; align-items: stretch; gap: 10px;">
+            <div class="product-body" style="padding-top: 0;">
+                <div class="card-footer" style="flex-direction: column; align-items: stretch; gap: 10px; border-top: none;">
                     <span style="font-weight: 600;">👤 ${item.seller}</span>
                     ${isOwner ?
                 `<button class="btn-del" style="background:#ef4444;color:white;padding:0.5rem;border:none;border-radius:6px;cursor:pointer;" onclick="deleteItem('${item.docId}')">Remove Listing</button>` :
@@ -414,7 +439,6 @@ function renderFilteredListings(filterTerm = '', filterCat = 'all') {
                 <div style="display: flex; gap: 5px; justify-content: space-between;">
                     <button class="btn-contact" style="background:#10b981;color:white;padding:0.5rem;border:none;border-radius:6px;cursor:pointer;font-weight:bold;flex:1;" onclick="openReserveModal('${item.title.replace(/'/g, "\\'")}', ${item.price}, '${item.sellerKey}', '${item.seller}')">Reserve</button>
                     <button class="btn-contact" style="background:var(--primary);color:white;padding:0.5rem;border:none;border-radius:6px;cursor:pointer;flex:1;" onclick="openChatModal('${item.sellerKey}', '${item.seller}')">Live Chat</button>
-                    <button class="btn-contact" style="background:#64748b;color:white;padding:0.5rem;border:none;border-radius:6px;cursor:pointer;flex:1;" onclick="contactSeller('${item.sellerKey}')">Contact</button>
                 </div>
                 `
             }
@@ -425,46 +449,61 @@ function renderFilteredListings(filterTerm = '', filterCat = 'all') {
     });
 }
 
+// --- NEW BIG PRODUCT MODAL ---
+window.openProductModal = function(docId) {
+    const item = allListings.find(i => i.docId === docId);
+    if (!item) return;
+
+    document.getElementById('pm-title').innerText = item.title;
+    document.getElementById('pm-price').innerText = `₱${Number(item.price).toLocaleString()}`;
+    document.getElementById('pm-desc').innerText = item.desc;
+    document.getElementById('pm-seller-name').innerText = item.seller;
+    
+    const imageArray = item.images && item.images.length > 0 ? item.images : [item.image];
+    document.getElementById('pm-main-img').src = imageArray[0];
+    
+    const thumbsContainer = document.getElementById('pm-thumbnails');
+    thumbsContainer.innerHTML = '';
+    
+    // Only show thumbnail bar if there are multiple images
+    if(imageArray.length > 1) {
+        imageArray.forEach(imgSrc => {
+            const img = document.createElement('img');
+            img.src = imgSrc;
+            img.style = "height: 60px; width: 60px; object-fit: cover; border-radius: 5px; cursor: pointer; border: 2px solid transparent;";
+            img.onmouseover = () => img.style.borderColor = "var(--primary)";
+            img.onmouseout = () => img.style.borderColor = "transparent";
+            img.onclick = () => document.getElementById('pm-main-img').src = imgSrc; // Swap main image
+            thumbsContainer.appendChild(img);
+        });
+    }
+
+    const isOwner = currentUser && currentUser.username === item.seller;
+    const actionsDiv = document.getElementById('pm-actions');
+    actionsDiv.innerHTML = '';
+
+    if (isOwner) {
+        actionsDiv.innerHTML = `<button class="btn-del" style="background:#ef4444;color:white;padding:0.8rem 1.5rem;border:none;border-radius:6px;cursor:pointer;" onclick="deleteItem('${item.docId}')">Remove Listing</button>`;
+    } else {
+        actionsDiv.innerHTML = `
+            <button class="btn-contact" style="background:#10b981;color:white;padding:0.8rem 1.5rem;border:none;border-radius:6px;cursor:pointer;font-weight:bold;" onclick="openReserveModal('${item.title.replace(/'/g, "\\'")}', ${item.price}, '${item.sellerKey}', '${item.seller}')">Reserve</button>
+            <button class="btn-contact" style="background:var(--primary);color:white;padding:0.8rem 1.5rem;border:none;border-radius:6px;cursor:pointer;" onclick="openChatModal('${item.sellerKey}', '${item.seller}')">Live Chat</button>
+        `;
+    }
+
+    document.getElementById('product-modal').classList.remove('hidden');
+};
+
 window.deleteItem = async function(docId) {
     if (confirm("Delete this listing from the cloud?")) {
         try {
             await deleteDoc(doc(db, "listings", docId));
+            document.getElementById('product-modal').classList.add('hidden'); // Close modal if open
             alert("Deleted!");
             fetchAndRenderListings();
         } catch (error) {
             alert("Error deleting item.");
         }
-    }
-};
-
-window.contactSeller = async function(sellerKey) {
-    try {
-        const q = query(collection(db, "users"), where("usernameKey", "==", sellerKey));
-        const querySnapshot = await getDocs(q);
-        
-        if (querySnapshot.empty) {
-            alert("Sorry, seller details could not be found in the database.");
-            return;
-        }
-
-        const sellerData = querySnapshot.docs[0].data();
-
-        document.getElementById('modal-seller-name').innerText = sellerData.username;
-        document.getElementById('modal-seller-avatar').src = sellerData.idPhoto;
-
-        const phoneBtn = document.getElementById('modal-seller-phone');
-        phoneBtn.href = `tel:${sellerData.phone}`; 
-        phoneBtn.innerText = `📞 Call / SMS: ${sellerData.phone}`;
-
-        const fbBtn = document.getElementById('modal-seller-fb');
-        let cleanFbLink = sellerData.fb.startsWith('http') ? sellerData.fb : `https://${sellerData.fb}`;
-        fbBtn.href = cleanFbLink;
-
-        document.getElementById('modal-seller-address').style.display = 'none';
-
-        document.getElementById('seller-modal').classList.remove('hidden');
-    } catch (error) {
-        alert("Error loading seller info.");
     }
 };
 
@@ -503,6 +542,7 @@ window.openReserveModal = function(title, price, sellerKey, sellerName) {
     }
 
     document.getElementById('reserve-receipt').value = ""; 
+    document.getElementById('product-modal').classList.add('hidden'); // Close product modal so this is clearly on top
     document.getElementById('reserve-modal').classList.remove('hidden');
 };
 
@@ -572,6 +612,7 @@ window.openChatModal = function(sellerKey, sellerName) {
     
     activeChatUserId = sellerKey;
     document.getElementById('chat-target-name').innerText = "Chat with " + sellerName;
+    document.getElementById('product-modal').classList.add('hidden'); // Close product modal if open
     document.getElementById('chat-modal').classList.remove('hidden');
 
     const chatId = getChatId(currentUser.usernameKey, sellerKey);
@@ -590,7 +631,17 @@ window.openChatModal = function(sellerKey, sellerName) {
         msgs.forEach(m => {
             const div = document.createElement('div');
             div.className = 'chat-bubble ' + (m.sender === currentUser.usernameKey ? 'sent' : 'received');
-            div.innerText = m.text;
+            
+            // Allow images to render beautifully inside chat bubbles!
+            let innerHtml = '';
+            if (m.imageUrl) {
+                innerHtml += `<img src="${m.imageUrl}" style="max-width: 100%; border-radius: 8px; margin-bottom: 5px; cursor: pointer;" onclick="viewFullImage('${m.imageUrl}')"><br>`;
+            }
+            if (m.text) {
+                innerHtml += `<span style="display: block;">${m.text}</span>`;
+            }
+            div.innerHTML = innerHtml;
+            
             chatBox.appendChild(div);
         });
         
@@ -603,35 +654,74 @@ window.closeChatModal = function() {
     activeChatUserId = null; 
 };
 
+// --- CHAT IMAGE PREVIEW & REMOVAL LOGIC ---
+window.removeChatImg = function() {
+    document.getElementById('chat-img-input').value = '';
+    document.getElementById('chat-img-preview-container').style.display = 'none';
+};
+
+document.getElementById('chat-img-input').onchange = function(e) {
+    const file = e.target.files[0];
+    if(file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            document.getElementById('chat-img-preview').src = e.target.result;
+            document.getElementById('chat-img-preview-container').style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    }
+};
+
 document.getElementById('form-chat').onsubmit = async (e) => {
     e.preventDefault();
     const input = document.getElementById('chat-input');
+    const fileInput = document.getElementById('chat-img-input');
+    
     const text = input.value.trim();
-    if (!text) return;
-    input.value = '';
+    const file = fileInput.files[0];
+    
+    if (!text && !file) return;
 
-    const chatId = getChatId(currentUser.usernameKey, activeChatUserId);
+    const submitBtn = document.querySelector('#form-chat button[type="submit"]');
+    submitBtn.disabled = true;
 
-    await addDoc(collection(db, "messages"), {
-        chatId: chatId,
-        sender: currentUser.usernameKey,
-        text: text,
-        timestamp: Date.now()
-    });
+    try {
+        let imgBase64 = null;
+        if (file) {
+            imgBase64 = await compressImageAsync(file, 800, 800, 0.7); // Compress chat images
+        }
 
-    await addDoc(collection(db, "notifications"), {
-        targetUser: activeChatUserId,
-        type: 'message',
-        fromUser: currentUser.username,
-        text: text,
-        timestamp: Date.now()
-    });
+        input.value = '';
+        removeChatImg();
 
-    sendEmailNotification(
-        activeChatUserId, 
-        "New Message Received", 
-        `You have a new unread message from ${currentUser.username} on VehiSell: "${text}"`
-    );
+        const chatId = getChatId(currentUser.usernameKey, activeChatUserId);
+
+        await addDoc(collection(db, "messages"), {
+            chatId: chatId,
+            sender: currentUser.usernameKey,
+            text: text,
+            imageUrl: imgBase64, // Save the image string!
+            timestamp: Date.now()
+        });
+
+        await addDoc(collection(db, "notifications"), {
+            targetUser: activeChatUserId,
+            type: 'message',
+            fromUser: currentUser.username,
+            text: text ? text : "Sent an image.",
+            timestamp: Date.now()
+        });
+
+        sendEmailNotification(
+            activeChatUserId, 
+            "New Message Received", 
+            `You have a new unread message from ${currentUser.username} on VehiSell.`
+        );
+
+    } catch (err) {
+        console.error(err);
+    }
+    submitBtn.disabled = false;
 };
 
 let alertsUnsubscribe = null;
@@ -760,7 +850,6 @@ async function loadAdminDashboard() {
         reserves.forEach(r => {
             const logItem = document.createElement('div');
             logItem.style = "padding: 10px; border-bottom: 1px solid #e2e8f0; font-size: 0.9rem;";
-            // Use the new Full Image modal to review the receipt!
             logItem.innerHTML = `
                 <strong>${r.buyer}</strong> reserved <em>${r.item}</em> from <strong>${r.seller}</strong> (+₱${r.fee.toLocaleString()})
                 ${r.receipt ? `<br><span onclick="viewFullImage('${r.receipt}')" style="color:var(--primary); font-size:0.8rem; font-weight:bold; cursor: pointer;">🔍 View Receipt</span>` : ''}
@@ -779,7 +868,6 @@ async function loadAdminDashboard() {
         console.error("Could not fetch counts", err);
     }
 
-    // 3. PENDING ID APPROVALS
     const qPending = query(collection(db, "users"), where("isVerified", "==", false));
     onSnapshot(qPending, (snapshot) => {
         const pendingBox = document.getElementById('admin-pending-users');
@@ -826,7 +914,6 @@ async function loadAdminDashboard() {
     });
 }
 
-// Global functions for Admin to Approve or Reject users
 window.approveUser = async function(docId, username, usernameKey) {
     if(confirm(`Approve ${username}'s ID and send them an email?`)) {
         try {
@@ -906,15 +993,16 @@ async function sendEmailNotification(targetUsernameKey, subjectTitle, bodyMessag
     }
 }
 
-// Ensure the new Image Modal closes when you click off of it!
 window.onclick = (event) => {
     const sellerModal = document.getElementById('seller-modal');
     const reserveModal = document.getElementById('reserve-modal');
     const imageModal = document.getElementById('image-modal');
+    const productModal = document.getElementById('product-modal'); // Ensures clicking off the big gallery closes it
     
     if (event.target === sellerModal) sellerModal.classList.add('hidden');
     if (event.target === reserveModal) reserveModal.classList.add('hidden');
     if (event.target === imageModal) imageModal.classList.add('hidden');
+    if (event.target === productModal) productModal.classList.add('hidden');
 };
 
 document.getElementById('search-input').oninput = (e) => {
