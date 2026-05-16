@@ -9,7 +9,6 @@
     --border: #e2e8f0;
 }
 
-/* --- CUSTOM PREMIUM SCROLLBAR --- */
 ::-webkit-scrollbar {
     width: 8px;
     height: 8px;
@@ -33,7 +32,6 @@ body {
     -webkit-font-smoothing: antialiased;
 }
 
-/* --- PREMIUM GLASS HEADER --- */
 header {
     background: rgba(255, 255, 255, 0.85);
     backdrop-filter: blur(12px);
@@ -65,7 +63,6 @@ header {
     -webkit-text-fill-color: transparent;
 }
 
-/* --- UPPER LEFT ICONS --- */
 .icon-btn {
     background: white;
     border: 1px solid var(--border);
@@ -101,7 +98,6 @@ header {
     box-shadow: 0 2px 5px rgba(239, 68, 68, 0.4);
 }
 
-/* --- PREMIUM NAVIGATION --- */
 .nav-btn {
     border: none;
     background: none;
@@ -145,7 +141,6 @@ main {
     gap: 2rem;
 }
 
-/* --- PREMIUM PRODUCT CARD --- */
 .product-card {
     background: var(--card-bg);
     border-radius: 20px;
@@ -189,7 +184,7 @@ main {
     transform: scale(1.08);
 }
 
-/* --- FIXED ID BADGE (NO MORE FLICKER) --- */
+/* --- FIXED ID BADGE (NO GLITCH) --- */
 .id-badge {
     position: absolute;
     top: 175px; 
@@ -203,15 +198,14 @@ main {
     align-items: center;
     gap: 8px;
     border: 1px solid rgba(226, 232, 240, 0.9);
-    box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
     z-index: 10; 
     cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
 .id-badge:hover {
-    transform: translateY(-3px) scale(1.02);
-    box-shadow: 0 10px 25px rgba(79, 70, 229, 0.25);
+    box-shadow: 0 8px 25px rgba(79, 70, 229, 0.2);
     border-color: var(--primary);
 }
 
@@ -272,7 +266,6 @@ main {
     border-top: 1px solid #f1f5f9;
 }
 
-/* --- PREMIUM INPUTS & FORMS --- */
 .glass-card {
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(20px);
@@ -305,7 +298,6 @@ input:focus, textarea:focus, select:focus {
     box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
 }
 
-/* --- BUTTON UPGRADES --- */
 .btn-primary, .btn-secondary, .btn-contact, .btn-del {
     transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
     font-family: inherit;
@@ -381,14 +373,12 @@ input:focus, textarea:focus, select:focus {
 
 .hidden { display: none !important; }
 
-/* --- PREMIUM MODALS --- */
 .modal {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    /* Deeper, more luxurious blur for modals */
     background: rgba(15, 23, 42, 0.8);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
@@ -436,17 +426,18 @@ input:focus, textarea:focus, select:focus {
     transform: scale(1.1) rotate(90deg);
 }
 
-/* --- FIXED THUMBNAIL GALLERY --- */
+/* --- FIXED THUMBNAIL CONTAINER --- */
 #pm-thumbnails {
     display: flex; 
-    gap: 15px; 
-    padding: 20px; 
-    background: #0f172a; 
+    gap: 10px; 
+    padding: 12px; 
+    background: #1e293b; 
     overflow-x: auto; 
-    /* Ensures outlines/shadows don't clip! */
-    overflow-y: visible; 
-    justify-content: flex-start;
+    overflow-y: hidden; 
+    justify-content: center;
     align-items: center;
+    min-height: 85px;
+    box-sizing: border-box;
 }
 
 #pm-thumbnails::-webkit-scrollbar {
@@ -461,7 +452,6 @@ input:focus, textarea:focus, select:focus {
     border-radius: 4px;
 }
 
-/* Hover effects for arrows */
 .gallery-nav-btn {
     position: absolute; 
     top: 50%; 
@@ -470,9 +460,9 @@ input:focus, textarea:focus, select:focus {
     color: var(--text);
     border: none; 
     border-radius: 50%; 
-    width: 45px; 
-    height: 45px; 
-    font-size: 1.5rem; 
+    width: 40px; 
+    height: 40px; 
+    font-size: 1.2rem; 
     cursor: pointer; 
     z-index: 20; 
     box-shadow: 0 4px 15px rgba(0,0,0,0.3); 
@@ -501,7 +491,6 @@ input:focus, textarea:focus, select:focus {
     }
 }
 
-/* --- TOAST NOTIFICATIONS --- */
 .toast-container {
     position: fixed;
     bottom: 20px;
@@ -536,7 +525,6 @@ input:focus, textarea:focus, select:focus {
 
 @keyframes slideIn { to { transform: translateX(0); } }
 
-/* --- LIVE CHAT BUBBLES --- */
 .chat-bubble {
     max-width: 75%;
     padding: 14px 18px;
