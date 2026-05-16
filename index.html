@@ -55,7 +55,7 @@
                 <p class="hero-subtitle">Buy, sell, and reserve with absolute confidence. Every seller is ID-verified, and every transaction is protected by our secure Escrow system.</p>
                 <div class="hero-buttons">
                     <button class="btn-primary" style="width: auto; padding: 1rem 2.5rem; font-size: 1.1rem; border-radius: 30px;" onclick="window.switchTab('buy')">Explore Marketplace</button>
-                    <button class="btn-secondary" style="width: auto; padding: 1rem 2.5rem; font-size: 1.1rem; border-radius: 30px;" onclick="window.switchTab('sell')">Start Selling</button>
+                    <button class="btn-secondary" style="background: var(--card-bg); color: var(--text); border: 1px solid var(--border); width: auto; padding: 1rem 2.5rem; font-size: 1.1rem; border-radius: 30px;" onclick="window.switchTab('sell')">Start Selling</button>
                 </div>
             </div>
 
@@ -301,14 +301,14 @@
     </main>
 
     <div id="image-modal" class="modal hidden" style="z-index: 9999;">
-        <div class="modal-content" style="background: transparent; box-shadow: none; text-align: center; padding: 0; max-width: 95%; max-height: none; overflow: visible; border: none;">
+        <div class="modal-content" style="background: transparent; box-shadow: none; text-align: center; padding: 0 !important; max-width: 95%; max-height: none; overflow: visible; border: none;">
             <span class="close-btn" onclick="document.getElementById('image-modal').classList.add('hidden')" style="color: white; font-size: 50px; position: absolute; right: 0; top: -50px; text-shadow: 0 2px 10px rgba(0,0,0,0.5);">&times;</span>
             <img id="full-image-viewer" src="" style="max-width: 100%; max-height: 85vh; border-radius: 16px; box-shadow: 0 20px 50px rgba(0,0,0,0.8); object-fit: contain;">
         </div>
     </div>
 
     <div id="product-modal" class="modal hidden">
-        <div class="modal-content glass-card" style="max-width: 650px; padding: 0; overflow-y: auto; display: flex; flex-direction: column; border: none; max-height: 90vh;">
+        <div class="modal-content glass-card" style="max-width: 650px; padding: 0 !important; overflow-y: auto; display: flex; flex-direction: column; border: none; max-height: 90vh;">
             <span class="close-btn" onclick="document.getElementById('product-modal').classList.add('hidden')" style="cursor: pointer; position: absolute; right: 20px; top: 15px; z-index: 50; background: rgba(255,255,255,0.95); box-shadow: 0 4px 10px rgba(0,0,0,0.1); border-radius: 50%; width: 36px; height: 36px; text-align: center; line-height: 36px; font-weight: bold; color: #0f172a;">&times;</span>
             
             <div style="background: #0f172a; text-align: center; position: relative; display: flex; align-items: center; justify-content: center; height: 35vh; min-height: 200px; width: 100%;">
@@ -355,7 +355,7 @@
     </div>
 
     <div id="chat-modal" class="modal hidden">
-        <div class="modal-content glass-card" style="padding: 0; overflow: hidden; display: flex; flex-direction: column; height: 85vh; max-height: 700px; border: none;">
+        <div class="modal-content glass-card" style="padding: 0 !important; overflow: hidden; display: flex; flex-direction: column; height: 85vh; max-height: 700px; border: none;">
             <div style="background: var(--primary-gradient); color: white; padding: 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1); z-index: 10;">
                 <div style="display: flex; align-items: center; gap: 10px;">
                     <span style="font-size: 1.5rem;">💬</span>
