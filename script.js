@@ -1,5 +1,5 @@
-﻿import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, doc, setDoc, getDoc, collection, getDocs, addDoc, query, where, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, doc, setDoc, getDoc, collection, getDocs, addDoc, query, where, deleteDoc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getStorage, ref, uploadString, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
 
 const firebaseConfig = {
@@ -114,6 +114,15 @@ document.getElementById('form-auth').addEventListener('submit', async function (
 
             if (!querySnapshot.empty) {
                 const userData = querySnapshot.docs[0].data();
+                
+                // NEW: Block login if the account hasn't been approved by the admin yet
+                if (userData.isVerified === false) {
+                    alert("⏳ Account still pending! Please wait for the admin to verify your ID.");
+                    authBtn.textContent = "Login";
+                    authBtn.disabled = false;
+                    return;
+                }
+                
                 login(userData);
             } else {
                 alert("❌ Invalid username or password.");
@@ -131,48 +140,72 @@ document.getElementById('form-auth').addEventListener('submit', async function (
         const phone = document.getElementById('auth-phone').value.trim();
         const fbLink = document.getElementById('auth-fb').value.trim();
         const idFileInput = document.getElementById('auth-id-img');
+        const idBackFileInput = document.getElementById('auth-id-back-img');
+        
         const idFile = idFileInput.files[0];
+        const idBackFile = idBackFileInput.files[0];
 
         if (!rawUser) return resetBtn("❌ Username required", "Create Verified Account");
         if (pass !== confirmPass) return resetBtn("❌ Passwords don't match", "Create Verified Account");
         if (!email) return resetBtn("❌ Email required", "Create Verified Account");
-        if (!idFile) return resetBtn("❌ ID photo required", "Create Verified Account");
+        if (!idFile) return resetBtn("❌ Front ID photo required", "Create Verified Account");
 
         const q = query(collection(db, "users"), where("usernameKey", "==", safeUserKey));
         const userExists = await getDocs(q);
         if (!userExists.empty) return resetBtn("❌ Username already taken!", "Create Verified Account");
 
-        authBtn.textContent = "Uploading ID...";
+        authBtn.textContent = "Processing Front ID...";
         
-        compressImage(idFile, 800, 800, 0.8, async function (compressedIdPhoto) {
-            try {
-                authBtn.textContent = "Creating Account...";
-                
-                const newUser = {
-                    username: rawUser,
-                    usernameKey: safeUserKey,
-                    password: pass, 
-                    email: email, 
-                    phone: phone,
-                    fb: fbLink,
-                    idPhoto: compressedIdPhoto 
-                };
-                await addDoc(collection(db, "users"), newUser);
+        compressImage(idFile, 800, 800, 0.8, async function (compressedFrontPhoto) {
+            
+            // Sub-function to save everything once photos are ready
+            const finishRegistration = async (compressedBackPhoto) => {
+                authBtn.textContent = "Submitting Review...";
+                try {
+                    const newUser = {
+                        username: rawUser,
+                        usernameKey: safeUserKey,
+                        password: pass, 
+                        email: email, 
+                        phone: phone,
+                        fb: fbLink,
+                        idPhoto: compressedFrontPhoto, 
+                        idPhotoBack: compressedBackPhoto, // Can be null if skipped
+                        isVerified: safeUserKey === 'admin' ? true : false // Admin auto-approves
+                    };
+                    await addDoc(collection(db, "users"), newUser);
 
-                alert("✅ Account created successfully! Logging you in...");
-                document.getElementById('form-auth').reset();
-                login(newUser);
+                    if (safeUserKey === 'admin') {
+                        alert("✅ Admin Account created! Logging you in...");
+                        document.getElementById('form-auth').reset();
+                        login(newUser);
+                    } else {
+                        // Regular users are NOT logged in yet. They must wait.
+                        alert("✅ Account submitted! The admin will review your ID to protect the community. You will receive an email once you are verified.");
+                        document.getElementById('form-auth').reset();
+                        toggleAuthMode(); // Flip back to login screen
+                        authBtn.textContent = "Login";
+                        authBtn.disabled = false;
+                    }
 
-                sendEmailNotification(
-                    safeUserKey, 
-                    "Welcome to VehiSell!", 
-                    `Hello ${rawUser}, your verified VehiSell account has been successfully created. Welcome to the marketplace!`
-                );
+                } catch (error) {
+                    console.error(error);
+                    resetBtn("❌ Error saving to cloud.", "Create Verified Account");
+                }
+            };
 
-            } catch (error) {
-                console.error(error);
-                resetBtn("❌ Error saving to cloud.", "Create Verified Account");
+            // Check if they uploaded an optional Back ID
+            if (idBackFile) {
+                authBtn.textContent = "Processing Back ID...";
+                compressImage(idBackFile, 800, 800, 0.8, function(compressedBackPhoto) {
+                    finishRegistration(compressedBackPhoto);
+                }, function(err) {
+                    resetBtn("❌ Error reading Back ID.", "Create Verified Account");
+                });
+            } else {
+                finishRegistration(null); // No back ID uploaded, skip to save
             }
+
         }, function(errorMessage) {
             resetBtn("❌ " + errorMessage, "Create Verified Account");
         });
@@ -400,18 +433,15 @@ window.openReserveModal = function(title, price, sellerKey, sellerName) {
     document.getElementById('reserve-full-price').innerText = numericPrice.toLocaleString();
     document.getElementById('reserve-fee-amount').innerText = reserveFee.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
 
-    // --- DYNAMIC GCASH LOGIC ---
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     const gcashDiv = document.getElementById('dynamic-gcash');
     
     if (isMobile) {
-        // Render a deep link button for Mobile Devices
         gcashDiv.innerHTML = `
             <a href="intent://#Intent;package=com.globe.gcash.android;scheme=gcash;end" style="background:#005ce6; color:white; font-weight:bold; text-decoration:none; display:inline-block; padding:12px 20px; border-radius:10px; box-shadow: 0 4px 10px rgba(0,92,230,0.3);">📱 Open GCash App</a>
             <p style="font-size:0.85rem; color:var(--light); margin-top:10px; margin-bottom:0;">Account Number: <strong>0912 345 6789</strong></p>
         `;
     } else {
-        // Render a scannable QR Code for Desktop Monitors
         const gcashNumber = "09123456789"; 
         gcashDiv.innerHTML = `
             <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${gcashNumber}" alt="GCash QR Code" style="border-radius:10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
@@ -419,12 +449,11 @@ window.openReserveModal = function(title, price, sellerKey, sellerName) {
         `;
     }
 
-    document.getElementById('reserve-receipt').value = ""; // Reset the file input
+    document.getElementById('reserve-receipt').value = ""; 
     document.getElementById('reserve-modal').classList.remove('hidden');
 };
 
 window.confirmReservation = async function() {
-    // 1. Force the user to upload a receipt
     const receiptFile = document.getElementById('reserve-receipt').files[0];
     if (!receiptFile) {
         alert("⚠️ Please upload a screenshot of your payment receipt before submitting.");
@@ -435,7 +464,6 @@ window.confirmReservation = async function() {
     submitBtn.disabled = true;
     submitBtn.textContent = "Verifying Payment...";
 
-    // 2. Compress the receipt and save the data
     compressImage(receiptFile, 600, 600, 0.6, async function (compressedReceipt) {
         try {
             await addDoc(collection(db, "notifications"), {
@@ -451,7 +479,7 @@ window.confirmReservation = async function() {
                 buyer: currentUser.username,
                 seller: pendingReservation.sellerName, 
                 fee: pendingReservation.fee,
-                receipt: compressedReceipt, // Saved for the Admin
+                receipt: compressedReceipt, 
                 timestamp: Date.now()
             });
 
@@ -648,12 +676,12 @@ function loadInbox() {
     });
 }
 
-// --- ADMIN DASHBOARD LOGIC (WITH WITHDRAWALS) ---
-let currentTotalAdminProfit = 0; // Kept in memory for the withdrawal button
+// --- ADMIN DASHBOARD LOGIC ---
+let currentTotalAdminProfit = 0;
 
 async function loadAdminDashboard() {
     
-    // 1. Monitor Reservations & Withdrawals to calculate net profit
+    // 1. Dashboard Financials
     const resQuery = query(collection(db, "reservations"));
     const withQuery = query(collection(db, "withdrawals"));
     
@@ -669,7 +697,6 @@ async function loadAdminDashboard() {
             reserves.push(data);
         });
 
-        // Fetch withdrawals to subtract from gross profit
         let totalWithdrawn = 0;
         const wSnap = await getDocs(withQuery);
         wSnap.forEach(d => totalWithdrawn += Number(d.data().amount));
@@ -677,7 +704,6 @@ async function loadAdminDashboard() {
         currentTotalAdminProfit = grossProfit - totalWithdrawn;
         document.getElementById('admin-total-profit').innerText = currentTotalAdminProfit.toLocaleString(undefined, {minimumFractionDigits: 2});
 
-        // Render Logs (We include a tiny "View Receipt" link for the admin)
         reserves.sort((a,b) => b.timestamp - a.timestamp);
         reserves.forEach(r => {
             const logItem = document.createElement('div');
@@ -690,6 +716,7 @@ async function loadAdminDashboard() {
         });
     });
 
+    // 2. Total Users & Listings
     try {
         const usersSnap = await getDocs(collection(db, "users"));
         document.getElementById('admin-total-users').innerText = usersSnap.size.toLocaleString();
@@ -699,9 +726,83 @@ async function loadAdminDashboard() {
     } catch(err) {
         console.error("Could not fetch counts", err);
     }
+
+    // 3. PENDING ID APPROVALS
+    const qPending = query(collection(db, "users"), where("isVerified", "==", false));
+    onSnapshot(qPending, (snapshot) => {
+        const pendingBox = document.getElementById('admin-pending-users');
+        pendingBox.innerHTML = '';
+        
+        if(snapshot.empty) {
+            pendingBox.innerHTML = '<p style="color: var(--light); text-align: center;">No pending accounts.</p>';
+            return;
+        }
+
+        snapshot.forEach(docSnap => {
+            const u = docSnap.data();
+            const uId = docSnap.id;
+            
+            const div = document.createElement('div');
+            div.style = "padding: 15px; border-bottom: 1px solid #e2e8f0; margin-bottom: 10px; background: #f8fafc; border-radius: 8px;";
+            div.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <div>
+                        <strong style="font-size: 1.1rem; color: var(--text);">${u.username}</strong>
+                        <p style="margin: 0; font-size: 0.85rem; color: var(--light);">${u.email}</p>
+                    </div>
+                    <div style="display: flex; gap: 5px;">
+                        <button class="btn-primary" style="background: #10b981; padding: 5px 15px; width: auto;" onclick="approveUser('${uId}', '${u.username}', '${u.usernameKey}')">Approve</button>
+                        <button class="btn-secondary" style="padding: 5px 15px; width: auto; margin: 0;" onclick="rejectUser('${uId}')">Reject</button>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <div style="flex: 1;">
+                        <p style="font-size: 0.8rem; margin: 0 0 5px 0; font-weight: bold;">Front ID</p>
+                        <a href="${u.idPhoto}" target="_blank"><img src="${u.idPhoto}" style="width: 100%; height: 100px; object-fit: cover; border-radius: 6px; border: 1px solid #cbd5e1;"></a>
+                    </div>
+                    ${u.idPhotoBack ? `
+                    <div style="flex: 1;">
+                        <p style="font-size: 0.8rem; margin: 0 0 5px 0; font-weight: bold;">Back ID</p>
+                        <a href="${u.idPhotoBack}" target="_blank"><img src="${u.idPhotoBack}" style="width: 100%; height: 100px; object-fit: cover; border-radius: 6px; border: 1px solid #cbd5e1;"></a>
+                    </div>` : '<div style="flex: 1;"><p style="font-size: 0.8rem; margin: 0 0 5px 0; color:var(--light);">No Back ID</p></div>'}
+                </div>
+            `;
+            pendingBox.appendChild(div);
+        });
+    });
 }
 
-// --- ADMIN WITHDRAW BUTTON LOGIC ---
+// Global functions for Admin to Approve or Reject users
+window.approveUser = async function(docId, username, usernameKey) {
+    if(confirm(`Approve ${username}'s ID and send them an email?`)) {
+        try {
+            await updateDoc(doc(db, "users", docId), { isVerified: true });
+            
+            sendEmailNotification(
+                usernameKey, 
+                "Account Verified: Welcome to VehiSell!", 
+                `Hello ${username}! Great news, the admin has successfully verified your ID. Your account is now fully active. You can log in, post listings, and safely interact with buyers!`
+            );
+            
+            alert(`✅ ${username} has been approved and notified.`);
+        } catch(e) {
+            alert("Error approving user.");
+            console.error(e);
+        }
+    }
+};
+
+window.rejectUser = async function(docId) {
+    if(confirm("Reject this user? This will delete their pending account permanently.")) {
+        try {
+            await deleteDoc(doc(db, "users", docId));
+            alert("User rejected and removed from system.");
+        } catch(e) {
+            alert("Error rejecting user.");
+        }
+    }
+};
+
 document.getElementById('btn-withdraw').onclick = async () => {
     if(currentTotalAdminProfit <= 0) {
         alert("You have no funds available to withdraw.");
@@ -715,7 +816,6 @@ document.getElementById('btn-withdraw').onclick = async () => {
                 timestamp: Date.now()
             });
             alert("✅ Withdrawal Requested! Funds will reflect in your account within 2-3 business days.");
-            // The onSnapshot listener above will auto-recalculate and set the dashboard to 0!
         } catch(err) {
             alert("Error processing withdrawal.");
         }
