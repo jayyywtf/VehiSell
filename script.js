@@ -594,16 +594,16 @@ async function sendEmailNotification(targetUsernameKey, subjectTitle, bodyMessag
         
         if(!userDoc.empty) {
             const userEmail = userDoc.docs[0].data().email;
-            const currentTime = new Date().toLocaleString(); // Creates the {{time}} for your template
+            const currentTime = new Date().toLocaleString(); 
             
-            // NOTE: Replace these three strings with your ACTUAL EmailJS IDs
-            emailjs.send("YOUR_SERVICE_ID", "YOUR_TEMPLATE_ID", {
-                to_email: userEmail,             // Maps to {{to_email}}
-                title: subjectTitle,             // Maps to {{title}}
-                name: "VehiSell Admin",          // Maps to {{name}}
-                message: bodyMessage,            // Maps to {{message}}
-                time: currentTime,               // Maps to {{time}}
-                email: "admin@vehisell.com"      // Maps to {{email}}
+            // Your live EmailJS keys are securely injected here!
+            emailjs.send("service_gzunt5g", "template_xlk8x6j", {
+                to_email: userEmail,             
+                title: subjectTitle,             
+                name: "VehiSell Admin",          
+                message: bodyMessage,            
+                time: currentTime,               
+                email: "admin@vehisell.com"      
             }).then(
               (response) => {
                 console.log('✅ Email sent successfully!', response.status, response.text);
