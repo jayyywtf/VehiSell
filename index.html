@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -83,9 +83,14 @@
                         <input type="text" id="auth-fb" placeholder="Facebook Profile Link">
 
                         <div class="id-upload-area">
-                            <label>Verify Identity (Required)</label>
-                            <p>Upload a photo of your Valid ID</p>
+                            <label style="color: var(--primary); font-weight: 800;">Front of Valid ID (Required)</label>
+                            <p>Upload a clear photo of the front</p>
                             <input type="file" id="auth-id-img" accept="image/*">
+                        </div>
+                        <div class="id-upload-area" style="margin-top: 10px;">
+                            <label style="font-weight: 800;">Back of Valid ID (Optional)</label>
+                            <p>Upload the back if it contains details</p>
+                            <input type="file" id="auth-id-back-img" accept="image/*">
                         </div>
                     </div>
 
@@ -124,7 +129,6 @@
                 <div style="background: #f8fafc; padding: 20px; border-radius: 12px; text-align: center; margin-bottom: 15px; border: 1px solid #e2e8f0;">
                     <h3 style="margin:0; color: var(--light);">Available Escrow Profit (5% Fees)</h3>
                     <h1 style="margin:10px 0; color: #10b981; font-size: 3rem;">₱<span id="admin-total-profit">0.00</span></h1>
-                    
                     <button id="btn-withdraw" class="btn-primary" style="background: var(--text); width: auto; padding: 10px 20px; border-radius: 20px;">🏦 Withdraw Funds to Bank</button>
                 </div>
 
@@ -137,6 +141,11 @@
                         <h4 style="margin:0; color: var(--light);">Active Listings</h4>
                         <h2 style="margin:5px 0; color: var(--primary);" id="admin-total-listings">0</h2>
                     </div>
+                </div>
+
+                <h3 style="margin-bottom: 10px; color: var(--primary);">Pending Account Approvals</h3>
+                <div id="admin-pending-users" style="max-height: 400px; overflow-y: auto; background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px; margin-bottom: 20px;">
+                    <p style="color: var(--light); text-align: center;">No pending accounts.</p>
                 </div>
 
                 <h3 style="margin-bottom: 10px;">Recent System Transactions</h3>
@@ -193,7 +202,7 @@
                 <h4 style="margin-bottom: 10px; text-align: center;">Send payment to VehiSell Escrow</h4>
                 
                 <div id="dynamic-gcash" style="text-align: center; margin-bottom: 15px; padding: 15px; border: 1px solid #cbd5e1; border-radius: 10px; background: #f8fafc;">
-                    </div>
+                </div>
 
                 <div style="border: 1px solid #cbd5e1; padding: 12px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
                     <strong>🏦 Bank Transfer</strong>
