@@ -85,9 +85,9 @@
                     </div>
                     <div class="footer-col">
                         <h3>Contact Us</h3>
-                        <p>📞 Phone: +63 992 642 2997/p>
-                        <p>✉️ Email: hernandezbjay1@gmail.com</p>
-                        <p>🏢 Office: STI College Balayan, Balayan, Batangas</p>
+                        <p>📞 Phone: +63 912 345 6789</p>
+                        <p>✉️ Email: support@vehisell.com</p>
+                        <p>🏢 Office: Makati City, Metro Manila</p>
                     </div>
                     <div class="footer-col">
                         <h3>Quick Links</h3>
@@ -172,10 +172,10 @@
                             <input type="checkbox" id="p-boost" style="width: 20px; height: 20px; margin:0;">
                             Boost this listing (₱150 fee)
                         </label>
-                        <p style="margin: 5px 0 0 30px; font-size: 0.8rem; color: #b45309;">Boosted listings always appear at the very top of the marketplace.</p>
+                        <p style="margin: 5px 0 0 30px; font-size: 0.8rem; color: var(--text);">Boosted listings always appear at the very top of the marketplace.</p>
                     </div>
 
-                    <button type="submit" class="btn-primary">Post Item</button>
+                    <button type="submit" id="submit-sell-btn" class="btn-primary">Post Item</button>
                 </form>
             </div>
         </section>
@@ -195,10 +195,10 @@
 
                         <div style="margin: 15px 0; background: rgba(79, 70, 229, 0.1); padding: 15px; border-radius: 12px; border: 1px solid var(--primary);">
                             <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: 800; color: var(--primary);">
-                                <input type="checkbox" id="auth-is-dealer" style="width: 20px; height: 20px; margin: 0;">
+                                <input type="checkbox" id="auth-is-dealer" style="width: 20px; height: 20px; margin: 0;" onchange="document.getElementById('auth-btn').textContent = this.checked ? 'Proceed to Payment (₱499)' : 'Create Verified Account'">
                                 Register as a Verified Dealer
                             </label>
-                            <p style="margin: 5px 0 0 30px; font-size: 0.8rem; color: var(--text);">Dealers can boost listings and receive a premium badge.</p>
+                            <p style="margin: 5px 0 0 30px; font-size: 0.8rem; color: var(--text);">Pay a one-time ₱499 fee to bypass manual admin verification and instantly unlock listing boosts.</p>
                         </div>
 
                         <div class="id-upload-area" style="background: var(--bg); border: 2px dashed var(--border); padding: 15px; border-radius: 12px;">
@@ -259,9 +259,9 @@
                 <h2 style="margin-top:0;">Admin Dashboard</h2>
                 
                 <div style="background: var(--bg); padding: 30px; border-radius: 20px; text-align: center; margin-bottom: 20px; border: 1px solid var(--border); box-shadow: 0 10px 30px rgba(0,0,0,0.03);">
-                    <h3 style="margin:0; color: var(--light); font-size: 1rem; text-transform: uppercase; letter-spacing: 1px;">Available Escrow Profit (5%)</h3>
+                    <h3 style="margin:0; color: var(--light); font-size: 1rem; text-transform: uppercase; letter-spacing: 1px;">Available Escrow Profit (5%) & Fees</h3>
                     <h1 style="margin:15px 0; color: #10b981; font-size: 3.5rem; letter-spacing: -1px;" id="admin-total-profit">₱0.00</h1>
-                   <button id="btn-withdraw" class="btn-primary" style="background: var(--text); color: var(--bg); width: auto; padding: 12px 25px; border-radius: 30px; font-size: 1rem;">🏦 Withdraw Funds to Bank</button>
+                    <button id="btn-withdraw" class="btn-primary" style="background: var(--text); color: var(--bg); width: auto; padding: 12px 25px; border-radius: 30px; font-size: 1rem;">🏦 Withdraw Funds to Bank</button>
                 </div>
 
                 <div class="stats-grid">
@@ -381,20 +381,19 @@
         </div>
     </div>
 
-    <div id="reserve-modal" class="modal hidden">
+    <div id="payment-modal" class="modal hidden">
         <div class="modal-content glass-card" style="text-align: center;">
-            <span class="close-btn" onclick="document.getElementById('reserve-modal').classList.add('hidden')">&times;</span>
-            <h2 style="margin-top:0;">Reserve Item</h2>
-            <h3 id="reserve-item-title" style="margin-bottom: 5px; font-size: 1.4rem;">Item Name</h3>
-            <p style="color: var(--light); margin-top: 0; font-size: 1rem;">Full Price: ₱<span id="reserve-full-price">0</span></p>
+            <span class="close-btn" onclick="document.getElementById('payment-modal').classList.add('hidden')">&times;</span>
+            <h2 id="payment-modal-title" style="margin-top:0;">Payment Request</h2>
+            <h3 id="payment-item-title" style="margin-bottom: 5px; font-size: 1.2rem; color: var(--light);">Item Name</h3>
             
             <div style="background: rgba(16, 185, 129, 0.1); padding: 20px; border-radius: 16px; margin: 20px 0; border: 1px solid #10b981; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.1);">
-                <p style="margin: 0; font-weight: 800; color: #10b981; text-transform: uppercase; font-size: 0.85rem; letter-spacing: 1px;">Required Downpayment (5%)</p>
-                <h2 style="margin: 10px 0 0 0; color: #10b981; font-size: 2.5rem; letter-spacing: -1px;">₱<span id="reserve-fee-amount">0</span></h2>
+                <p id="payment-fee-label" style="margin: 0; font-weight: 800; color: #10b981; text-transform: uppercase; font-size: 0.85rem; letter-spacing: 1px;">Required Fee</p>
+                <h2 style="margin: 10px 0 0 0; color: #10b981; font-size: 2.5rem; letter-spacing: -1px;">₱<span id="payment-fee-amount">0</span></h2>
             </div>
             
             <div style="text-align: left; margin-bottom: 20px;">
-                <h4 style="margin-bottom: 15px; text-align: center; color: var(--text);">Send payment to VehiSell Escrow</h4>
+                <h4 style="margin-bottom: 15px; text-align: center; color: var(--text);">Send payment to VehiSell</h4>
                 
                 <div id="dynamic-gcash" style="text-align: center; margin-bottom: 15px; padding: 20px; border: 1px solid var(--border); border-radius: 16px; background: var(--bg); box-shadow: 0 4px 10px rgba(0,0,0,0.02);"></div>
 
@@ -406,10 +405,10 @@
 
             <div class="file-box" style="text-align: left; margin-bottom: 25px; background: var(--bg); padding: 15px; border-radius: 12px; border: 2px dashed var(--primary);">
                 <label style="font-size: 0.95rem; font-weight: 800; color: var(--primary); display: block; margin-bottom: 10px;">Upload Proof of Payment (Receipt) *</label>
-                <input type="file" id="reserve-receipt" accept="image/*" style="border: none; padding: 0; background: transparent; color: var(--text);">
+                <input type="file" id="payment-receipt" accept="image/*" style="border: none; padding: 0; background: transparent; color: var(--text);">
             </div>
             
-            <button id="btn-confirm-reservation" class="btn-primary" style="background: #10b981; padding: 15px; font-size: 1.1rem;" onclick="confirmReservation()">Submit Payment Proof</button>
+            <button id="btn-confirm-payment" class="btn-primary" style="background: #10b981; padding: 15px; font-size: 1.1rem;">Submit Payment Proof</button>
         </div>
     </div>
 
