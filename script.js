@@ -159,6 +159,7 @@ window.openPaymentModal = function(type, title, itemName, feeAmount, callback) {
     
     let label = 'Required Fee';
     if(type === 'reserve') label = 'Required Downpayment (5%)';
+    if(type === 'dealer') label = 'Instant Verification Fee';
     if(type === 'boost') label = 'Hot List Boost Fee';
     document.getElementById('payment-fee-label').innerText = label;
 
@@ -228,6 +229,7 @@ document.getElementById('form-auth').addEventListener('submit', async function (
 
             if (!querySnapshot.empty) {
                 const userData = querySnapshot.docs[0].data();
+                
                 if (userData.isVerified === false) {
                     alert("⏳ Account still pending! Please wait for the admin to verify your ID.");
                     authBtn.textContent = "Login";
@@ -253,6 +255,7 @@ document.getElementById('form-auth').addEventListener('submit', async function (
                 } else {
                     login(userData);
                 }
+
             } else {
                 alert("❌ Invalid username or password.");
                 authBtn.textContent = "Login";
@@ -270,7 +273,7 @@ document.getElementById('form-auth').addEventListener('submit', async function (
         const email = document.getElementById('auth-email').value.trim(); 
         const phone = document.getElementById('auth-phone').value.trim();
         const fbLink = document.getElementById('auth-fb').value.trim();
-        const isDealer = false; // Dealer toggle removed as requested
+        const isDealer = document.getElementById('auth-is-dealer') ? document.getElementById('auth-is-dealer').checked : false; 
         const idFileInput = document.getElementById('auth-id-img');
         const idBackFileInput = document.getElementById('auth-id-back-img');
         
@@ -286,55 +289,65 @@ document.getElementById('form-auth').addEventListener('submit', async function (
         const userExists = await getDocs(q);
         if (!userExists.empty) return resetBtn("❌ Username already taken!", "Create Verified Account");
 
+        const submitToFirebase = async (frontId, backId, verifyNow) => {
+            const newUser = {
+                username: rawUser,
+                usernameKey: safeUserKey,
+                password: pass, 
+                email: email, 
+                phone: phone,
+                fb: fbLink,
+                isDealer: isDealer, 
+                idPhoto: frontId, 
+                idPhotoBack: backId, 
+                isVerified: verifyNow || safeUserKey === 'admin' 
+            };
+            await addDoc(collection(db, "users"), newUser);
+            return newUser;
+        };
+
         authBtn.textContent = "Processing Front ID...";
         
         compressImage(idFile, 800, 800, 0.8, async function (compressedFrontPhoto) {
             
-            const finishRegistration = async (compressedBackPhoto) => {
-                authBtn.textContent = "Submitting Review...";
-                try {
-                    const newUser = {
-                        username: rawUser,
-                        usernameKey: safeUserKey,
-                        password: pass, 
-                        email: email, 
-                        phone: phone,
-                        fb: fbLink,
-                        isDealer: isDealer, 
-                        idPhoto: compressedFrontPhoto, 
-                        idPhotoBack: compressedBackPhoto, 
-                        isVerified: safeUserKey === 'admin' ? true : false 
-                    };
-                    await addDoc(collection(db, "users"), newUser);
+            const processBackAndSave = async () => {
+                let compressedBackPhoto = null;
+                if (idBackFile) {
+                    compressedBackPhoto = await compressImageAsync(idBackFile, 800, 800, 0.8);
+                }
 
-                    if (safeUserKey === 'admin') {
-                        alert("✅ Admin Account created! Logging you in...");
+                if(isDealer) {
+                    authBtn.textContent = "Proceed to Payment";
+                    authBtn.disabled = false;
+                    
+                    openPaymentModal('dealer', 'Premium Dealer Registration', `Account: ${rawUser}`, 499, async (receiptStr) => {
+                        await addDoc(collection(db, "reservations"), {
+                            item: "Premium Dealer Registration",
+                            buyer: rawUser,
+                            seller: "VehiSell Admin", 
+                            fee: 499,
+                            receipt: receiptStr, 
+                            timestamp: Date.now()
+                        });
+                        
+                        const newUser = await submitToFirebase(compressedFrontPhoto, compressedBackPhoto, true);
+                        alert("✅ Payment accepted! You are now an Instantly Verified Premium Dealer!");
                         document.getElementById('form-auth').reset();
                         login(newUser);
-                    } else {
-                        alert("✅ Account submitted! The admin will review your ID to protect the community. You will receive an email once you are verified.");
-                        document.getElementById('form-auth').reset();
-                        toggleAuthMode(); 
-                        authBtn.textContent = "Login";
-                        authBtn.disabled = false;
-                    }
+                    });
 
-                } catch (error) {
-                    console.error(error);
-                    resetBtn("❌ Error saving to cloud.", "Create Verified Account");
+                } else {
+                    authBtn.textContent = "Submitting Review...";
+                    await submitToFirebase(compressedFrontPhoto, compressedBackPhoto, false);
+                    alert("✅ Account submitted! The admin will review your ID to protect the community.");
+                    document.getElementById('form-auth').reset();
+                    toggleAuthMode(); 
+                    authBtn.textContent = "Login";
+                    authBtn.disabled = false;
                 }
             };
-
-            if (idBackFile) {
-                authBtn.textContent = "Processing Back ID...";
-                compressImage(idBackFile, 800, 800, 0.8, function(compressedBackPhoto) {
-                    finishRegistration(compressedBackPhoto);
-                }, function(err) {
-                    resetBtn("❌ Error reading Back ID.", "Create Verified Account");
-                });
-            } else {
-                finishRegistration(null); 
-            }
+            
+            processBackAndSave();
 
         }, function(errorMessage) {
             resetBtn("❌ " + errorMessage, "Create Verified Account");
@@ -365,14 +378,14 @@ function resetBtn(msg, originalText) {
     authBtn.disabled = false;
 }
 
-// --- FIX: ADMIN ISOLATION ON LOGIN ---
+// --- ADMIN ISOLATION ON LOGIN ---
 function login(user) {
     localStorage.setItem('user_session', JSON.stringify(user));
     currentUser = user;
     updateNav();
     
     if (user.usernameKey === 'admin') {
-        showTab('admin'); // Admin goes straight to Dashboard
+        showTab('admin'); // Admins go directly to tracking dashboard
     } else {
         showTab('buy'); // Normal users go to marketplace
     }
@@ -381,50 +394,66 @@ function login(user) {
     listenForLiveAlerts(); 
 }
 
-// --- FIX: SECURE NAV FOR ADMIN ---
 function updateNav() {
     if (currentUser) {
         document.getElementById('nav-auth').classList.add('hidden');
-        document.getElementById('nav-acc').classList.remove('hidden');
-        
-        document.getElementById('acc-name').innerText = currentUser.username;
-        document.getElementById('acc-id-display').src = currentUser.idPhoto;
-
         const isAdmin = currentUser.usernameKey === 'admin';
 
         if (isAdmin) {
-            // ADMIN VIEW: Hide normal features
+            // ADMIN OVERSEER MODE: Strip away user functions completely
+            document.getElementById('nav-acc').classList.add('hidden');
+            document.getElementById('nav-sell').classList.add('hidden');
             document.getElementById('nav-admin').classList.remove('hidden');
-            document.querySelector('[data-tab="sell"]').classList.add('hidden'); 
+            document.getElementById('nav-logout').classList.remove('hidden');
+            
             if(document.getElementById('nav-saved')) document.getElementById('nav-saved').classList.add('hidden');
             if(document.getElementById('quick-icons')) document.getElementById('quick-icons').style.display = 'none';
+            if(bellBtn) bellBtn.style.display = 'none';
+            
             loadAdminDashboard();
         } else {
-            // NORMAL USER VIEW
-            document.querySelector('[data-tab="sell"]').classList.remove('hidden'); 
+            // NORMAL USER MODE
+            document.getElementById('nav-acc').classList.remove('hidden');
+            document.getElementById('nav-sell').classList.remove('hidden');
+            document.getElementById('nav-admin').classList.add('hidden');
+            document.getElementById('nav-logout').classList.add('hidden');
+            
             if(document.getElementById('nav-saved')) document.getElementById('nav-saved').classList.remove('hidden');
             if(document.getElementById('quick-icons')) document.getElementById('quick-icons').style.display = 'flex';
             if(bellBtn) bellBtn.style.display = 'flex';
+            
+            document.getElementById('acc-name').innerText = currentUser.username;
+            document.getElementById('acc-id-display').src = currentUser.idPhoto;
+
+            if (currentUser.isDealer) {
+                if(document.getElementById('acc-dealer-badge')) document.getElementById('acc-dealer-badge').style.display = 'block';
+                if(document.getElementById('boost-container')) document.getElementById('boost-container').classList.remove('hidden');
+            } else {
+                if(document.getElementById('acc-dealer-badge')) document.getElementById('acc-dealer-badge').style.display = 'none';
+                if(document.getElementById('boost-container')) document.getElementById('boost-container').classList.add('hidden');
+            }
+
+            const backIdImg = document.getElementById('acc-id-back-display');
+            const backIdUploadBox = document.getElementById('upload-back-id-box');
+            if (currentUser.idPhotoBack) {
+                backIdImg.src = currentUser.idPhotoBack;
+                backIdImg.style.display = 'block';
+                backIdUploadBox.style.display = 'none';
+            } else {
+                backIdImg.style.display = 'none';
+                backIdUploadBox.style.display = 'block';
+            }
+
             loadInbox();
             loadUserHistory(); 
         }
-
-        const backIdImg = document.getElementById('acc-id-back-display');
-        const backIdUploadBox = document.getElementById('upload-back-id-box');
-        
-        if (currentUser.idPhotoBack) {
-            backIdImg.src = currentUser.idPhotoBack;
-            backIdImg.style.display = 'block';
-            backIdUploadBox.style.display = 'none';
-        } else {
-            backIdImg.style.display = 'none';
-            backIdUploadBox.style.display = 'block';
-        }
-
     } else {
-        if(document.getElementById('quick-icons')) {
-            document.getElementById('quick-icons').style.display = 'none';
-        }
+        // LOGGED OUT
+        document.getElementById('nav-auth').classList.remove('hidden');
+        document.getElementById('nav-acc').classList.add('hidden');
+        document.getElementById('nav-admin').classList.add('hidden');
+        document.getElementById('nav-logout').classList.add('hidden');
+        if(document.getElementById('quick-icons')) document.getElementById('quick-icons').style.display = 'none';
         if(document.getElementById('nav-saved')) document.getElementById('nav-saved').classList.add('hidden');
     }
 }
@@ -578,7 +607,7 @@ sellForm.onsubmit = async (e) => {
 window.toggleFavorite = (e, docId) => {
     e.stopPropagation();
     if (!currentUser) return alert("You must be logged in to save items.");
-    if (currentUser.usernameKey === 'admin') return; // Admin can't save
+    if (currentUser.usernameKey === 'admin') return; 
     
     if (userFavorites.includes(docId)) {
         userFavorites = userFavorites.filter(id => id !== docId);
@@ -781,7 +810,7 @@ function renderFilteredListings() {
 
     toDisplay.forEach(item => {
         const isOwner = currentUser && currentUser.username === item.seller;
-        const isAdmin = currentUser && currentUser.usernameKey === 'admin'; // Admin Check
+        const isAdmin = currentUser && currentUser.usernameKey === 'admin'; 
         
         const thumbnailSrc = item.images && item.images.length > 0 ? item.images[0] : item.image;
         const datePosted = new Date(item.timestamp).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
@@ -797,7 +826,8 @@ function renderFilteredListings() {
         const boostClass = item.boosted ? 'boosted-card' : '';
         
         const heartClass = userFavorites.includes(item.docId) ? 'heart-btn active' : 'heart-btn';
-        // FIX: Admin does not see the heart button to save listings
+        
+        // ADMIN FIX: Admin cannot see the heart/wishlist button
         const heartBtnHtml = isAdmin ? '' : `<button class="${heartClass}" style="position: absolute; top: 15px; right: 15px; z-index: 50;" onclick="toggleFavorite(event, '${item.docId}')">❤️</button>`;
 
         const card = document.createElement('div');
@@ -868,8 +898,8 @@ window.openProductModal = function(docId) {
     const isAdmin = currentUser && currentUser.usernameKey === 'admin';
     const isOwner = currentUser && currentUser.username === item.seller;
     
-    // FIX: Hide Report button if user is Admin or Owner
-    const reportBtn = document.querySelector('button[title="Report this listing"]');
+    // ADMIN FIX: Admin cannot report listings
+    const reportBtn = document.getElementById('pm-report-btn');
     if (reportBtn) {
         reportBtn.style.display = (isAdmin || isOwner) ? 'none' : 'inline-block';
     }
@@ -877,7 +907,7 @@ window.openProductModal = function(docId) {
     const actionsDiv = document.getElementById('pm-actions');
     actionsDiv.innerHTML = '';
 
-    // FIX: Admin Isolation Logic. Admin ONLY sees Delete Action. No buying/chatting.
+    // ADMIN FIX: Admins can ONLY delete listings. No buying or chatting.
     if (isAdmin) {
         actionsDiv.innerHTML = `<button class="btn-del" style="background:#ef4444;color:white;padding:1rem 2rem;border:none;border-radius:12px;cursor:pointer;font-weight:800;" onclick="deleteItem('${item.docId}')">Delete Listing (Admin Action)</button>`;
     } 
@@ -1407,6 +1437,43 @@ async function loadAdminDashboard() {
         });
     });
 
+    // ADMIN FIX: NEW PLATFORM USERS TRACKER
+    const qVerified = query(collection(db, "users"), where("isVerified", "==", true));
+    onSnapshot(qVerified, (snapshot) => {
+        const allUsersBox = document.getElementById('admin-all-users');
+        if(!allUsersBox) return;
+        allUsersBox.innerHTML = '';
+        
+        let count = 0;
+        snapshot.forEach(docSnap => {
+            const u = docSnap.data();
+            const uId = docSnap.id;
+            
+            // Do not show the admin in the ban list
+            if(u.usernameKey === 'admin') return; 
+            count++;
+            
+            const badge = u.isDealer 
+                ? `<span style="background:#3b82f6; color:white; padding:2px 6px; border-radius:4px; font-size:0.7rem; font-weight:bold;">Premium Dealer</span>` 
+                : `<span style="background:#64748b; color:white; padding:2px 6px; border-radius:4px; font-size:0.7rem; font-weight:bold;">Standard User</span>`;
+
+            allUsersBox.innerHTML += `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid var(--border); background: var(--card-bg); border-radius: 8px; margin-bottom: 10px;">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <img src="${u.idPhoto}" style="width:40px; height:40px; border-radius:50%; object-fit:cover; border:1px solid var(--border); cursor:zoom-in;" onclick="viewFullImage('${u.idPhoto}')">
+                        <div>
+                            <strong style="color:var(--text);">${u.username}</strong> ${badge}<br>
+                            <span style="font-size:0.8rem; color:var(--light);">${u.email} | ${u.phone}</span>
+                        </div>
+                    </div>
+                    <button class="btn-del" style="background:#ef4444; color:white; border:none; padding:8px 15px; border-radius:8px; cursor:pointer; font-size:0.85rem;" onclick="banUser('${uId}', '${u.username}')">Ban User</button>
+                </div>
+            `;
+        });
+        
+        if(count === 0) allUsersBox.innerHTML = '<p style="color: var(--light); text-align: center; margin: 20px 0;">No active users found.</p>';
+    });
+
     const reportsQuery = query(collection(db, "reports"));
     onSnapshot(reportsQuery, (snapshot) => {
         const box = document.getElementById('admin-reports');
@@ -1432,6 +1499,18 @@ async function loadAdminDashboard() {
         });
     });
 }
+
+// ADMIN FIX: THE BAN HAMMER FUNCTION
+window.banUser = async function(docId, username) {
+    if(confirm(`Are you absolutely sure you want to PERMANENTLY BAN and delete ${username} from the platform?`)) {
+        try {
+            await deleteDoc(doc(db, "users", docId));
+            alert(`🔨 User ${username} has been permanently banned.`);
+        } catch(e) {
+            alert("Error banning user.");
+        }
+    }
+};
 
 window.dismissReport = async function(reportId) {
     try { await deleteDoc(doc(db, "reports", reportId)); } 
@@ -1575,6 +1654,7 @@ document.getElementById('category-filter').onchange = (e) => {
     renderFilteredListings();
 };
 
+// Force initialization to start on home page
 showTab('home');
 updateNav();
 fetchAndRenderListings();
