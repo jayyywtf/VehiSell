@@ -170,7 +170,6 @@ window.openPaymentModal = function(type, title, itemName, feeAmount, callback) {
     
     let label = 'Required Fee';
     if(type === 'reserve') label = 'Required Downpayment (5%)';
-    if(type === 'dealer') label = 'Instant Verification Fee';
     if(type === 'boost') label = 'Hot List Boost Fee';
     if(feeLabel) feeLabel.innerText = label;
 
@@ -297,8 +296,6 @@ if (formAuth) {
             const email = document.getElementById('auth-email')?.value.trim(); 
             const phone = document.getElementById('auth-phone')?.value.trim();
             const fbLink = document.getElementById('auth-fb')?.value.trim();
-            const dealerCheckbox = document.getElementById('auth-is-dealer');
-            const isDealer = dealerCheckbox ? dealerCheckbox.checked : false; 
             const idFileInput = document.getElementById('auth-id-img');
             const idBackFileInput = document.getElementById('auth-id-back-img');
             
@@ -322,7 +319,7 @@ if (formAuth) {
                     email: email, 
                     phone: phone,
                     fb: fbLink,
-                    isDealer: isDealer, 
+                    isDealer: false, // DEALER FEATURE REMOVED. EVERYONE IS STANDARD.
                     idPhoto: frontId, 
                     idPhotoBack: backId, 
                     isVerified: verifyNow || safeUserKey === 'admin' 
@@ -341,38 +338,15 @@ if (formAuth) {
                         compressedBackPhoto = await compressImageAsync(idBackFile, 800, 800, 0.8);
                     }
 
-                    if(isDealer) {
-                        if(authBtn) {
-                            authBtn.textContent = "Proceed to Payment";
-                            authBtn.disabled = false;
-                        }
-                        
-                        openPaymentModal('dealer', 'Premium Dealer Registration', `Account: ${rawUser}`, 499, async (receiptStr) => {
-                            await addDoc(collection(db, "reservations"), {
-                                item: "Premium Dealer Registration",
-                                buyer: rawUser,
-                                seller: "VehiSell Admin", 
-                                fee: 499,
-                                receipt: receiptStr, 
-                                timestamp: Date.now()
-                            });
-                            
-                            const newUser = await submitToFirebase(compressedFrontPhoto, compressedBackPhoto, true);
-                            alert("✅ Payment accepted! You are now an Instantly Verified Premium Dealer!");
-                            formAuth.reset();
-                            login(newUser);
-                        });
-
-                    } else {
-                        if(authBtn) authBtn.textContent = "Submitting Review...";
-                        await submitToFirebase(compressedFrontPhoto, compressedBackPhoto, false);
-                        alert("✅ Account submitted! The admin will review your ID to protect the community.");
-                        formAuth.reset();
-                        toggleAuthMode(); 
-                        if(authBtn) {
-                            authBtn.textContent = "Login";
-                            authBtn.disabled = false;
-                        }
+                    // EVERYONE GOES THROUGH MANUAL APPROVAL NOW (NO BYPASS)
+                    if(authBtn) authBtn.textContent = "Submitting Review...";
+                    await submitToFirebase(compressedFrontPhoto, compressedBackPhoto, false);
+                    alert("✅ Account submitted! The admin will review your ID to protect the community.");
+                    formAuth.reset();
+                    toggleAuthMode(); 
+                    if(authBtn) {
+                        authBtn.textContent = "Login";
+                        authBtn.disabled = false;
                     }
                 };
                 
@@ -425,11 +399,11 @@ function login(user) {
     listenForLiveAlerts(); 
 }
 
-// --- FIX: EVERYONE GETS LOGOUT AND BOOST CONTAINER IS NOT HIDDEN FOR NORMAL USERS ---
+// SECURE NAV UPDATER (LOGOUT NOW SHOWS FOR EVERYONE)
 function updateNav() {
     if (currentUser) {
         document.getElementById('nav-auth')?.classList.add('hidden');
-        document.getElementById('nav-logout')?.classList.remove('hidden'); // SHOW LOGOUT FOR EVERYONE
+        document.getElementById('nav-logout')?.classList.remove('hidden'); // ALWAYS SHOW LOGOUT
         
         const isAdmin = currentUser.usernameKey === 'admin';
 
@@ -456,12 +430,6 @@ function updateNav() {
             if (accName) accName.innerText = currentUser.username;
             const accDisplay = document.getElementById('acc-id-display');
             if (accDisplay) accDisplay.src = currentUser.idPhoto;
-
-            if (currentUser.isDealer) {
-                if(document.getElementById('acc-dealer-badge')) document.getElementById('acc-dealer-badge').style.display = 'block';
-            } else {
-                if(document.getElementById('acc-dealer-badge')) document.getElementById('acc-dealer-badge').style.display = 'none';
-            }
 
             const backIdImg = document.getElementById('acc-id-back-display');
             const backIdUploadBox = document.getElementById('upload-back-id-box');
@@ -602,7 +570,7 @@ if (sellForm) {
                     seller: currentUser.username,
                     sellerKey: currentUser.username.toLowerCase(),
                     sellerIdPhoto: currentUser.idPhoto, 
-                    isDealer: currentUser.isDealer || false, 
+                    isDealer: false, // Dealer tag removed
                     boosted: isBoosted, 
                     status: 'available', 
                     timestamp: Date.now(),
@@ -622,6 +590,7 @@ if (sellForm) {
                 showTab('buy');
             };
 
+            // BOOST IS AVAILABLE TO EVERYONE NOW
             if(isBoosted) {
                 if(submitBtn) submitBtn.disabled = false;
                 window.openPaymentModal('boost', 'Hot List Boost', document.getElementById('p-title')?.value || 'Item', 150, async (receiptStr) => {
@@ -715,6 +684,7 @@ function loadUserHistory() {
             let statusBadge = '';
             let actionButtons = '';
 
+            // BOOST AVAILABLE TO EVERYONE
             const canBoost = item.status === 'available' && !item.boosted;
             const boostBtnHtml = canBoost 
                 ? `<button class="btn-boost" onclick="boostExistingItem('${item.docId}', '${item.title.replace(/'/g, "\\'")}')">🚀 Boost (₱150)</button>` 
@@ -870,8 +840,8 @@ function renderFilteredListings() {
             : '';
             
         const boostClass = item.boosted ? 'boosted-card' : '';
-        
         const heartClass = userFavorites.includes(item.docId) ? 'heart-btn active' : 'heart-btn';
+        
         const heartBtnHtml = isAdmin ? '' : `<button class="${heartClass}" style="position: absolute; top: 15px; right: 15px; z-index: 50;" onclick="toggleFavorite(event, '${item.docId}')">❤️</button>`;
 
         const card = document.createElement('div');
@@ -1481,16 +1451,12 @@ async function loadAdminDashboard() {
             if(u.usernameKey === 'admin') return; 
             count++;
             
-            const badge = u.isDealer 
-                ? `<span style="background:#3b82f6; color:white; padding:2px 6px; border-radius:4px; font-size:0.7rem; font-weight:bold;">Premium Dealer</span>` 
-                : `<span style="background:#64748b; color:white; padding:2px 6px; border-radius:4px; font-size:0.7rem; font-weight:bold;">Standard User</span>`;
-
             allUsersBox.innerHTML += `
                 <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid var(--border); background: var(--card-bg); border-radius: 8px; margin-bottom: 10px;">
                     <div style="display:flex; align-items:center; gap:10px;">
                         <img src="${u.idPhoto}" style="width:40px; height:40px; border-radius:50%; object-fit:cover; border:1px solid var(--border); cursor:zoom-in;" onclick="viewFullImage('${u.idPhoto}')">
                         <div>
-                            <strong style="color:var(--text);">${u.username}</strong> ${badge}<br>
+                            <strong style="color:var(--text);">${u.username}</strong><br>
                             <span style="font-size:0.8rem; color:var(--light);">${u.email} | ${u.phone}</span>
                         </div>
                     </div>
