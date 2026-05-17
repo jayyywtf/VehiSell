@@ -23,6 +23,10 @@ let currentTab = 'home';
 let currentLimit = 12; 
 let userFavorites = JSON.parse(localStorage.getItem('user_favorites')) || []; 
 
+// --- ADMIN OTP VARIABLES ---
+let generatedAdminOTP = null;
+let pendingAdminUser = null;
+
 const navButtons = document.querySelectorAll('.nav-btn');
 const sections = document.querySelectorAll('.tab-content');
 
@@ -232,22 +236,44 @@ document.getElementById('form-auth').addEventListener('submit', async function (
                     authBtn.disabled = false;
                     return;
                 }
-                login(userData);
+
+                // --- NEW: ADMIN OTP LOGIC ---
+                if (userData.usernameKey === 'admin') {
+                    authBtn.textContent = "Sending Security Code...";
+                    
+                    generatedAdminOTP = Math.floor(100000 + Math.random() * 900000).toString();
+                    pendingAdminUser = userData;
+
+                    sendEmailNotification(
+                        'admin', 
+                        "Admin Login Attempt: Security Code", 
+                        `Someone is attempting to log into the VehiSell Admin Dashboard.\n\nYour 6-digit authorization code is: ${generatedAdminOTP}\n\nIf this was not you, please secure your account.`
+                    );
+
+                    document.getElementById('otp-modal').classList.remove('hidden');
+                    authBtn.textContent = "Login";
+                    authBtn.disabled = false;
+                } else {
+                    login(userData);
+                }
             } else {
                 alert("❌ Invalid username or password.");
+                authBtn.textContent = "Login";
+                authBtn.disabled = false;
             }
         } catch (error) {
             console.error(error);
             alert("Error logging in.");
+            authBtn.textContent = "Login";
+            authBtn.disabled = false;
         }
-        authBtn.textContent = "Login";
-        authBtn.disabled = false;
 
     } else {
         const confirmPass = document.getElementById('auth-pass-confirm').value;
         const email = document.getElementById('auth-email').value.trim(); 
         const phone = document.getElementById('auth-phone').value.trim();
         const fbLink = document.getElementById('auth-fb').value.trim();
+        const isDealer = document.getElementById('auth-is-dealer') ? document.getElementById('auth-is-dealer').checked : false; 
         const idFileInput = document.getElementById('auth-id-img');
         const idBackFileInput = document.getElementById('auth-id-back-img');
         
@@ -277,6 +303,7 @@ document.getElementById('form-auth').addEventListener('submit', async function (
                         email: email, 
                         phone: phone,
                         fb: fbLink,
+                        isDealer: isDealer, 
                         idPhoto: compressedFrontPhoto, 
                         idPhotoBack: compressedBackPhoto, 
                         isVerified: safeUserKey === 'admin' ? true : false 
@@ -318,6 +345,24 @@ document.getElementById('form-auth').addEventListener('submit', async function (
     }
 });
 
+// --- VERIFY OTP BUTTON LOGIC ---
+const verifyOtpBtn = document.getElementById('btn-verify-otp');
+if (verifyOtpBtn) {
+    verifyOtpBtn.onclick = () => {
+        const inputVal = document.getElementById('otp-input').value.trim();
+        
+        if (inputVal === generatedAdminOTP) {
+            document.getElementById('otp-modal').classList.add('hidden');
+            document.getElementById('otp-input').value = '';
+            generatedAdminOTP = null; 
+            login(pendingAdminUser);
+            pendingAdminUser = null;
+        } else {
+            alert("❌ Incorrect security code. Please try again.");
+        }
+    };
+}
+
 function resetBtn(msg, originalText) {
     alert(msg);
     authBtn.textContent = originalText;
@@ -341,6 +386,14 @@ function updateNav() {
         
         document.getElementById('acc-name').innerText = currentUser.username;
         document.getElementById('acc-id-display').src = currentUser.idPhoto;
+
+        if (currentUser.isDealer) {
+            if(document.getElementById('acc-dealer-badge')) document.getElementById('acc-dealer-badge').style.display = 'block';
+            if(document.getElementById('boost-container')) document.getElementById('boost-container').classList.remove('hidden');
+        } else {
+            if(document.getElementById('acc-dealer-badge')) document.getElementById('acc-dealer-badge').style.display = 'none';
+            if(document.getElementById('boost-container')) document.getElementById('boost-container').classList.add('hidden');
+        }
 
         if(currentUser.usernameKey !== 'admin') {
             document.getElementById('quick-icons').style.display = 'flex';
@@ -467,7 +520,7 @@ sellForm.onsubmit = async (e) => {
 
     try {
         const compressedImagesArray = await Promise.all(pendingProductImages.map(f => compressImageAsync(f, 1200, 1200, 0.8)));
-        const isBoosted = document.getElementById('p-boost').checked;
+        const isBoosted = document.getElementById('p-boost') ? document.getElementById('p-boost').checked : false;
 
         const publishToCloud = async () => {
             submitBtn.textContent = "Saving Listing...";
@@ -1232,7 +1285,7 @@ async function loadAdminDashboard() {
                 if (log.type === 'reserve') {
                     const r = log.data;
                     let logText = `<strong>${r.buyer}</strong> reserved <em>${r.item}</em> from <strong>${r.seller}</strong>`;
-                    if (r.item.includes("Listing Boost Fee")) {
+                    if (r.item.includes("Listing Boost Fee") || r.item.includes("Premium Dealer Registration")) {
                         logText = `<strong>${r.buyer}</strong> paid for <em>${r.item}</em>`;
                     }
                     logItem.innerHTML = `
@@ -1482,11 +1535,13 @@ window.onclick = (event) => {
     const imageModal = document.getElementById('image-modal');
     const productModal = document.getElementById('product-modal'); 
     const notifDropdown = document.getElementById('notif-dropdown');
+    const otpModal = document.getElementById('otp-modal');
     
     if (event.target === sellerModal) sellerModal.classList.add('hidden');
     if (event.target === paymentModal) paymentModal.classList.add('hidden');
     if (event.target === imageModal) imageModal.classList.add('hidden');
     if (event.target === productModal) productModal.classList.add('hidden');
+    if (otpModal && event.target === otpModal) otpModal.classList.add('hidden');
 
     if (notifDropdown && !notifDropdown.classList.contains('hidden')) {
         if (!event.target.closest('#quick-icons')) {
@@ -1505,6 +1560,7 @@ document.getElementById('category-filter').onchange = (e) => {
     renderFilteredListings();
 };
 
+// Force initialization to start on home page
 showTab('home');
 updateNav();
 fetchAndRenderListings();
