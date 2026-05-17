@@ -425,17 +425,18 @@ function login(user) {
     listenForLiveAlerts(); 
 }
 
-// BULLETPROOF NAV UPDATER - Safe from crashes
+// --- FIX: EVERYONE GETS LOGOUT AND BOOST CONTAINER IS NOT HIDDEN FOR NORMAL USERS ---
 function updateNav() {
     if (currentUser) {
         document.getElementById('nav-auth')?.classList.add('hidden');
+        document.getElementById('nav-logout')?.classList.remove('hidden'); // SHOW LOGOUT FOR EVERYONE
+        
         const isAdmin = currentUser.usernameKey === 'admin';
 
         if (isAdmin) {
             document.getElementById('nav-acc')?.classList.add('hidden');
             document.querySelector('[data-tab="sell"]')?.classList.add('hidden'); 
             document.getElementById('nav-admin')?.classList.remove('hidden');
-            document.getElementById('nav-logout')?.classList.remove('hidden');
             
             document.getElementById('nav-saved')?.classList.add('hidden');
             if(document.getElementById('quick-icons')) document.getElementById('quick-icons').style.display = 'none';
@@ -446,7 +447,6 @@ function updateNav() {
             document.getElementById('nav-acc')?.classList.remove('hidden');
             document.querySelector('[data-tab="sell"]')?.classList.remove('hidden'); 
             document.getElementById('nav-admin')?.classList.add('hidden');
-            document.getElementById('nav-logout')?.classList.add('hidden');
             
             document.getElementById('nav-saved')?.classList.remove('hidden');
             if(document.getElementById('quick-icons')) document.getElementById('quick-icons').style.display = 'flex';
@@ -459,10 +459,8 @@ function updateNav() {
 
             if (currentUser.isDealer) {
                 if(document.getElementById('acc-dealer-badge')) document.getElementById('acc-dealer-badge').style.display = 'block';
-                if(document.getElementById('boost-container')) document.getElementById('boost-container').classList.remove('hidden');
             } else {
                 if(document.getElementById('acc-dealer-badge')) document.getElementById('acc-dealer-badge').style.display = 'none';
-                if(document.getElementById('boost-container')) document.getElementById('boost-container').classList.add('hidden');
             }
 
             const backIdImg = document.getElementById('acc-id-back-display');
@@ -525,7 +523,6 @@ if (saveBackIdBtn) {
     };
 }
 
-// SAFE LOGOUT LOGIC
 const performLogout = () => {
     localStorage.removeItem('user_session');
     location.reload();
@@ -873,9 +870,8 @@ function renderFilteredListings() {
             : '';
             
         const boostClass = item.boosted ? 'boosted-card' : '';
-        const dealerIcon = item.isDealer ? `<span style="color:#3b82f6; font-size:0.85rem;" title="Verified Dealer">☑️</span>` : '';
-        const heartClass = userFavorites.includes(item.docId) ? 'heart-btn active' : 'heart-btn';
         
+        const heartClass = userFavorites.includes(item.docId) ? 'heart-btn active' : 'heart-btn';
         const heartBtnHtml = isAdmin ? '' : `<button class="${heartClass}" style="position: absolute; top: 15px; right: 15px; z-index: 50;" onclick="toggleFavorite(event, '${item.docId}')">❤️</button>`;
 
         const card = document.createElement('div');
@@ -908,7 +904,7 @@ function renderFilteredListings() {
             
             <div class="product-body" style="padding-top: 0; flex: 0;">
                 <div class="card-footer" style="flex-direction: column; align-items: stretch; gap: 10px; border-top: none;">
-                    <span style="font-weight: 800; color: var(--text);">👤 ${item.seller} ${dealerIcon}</span>
+                    <span style="font-weight: 800; color: var(--text);">👤 ${item.seller}</span>
                     <button class="btn-primary" style="padding:0.8rem;border-radius:12px;cursor:pointer;flex:1;" onclick="openProductModal('${item.docId}')">View Details</button>
                 </div>
             </div>
@@ -940,8 +936,7 @@ window.openProductModal = function(docId) {
     if(document.getElementById('pm-price')) document.getElementById('pm-price').innerText = `₱${Number(item.price).toLocaleString()}`;
     if(document.getElementById('pm-desc')) document.getElementById('pm-desc').innerText = item.desc;
     
-    const dealerIcon = item.isDealer ? `<span style="color:#3b82f6; font-size:0.95rem;">☑️</span>` : '';
-    if(document.getElementById('pm-seller-name')) document.getElementById('pm-seller-name').innerHTML = `${item.seller} ${dealerIcon}`;
+    if(document.getElementById('pm-seller-name')) document.getElementById('pm-seller-name').innerHTML = `${item.seller}`;
     
     window.currentGalleryImages = item.images && item.images.length > 0 ? item.images : [item.image];
     window.currentGalleryIndex = 0;
@@ -1371,8 +1366,6 @@ async function loadAdminDashboard() {
         let grossProfit = 0;
         let adminReserves = [];
         let adminWithdrawals = [];
-        
-        // This is safe since it's driven by snapshot callbacks below
     };
 
     onSnapshot(resQuery, (snapshot) => {
@@ -1384,7 +1377,6 @@ async function loadAdminDashboard() {
             allLogs.push({ type: 'reserve', data: r, time: r.timestamp });
         });
 
-        // Store these globally to compute balance properly if needed
         window.tempAdminGross = grossProfit;
         window.tempAdminReservesLogs = allLogs;
         
