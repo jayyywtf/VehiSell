@@ -195,14 +195,6 @@
                         <input type="tel" id="auth-phone" placeholder="Phone Number (e.g., 09123456789)">
                         <input type="text" id="auth-fb" placeholder="Facebook Profile Link">
 
-                        <div style="margin: 15px 0; background: rgba(79, 70, 229, 0.1); padding: 15px; border-radius: 12px; border: 1px solid var(--primary);">
-                            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: 800; color: var(--primary);">
-                                <input type="checkbox" id="auth-is-dealer" style="width: 20px; height: 20px; margin: 0;" onchange="document.getElementById('auth-btn').textContent = this.checked ? 'Proceed to Payment (₱499)' : 'Create Verified Account'">
-                                Register as a Verified Dealer
-                            </label>
-                            <p style="margin: 5px 0 0 30px; font-size: 0.8rem; color: var(--text);">Pay a one-time ₱499 fee to bypass manual admin verification and instantly unlock premium dealer status.</p>
-                        </div>
-
                         <div class="id-upload-area" style="background: var(--bg); border: 2px dashed var(--border); padding: 15px; border-radius: 12px;">
                             <label style="color: var(--primary); font-weight: 800;">Front of Valid ID (Required)</label>
                             <p style="margin: 5px 0; font-size: 0.85rem; color: var(--light);">Upload a clear photo of the front</p>
@@ -227,7 +219,6 @@
             <div class="glass-card acc-view" style="max-width: 600px; text-align: center;">
                 <div style="font-size: 4rem; margin-bottom: 10px;">👤</div>
                 <h2 id="acc-name" style="margin-top: 0; margin-bottom: 5px;">User</h2>
-                <div id="acc-dealer-badge" style="display: none; color: #3b82f6; font-weight: bold; font-size: 1rem; margin-bottom: 15px;">☑️ Verified Premium Dealer</div>
                 
                 <div class="id-display-section" style="width: 100%; text-align: left; background: var(--bg); padding: 20px; border-radius: 16px; border: 1px solid var(--border); margin-top: 20px; box-sizing: border-box;">
                     <p style="font-weight: 800; margin-bottom: 10px; color: var(--text);">Front ID:</p>
