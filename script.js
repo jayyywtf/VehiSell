@@ -23,7 +23,7 @@ let currentTab = 'home';
 let currentLimit = 12; 
 let userFavorites = JSON.parse(localStorage.getItem('user_favorites')) || []; 
 
-// --- ADMIN OTP VARIABLES ---
+// ADMIN OTP VARIABLES
 let generatedAdminOTP = null;
 let pendingAdminUser = null;
 
@@ -84,7 +84,6 @@ navButtons.forEach(btn => {
     };
 });
 
-// Safe Bell Button Hook
 const bellBtn = document.getElementById('bell-btn');
 if(bellBtn) {
     bellBtn.onclick = (e) => {
@@ -153,7 +152,6 @@ function compressImageAsync(file, maxWidth, maxHeight, quality) {
     });
 }
 
-// --- FIX: MADE UNIVERSAL PAYMENT MODAL GLOBAL ---
 window.openPaymentModal = function(type, title, itemName, feeAmount, callback) {
     document.getElementById('payment-modal-title').innerText = title;
     document.getElementById('payment-item-title').innerText = itemName;
@@ -237,7 +235,6 @@ document.getElementById('form-auth').addEventListener('submit', async function (
                     return;
                 }
 
-                // --- NEW: ADMIN OTP LOGIC ---
                 if (userData.usernameKey === 'admin') {
                     authBtn.textContent = "Sending Security Code...";
                     
@@ -273,7 +270,7 @@ document.getElementById('form-auth').addEventListener('submit', async function (
         const email = document.getElementById('auth-email').value.trim(); 
         const phone = document.getElementById('auth-phone').value.trim();
         const fbLink = document.getElementById('auth-fb').value.trim();
-        const isDealer = document.getElementById('auth-is-dealer') ? document.getElementById('auth-is-dealer').checked : false; 
+        const isDealer = false; // Dealer toggle removed as requested
         const idFileInput = document.getElementById('auth-id-img');
         const idBackFileInput = document.getElementById('auth-id-back-img');
         
@@ -345,7 +342,6 @@ document.getElementById('form-auth').addEventListener('submit', async function (
     }
 });
 
-// --- VERIFY OTP BUTTON LOGIC ---
 const verifyOtpBtn = document.getElementById('btn-verify-otp');
 if (verifyOtpBtn) {
     verifyOtpBtn.onclick = () => {
@@ -369,35 +365,48 @@ function resetBtn(msg, originalText) {
     authBtn.disabled = false;
 }
 
+// --- FIX: ADMIN ISOLATION ON LOGIN ---
 function login(user) {
     localStorage.setItem('user_session', JSON.stringify(user));
     currentUser = user;
     updateNav();
-    showTab('buy'); 
+    
+    if (user.usernameKey === 'admin') {
+        showTab('admin'); // Admin goes straight to Dashboard
+    } else {
+        showTab('buy'); // Normal users go to marketplace
+    }
+    
     fetchAndRenderListings();
     listenForLiveAlerts(); 
 }
 
+// --- FIX: SECURE NAV FOR ADMIN ---
 function updateNav() {
     if (currentUser) {
         document.getElementById('nav-auth').classList.add('hidden');
         document.getElementById('nav-acc').classList.remove('hidden');
-        document.getElementById('nav-saved').classList.remove('hidden'); 
         
         document.getElementById('acc-name').innerText = currentUser.username;
         document.getElementById('acc-id-display').src = currentUser.idPhoto;
 
-        if (currentUser.isDealer) {
-            if(document.getElementById('acc-dealer-badge')) document.getElementById('acc-dealer-badge').style.display = 'block';
-            if(document.getElementById('boost-container')) document.getElementById('boost-container').classList.remove('hidden');
-        } else {
-            if(document.getElementById('acc-dealer-badge')) document.getElementById('acc-dealer-badge').style.display = 'none';
-            if(document.getElementById('boost-container')) document.getElementById('boost-container').classList.add('hidden');
-        }
+        const isAdmin = currentUser.usernameKey === 'admin';
 
-        if(currentUser.usernameKey !== 'admin') {
-            document.getElementById('quick-icons').style.display = 'flex';
+        if (isAdmin) {
+            // ADMIN VIEW: Hide normal features
+            document.getElementById('nav-admin').classList.remove('hidden');
+            document.querySelector('[data-tab="sell"]').classList.add('hidden'); 
+            if(document.getElementById('nav-saved')) document.getElementById('nav-saved').classList.add('hidden');
+            if(document.getElementById('quick-icons')) document.getElementById('quick-icons').style.display = 'none';
+            loadAdminDashboard();
+        } else {
+            // NORMAL USER VIEW
+            document.querySelector('[data-tab="sell"]').classList.remove('hidden'); 
+            if(document.getElementById('nav-saved')) document.getElementById('nav-saved').classList.remove('hidden');
+            if(document.getElementById('quick-icons')) document.getElementById('quick-icons').style.display = 'flex';
             if(bellBtn) bellBtn.style.display = 'flex';
+            loadInbox();
+            loadUserHistory(); 
         }
 
         const backIdImg = document.getElementById('acc-id-back-display');
@@ -412,20 +421,11 @@ function updateNav() {
             backIdUploadBox.style.display = 'block';
         }
 
-        if (currentUser.usernameKey === 'admin') {
-            document.getElementById('nav-admin').classList.remove('hidden');
-            document.querySelector('[data-tab="sell"]').classList.add('hidden'); 
-            loadAdminDashboard();
-        } else {
-            document.querySelector('[data-tab="sell"]').classList.remove('hidden'); 
-            loadInbox();
-            loadUserHistory(); 
-        }
     } else {
         if(document.getElementById('quick-icons')) {
             document.getElementById('quick-icons').style.display = 'none';
         }
-        document.getElementById('nav-saved').classList.add('hidden');
+        if(document.getElementById('nav-saved')) document.getElementById('nav-saved').classList.add('hidden');
     }
 }
 
@@ -578,6 +578,7 @@ sellForm.onsubmit = async (e) => {
 window.toggleFavorite = (e, docId) => {
     e.stopPropagation();
     if (!currentUser) return alert("You must be logged in to save items.");
+    if (currentUser.usernameKey === 'admin') return; // Admin can't save
     
     if (userFavorites.includes(docId)) {
         userFavorites = userFavorites.filter(id => id !== docId);
@@ -780,6 +781,8 @@ function renderFilteredListings() {
 
     toDisplay.forEach(item => {
         const isOwner = currentUser && currentUser.username === item.seller;
+        const isAdmin = currentUser && currentUser.usernameKey === 'admin'; // Admin Check
+        
         const thumbnailSrc = item.images && item.images.length > 0 ? item.images[0] : item.image;
         const datePosted = new Date(item.timestamp).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 
@@ -792,7 +795,10 @@ function renderFilteredListings() {
             : '';
             
         const boostClass = item.boosted ? 'boosted-card' : '';
+        
         const heartClass = userFavorites.includes(item.docId) ? 'heart-btn active' : 'heart-btn';
+        // FIX: Admin does not see the heart button to save listings
+        const heartBtnHtml = isAdmin ? '' : `<button class="${heartClass}" style="position: absolute; top: 15px; right: 15px; z-index: 50;" onclick="toggleFavorite(event, '${item.docId}')">❤️</button>`;
 
         const card = document.createElement('div');
         card.className = `product-card ${boostClass}`;
@@ -811,7 +817,7 @@ function renderFilteredListings() {
                 <span>Verified</span>
             </div>` : ''}
 
-            <button class="${heartClass}" style="position: absolute; top: 15px; right: 15px; z-index: 50;" onclick="toggleFavorite(event, '${item.docId}')">❤️</button>
+            ${heartBtnHtml}
 
             <div onclick="openProductModal('${item.docId}')" style="cursor: pointer; display: flex; flex-direction: column; flex: 1;">
                 <div class="product-body" style="padding-bottom: 0;">
@@ -852,7 +858,6 @@ window.openProductModal = function(docId) {
     document.getElementById('pm-title').innerText = item.title;
     document.getElementById('pm-price').innerText = `₱${Number(item.price).toLocaleString()}`;
     document.getElementById('pm-desc').innerText = item.desc;
-    
     document.getElementById('pm-seller-name').innerHTML = `${item.seller}`;
     
     window.currentGalleryImages = item.images && item.images.length > 0 ? item.images : [item.image];
@@ -860,11 +865,23 @@ window.openProductModal = function(docId) {
     
     renderGallery();
 
+    const isAdmin = currentUser && currentUser.usernameKey === 'admin';
     const isOwner = currentUser && currentUser.username === item.seller;
+    
+    // FIX: Hide Report button if user is Admin or Owner
+    const reportBtn = document.querySelector('button[title="Report this listing"]');
+    if (reportBtn) {
+        reportBtn.style.display = (isAdmin || isOwner) ? 'none' : 'inline-block';
+    }
+
     const actionsDiv = document.getElementById('pm-actions');
     actionsDiv.innerHTML = '';
 
-    if (isOwner) {
+    // FIX: Admin Isolation Logic. Admin ONLY sees Delete Action. No buying/chatting.
+    if (isAdmin) {
+        actionsDiv.innerHTML = `<button class="btn-del" style="background:#ef4444;color:white;padding:1rem 2rem;border:none;border-radius:12px;cursor:pointer;font-weight:800;" onclick="deleteItem('${item.docId}')">Delete Listing (Admin Action)</button>`;
+    } 
+    else if (isOwner) {
         actionsDiv.innerHTML = `<button class="btn-del" style="background:#ef4444;color:white;padding:1rem 2rem;border:none;border-radius:12px;cursor:pointer;font-weight:800;" onclick="deleteItem('${item.docId}')">Remove Listing</button>`;
     } else {
         const isReserved = item.status === 'reserved';
@@ -872,7 +889,6 @@ window.openProductModal = function(docId) {
             ? `<button class="btn-contact" style="background:#94a3b8;color:white;padding:1rem 1.5rem;border:none;border-radius:12px;cursor:not-allowed;font-weight:800;" disabled>Item is Reserved</button>`
             : `<button class="btn-contact" style="background:#10b981;color:white;padding:1rem 1.5rem;border:none;border-radius:12px;cursor:pointer;font-weight:800;" onclick="openPaymentModal('reserve', 'Reserve Item', '${item.title.replace(/'/g, "\\'")}', ${item.price * 0.05}, processReservation)">Reserve (5%)</button>`;
 
-        // Pass globals for processReservation
         window.pendingReservation = { docId: item.docId, title: item.title, sellerKey: item.sellerKey, sellerName: item.seller, fee: item.price * 0.05 };
 
         actionsDiv.innerHTML = `
@@ -983,7 +999,6 @@ window.contactSeller = async function(sellerKey) {
     }
 };
 
-// Tied to Universal Payment Modal
 window.processReservation = async function(compressedReceipt) {
     await addDoc(collection(db, "notifications"), {
         targetUser: window.pendingReservation.sellerKey,
@@ -1560,7 +1575,6 @@ document.getElementById('category-filter').onchange = (e) => {
     renderFilteredListings();
 };
 
-// Force initialization to start on home page
 showTab('home');
 updateNav();
 fetchAndRenderListings();
