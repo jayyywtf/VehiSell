@@ -3,10 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VehiSell</title>
-    
+    <title>VehiSell | Premium Marketplace</title>
     <link rel="icon" type="image/png" href="favicon.png">
-    
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
 </head>
@@ -40,11 +38,12 @@
             <nav id="main-nav">
                 <button class="nav-btn active" data-tab="home">Home</button>
                 <button class="nav-btn" data-tab="buy">Marketplace</button>
-                <button class="nav-btn hidden" id="nav-saved" data-tab="saved" style="color: #ef4444;">Saved</button>
-                <button class="nav-btn" data-tab="sell">Sell Item</button>
+                <button class="nav-btn hidden" id="nav-saved" data-tab="saved" style="color: #ef4444;">Saved ❤️</button>
+                <button class="nav-btn" id="nav-sell" data-tab="sell">Sell Item</button>
                 <button class="nav-btn nav-accent" id="nav-auth" data-tab="auth">Sign In</button>
                 <button class="nav-btn hidden" id="nav-acc" data-tab="acc">Profile</button>
                 <button class="nav-btn hidden" id="nav-admin" data-tab="admin" style="background: var(--primary); color: white;">Dashboard</button>
+                <button class="nav-btn hidden" id="nav-logout" style="color: #ef4444;" onclick="document.getElementById('logout-btn').click()">Logout</button>
             </nav>
         </div>
     </header>
@@ -88,9 +87,9 @@
                     </div>
                     <div class="footer-col">
                         <h3>Contact Us</h3>
-                        <p>📞 Phone: +63 992 642 2997</p>
-                        <p>✉️ Email: hernandezbjay1@gmail.com</p>
-                        <p>🏢 Office: STI College Balayan, Balayan, Batangas</p>
+                        <p>📞 Phone: +63 912 345 6789</p>
+                        <p>✉️ Email: support@vehisell.com</p>
+                        <p>🏢 Office: Makati City, Metro Manila</p>
                     </div>
                     <div class="footer-col">
                         <h3>Quick Links</h3>
@@ -141,7 +140,7 @@
 
         <section id="sec-saved" class="tab-content hidden">
             <div class="section-header" style="margin-bottom: 2rem;">
-                <h2 style="font-size: 2rem; margin: 0 0 5px 0;">My Saved Items</h2>
+                <h2 style="font-size: 2rem; margin: 0 0 5px 0;">My Saved Items ❤️</h2>
                 <p style="color: var(--light); margin: 0; font-size: 1.1rem;">Keep track of the vehicles you love.</p>
             </div>
             <div id="saved-grid" class="grid"></div>
@@ -170,12 +169,12 @@
                         <div id="sell-img-previews" style="display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap;"></div>
                     </div>
                     
-                    <div id="boost-container" style="margin: 15px 0; background: rgba(245, 158, 11, 0.1); padding: 15px; border-radius: 12px; border: 1px solid #f59e0b;">
+                    <div id="boost-container" class="hidden" style="margin: 15px 0; background: rgba(245, 158, 11, 0.1); padding: 15px; border-radius: 12px; border: 1px solid #f59e0b;">
                         <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: 800; color: #d97706;">
                             <input type="checkbox" id="p-boost" style="width: 20px; height: 20px; margin:0;">
                             Boost this listing (₱150 fee)
                         </label>
-                        <p style="margin: 5px 0 0 30px; font-size: 0.8rem; color: var(--text);">Boosted listings jump to the front of the marketplace and get a premium badge!</p>
+                        <p style="margin: 5px 0 0 30px; font-size: 0.8rem; color: var(--text);">Boosted listings always appear at the very top of the marketplace.</p>
                     </div>
 
                     <button type="submit" id="submit-sell-btn" class="btn-primary">Post Item</button>
@@ -195,6 +194,14 @@
                         <input type="email" id="auth-email" placeholder="Email Address (For Notifications)">
                         <input type="tel" id="auth-phone" placeholder="Phone Number (e.g., 09123456789)">
                         <input type="text" id="auth-fb" placeholder="Facebook Profile Link">
+
+                        <div style="margin: 15px 0; background: rgba(79, 70, 229, 0.1); padding: 15px; border-radius: 12px; border: 1px solid var(--primary);">
+                            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: 800; color: var(--primary);">
+                                <input type="checkbox" id="auth-is-dealer" style="width: 20px; height: 20px; margin: 0;" onchange="document.getElementById('auth-btn').textContent = this.checked ? 'Proceed to Payment (₱499)' : 'Create Verified Account'">
+                                Register as a Verified Dealer
+                            </label>
+                            <p style="margin: 5px 0 0 30px; font-size: 0.8rem; color: var(--text);">Pay a one-time ₱499 fee to bypass manual admin verification and instantly unlock listing boosts.</p>
+                        </div>
 
                         <div class="id-upload-area" style="background: var(--bg); border: 2px dashed var(--border); padding: 15px; border-radius: 12px;">
                             <label style="color: var(--primary); font-weight: 800;">Front of Valid ID (Required)</label>
@@ -220,6 +227,7 @@
             <div class="glass-card acc-view" style="max-width: 600px; text-align: center;">
                 <div style="font-size: 4rem; margin-bottom: 10px;">👤</div>
                 <h2 id="acc-name" style="margin-top: 0; margin-bottom: 5px;">User</h2>
+                <div id="acc-dealer-badge" style="display: none; color: #3b82f6; font-weight: bold; font-size: 1rem; margin-bottom: 15px;">☑️ Verified Premium Dealer</div>
                 
                 <div class="id-display-section" style="width: 100%; text-align: left; background: var(--bg); padding: 20px; border-radius: 16px; border: 1px solid var(--border); margin-top: 20px; box-sizing: border-box;">
                     <p style="font-weight: 800; margin-bottom: 10px; color: var(--text);">Front ID:</p>
@@ -243,17 +251,16 @@
                         <p style="color: var(--light); text-align: center;">No history yet.</p>
                     </div>
                 </div>
-
-                <button class="btn-secondary" id="logout-btn" style="margin-top: 30px; background: #ef4444; color: white; border: none;">Secure Logout</button>
             </div>
         </section>
 
         <section id="sec-admin" class="tab-content hidden">
-            <div class="glass-card" style="max-width: 700px;">
-                <h2 style="margin-top:0;">Admin Dashboard</h2>
+            <div class="glass-card" style="max-width: 800px;">
+                <h2 style="margin-top:0;">🛡️ Overseer Dashboard</h2>
+                <p style="color: var(--light); margin-top: -15px; margin-bottom: 25px;">Welcome to the VehiSell Administration Panel.</p>
                 
                 <div style="background: var(--bg); padding: 30px; border-radius: 20px; text-align: center; margin-bottom: 20px; border: 1px solid var(--border); box-shadow: 0 10px 30px rgba(0,0,0,0.03);">
-                    <h3 style="margin:0; color: var(--light); font-size: 1rem; text-transform: uppercase; letter-spacing: 1px;">Available Escrow Profit (5%) & Fees</h3>
+                    <h3 style="margin:0; color: var(--light); font-size: 1rem; text-transform: uppercase; letter-spacing: 1px;">Available Escrow Profit & Fees</h3>
                     <h1 style="margin:15px 0; color: #10b981; font-size: 3.5rem; letter-spacing: -1px;" id="admin-total-profit">₱0.00</h1>
                     <button id="btn-withdraw" class="btn-primary" style="background: var(--text); color: var(--bg); width: auto; padding: 12px 25px; border-radius: 30px; font-size: 1rem;">🏦 Withdraw Funds to Bank</button>
                 </div>
@@ -277,9 +284,14 @@
                     </div>
                 </div>
 
-                <h3 style="margin-bottom: 15px; color: var(--primary); font-size: 1.2rem;">Pending Account Approvals</h3>
+                <h3 style="margin-bottom: 15px; color: var(--primary); font-size: 1.2rem;">⏳ Pending Account Approvals</h3>
                 <div id="admin-pending-users" style="max-height: 400px; overflow-y: auto; background: var(--bg); border: 1px solid var(--border); border-radius: 16px; padding: 15px; margin-bottom: 25px;">
                     <p style="color: var(--light); text-align: center; margin: 20px 0;">No pending accounts.</p>
+                </div>
+
+                <h3 style="margin-bottom: 15px; color: #3b82f6; font-size: 1.2rem;">👥 Active Platform Users</h3>
+                <div id="admin-all-users" style="max-height: 350px; overflow-y: auto; background: var(--bg); border: 1px solid var(--border); border-radius: 16px; padding: 15px; margin-bottom: 25px;">
+                    <p style="color: var(--light); text-align: center; margin: 20px 0;">Loading users...</p>
                 </div>
 
                 <h3 style="margin-bottom: 15px; color: #ef4444; font-size: 1.2rem;">🚩 Reported Listings</h3>
@@ -287,7 +299,7 @@
                     <p style="color: var(--light); text-align: center; margin: 20px 0;">No reported listings.</p>
                 </div>
 
-                <h3 style="margin-bottom: 15px; font-size: 1.2rem;">System Ledger</h3>
+                <h3 style="margin-bottom: 15px; font-size: 1.2rem;">🧾 System Ledger</h3>
                 <div id="admin-logs" style="max-height: 350px; overflow-y: auto; background: var(--bg); border: 1px solid var(--border); border-radius: 16px; padding: 15px;">
                 </div>
             </div>
@@ -316,7 +328,7 @@
             <div style="padding: 20px; text-align: left; background: var(--card-bg);">
                 <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                     <h2 id="pm-price" style="color: #10b981; margin: 0 0 5px 0; font-size: 2rem; letter-spacing: -1px;">₱0</h2>
-                    <button onclick="reportCurrentListing()" style="background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #ef4444;" title="Report this listing">🚩 Report</button>
+                    <button id="pm-report-btn" onclick="reportCurrentListing()" style="background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #ef4444;" title="Report this listing">🚩 Report</button>
                 </div>
                 <h3 id="pm-title" style="margin: 0 0 10px 0; font-size: 1.5rem; color: var(--text);">Product Title</h3>
                 <p id="pm-desc" style="color: var(--light); white-space: pre-wrap; line-height: 1.6; max-height: 150px; overflow-y: auto; padding-right: 10px; font-size: 0.95rem;">Description...</p>
@@ -405,7 +417,8 @@
             <button id="btn-confirm-payment" class="btn-primary" style="background: #10b981; padding: 15px; font-size: 1.1rem;">Submit Payment Proof</button>
         </div>
     </div>
-<div id="otp-modal" class="modal hidden">
+
+    <div id="otp-modal" class="modal hidden">
         <div class="modal-content glass-card" style="text-align: center; max-width: 400px; padding: 2rem !important; border: 1px solid var(--primary);">
             <span class="close-btn" onclick="document.getElementById('otp-modal').classList.add('hidden')">&times;</span>
             <div style="font-size: 3rem; margin-bottom: 10px;">🔐</div>
@@ -417,6 +430,9 @@
             <button id="btn-verify-otp" class="btn-primary" style="margin-top: 20px; font-size: 1.1rem; padding: 12px;">Verify & Login</button>
         </div>
     </div>
+
+    <button id="logout-btn" style="display: none;"></button>
+
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
     <script type="text/javascript">
        (function(){
