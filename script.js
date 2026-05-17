@@ -34,21 +34,27 @@ const sections = document.querySelectorAll('.tab-content');
 const themeToggleBtn = document.getElementById('theme-toggle');
 let currentTheme = localStorage.getItem('theme') || 'light';
 
-if (currentTheme === 'dark') {
+if (currentTheme === 'dark' && themeToggleBtn) {
     document.documentElement.setAttribute('data-theme', 'dark');
     themeToggleBtn.innerText = '☀️';
 }
 
-themeToggleBtn.onclick = () => {
-    currentTheme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-    document.documentElement.setAttribute('data-theme', currentTheme);
-    localStorage.setItem('theme', currentTheme);
-    themeToggleBtn.innerText = currentTheme === 'dark' ? '☀️' : '🌙';
-};
+if (themeToggleBtn) {
+    themeToggleBtn.onclick = () => {
+        currentTheme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', currentTheme);
+        localStorage.setItem('theme', currentTheme);
+        themeToggleBtn.innerText = currentTheme === 'dark' ? '☀️' : '🌙';
+    };
+}
 
 window.viewFullImage = function(url) {
-    document.getElementById('full-image-viewer').src = url;
-    document.getElementById('image-modal').classList.remove('hidden');
+    const viewer = document.getElementById('full-image-viewer');
+    const modal = document.getElementById('image-modal');
+    if (viewer && modal) {
+        viewer.src = url;
+        modal.classList.remove('hidden');
+    }
 };
 
 function showTab(tabId) {
@@ -88,7 +94,7 @@ const bellBtn = document.getElementById('bell-btn');
 if(bellBtn) {
     bellBtn.onclick = (e) => {
         e.stopPropagation(); 
-        document.getElementById('notif-dropdown').classList.toggle('hidden');
+        document.getElementById('notif-dropdown')?.classList.toggle('hidden');
     };
 }
 
@@ -100,18 +106,18 @@ const authBtn = document.getElementById('auth-btn');
 function toggleAuthMode() {
     isLoginMode = !isLoginMode;
     if (isLoginMode) {
-        authTitle.textContent = 'Welcome Back';
-        authBtn.textContent = 'Login';
-        signupExtra.classList.add('hidden');
-        switchBtn.textContent = "New here? Create a verified account";
+        if(authTitle) authTitle.textContent = 'Welcome Back';
+        if(authBtn) authBtn.textContent = 'Login';
+        signupExtra?.classList.add('hidden');
+        if(switchBtn) switchBtn.textContent = "New here? Create a verified account";
     } else {
-        authTitle.textContent = 'Verified Registration';
-        authBtn.textContent = 'Create Verified Account';
-        signupExtra.classList.remove('hidden');
-        switchBtn.textContent = "Already have an account? Login";
+        if(authTitle) authTitle.textContent = 'Verified Registration';
+        if(authBtn) authBtn.textContent = 'Create Verified Account';
+        signupExtra?.classList.remove('hidden');
+        if(switchBtn) switchBtn.textContent = "Already have an account? Login";
     }
 }
-switchBtn.addEventListener('click', toggleAuthMode);
+if(switchBtn) switchBtn.addEventListener('click', toggleAuthMode);
 
 function compressImage(file, maxWidth, maxHeight, quality, onSuccess, onError) {
     if (!file.type.match(/image.*/)) {
@@ -153,216 +159,240 @@ function compressImageAsync(file, maxWidth, maxHeight, quality) {
 }
 
 window.openPaymentModal = function(type, title, itemName, feeAmount, callback) {
-    document.getElementById('payment-modal-title').innerText = title;
-    document.getElementById('payment-item-title').innerText = itemName;
-    document.getElementById('payment-fee-amount').innerText = Number(feeAmount).toLocaleString(undefined, {minimumFractionDigits: 2});
+    const modalTitle = document.getElementById('payment-modal-title');
+    const itemTitle = document.getElementById('payment-item-title');
+    const feeAmountEl = document.getElementById('payment-fee-amount');
+    const feeLabel = document.getElementById('payment-fee-label');
+
+    if(modalTitle) modalTitle.innerText = title;
+    if(itemTitle) itemTitle.innerText = itemName;
+    if(feeAmountEl) feeAmountEl.innerText = Number(feeAmount).toLocaleString(undefined, {minimumFractionDigits: 2});
     
     let label = 'Required Fee';
     if(type === 'reserve') label = 'Required Downpayment (5%)';
     if(type === 'dealer') label = 'Instant Verification Fee';
     if(type === 'boost') label = 'Hot List Boost Fee';
-    document.getElementById('payment-fee-label').innerText = label;
+    if(feeLabel) feeLabel.innerText = label;
 
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     const gcashDiv = document.getElementById('dynamic-gcash');
     
-    if (isMobile) {
-        gcashDiv.innerHTML = `
-            <a href="intent://#Intent;package=com.globe.gcash.android;scheme=gcash;end" style="background:#005ce6; color:white; font-weight:800; text-decoration:none; display:inline-block; padding:15px 25px; border-radius:12px; box-shadow: 0 4px 15px rgba(0,92,230,0.3); font-size: 1.1rem;">📱 Open GCash App</a>
-            <p style="font-size:0.95rem; color:var(--text); margin-top:15px; margin-bottom:0;">Account Number: <strong style="color:var(--primary); font-family:monospace; font-size:1.1rem;">0912 345 6789</strong></p>
-        `;
-    } else {
-        const gcashNumber = "09123456789"; 
-        gcashDiv.innerHTML = `
-            <img src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${gcashNumber}" alt="GCash QR Code" style="border-radius:12px; box-shadow: 0 5px 20px rgba(0,0,0,0.1);">
-            <p style="font-size:0.95rem; color:var(--text); margin-top:15px; margin-bottom:0; font-weight:600;">Scan code with your GCash App</p>
-        `;
+    if (gcashDiv) {
+        if (isMobile) {
+            gcashDiv.innerHTML = `
+                <a href="intent://#Intent;package=com.globe.gcash.android;scheme=gcash;end" style="background:#005ce6; color:white; font-weight:800; text-decoration:none; display:inline-block; padding:15px 25px; border-radius:12px; box-shadow: 0 4px 15px rgba(0,92,230,0.3); font-size: 1.1rem;">📱 Open GCash App</a>
+                <p style="font-size:0.95rem; color:var(--text); margin-top:15px; margin-bottom:0;">Account Number: <strong style="color:var(--primary); font-family:monospace; font-size:1.1rem;">0912 345 6789</strong></p>
+            `;
+        } else {
+            const gcashNumber = "09123456789"; 
+            gcashDiv.innerHTML = `
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${gcashNumber}" alt="GCash QR Code" style="border-radius:12px; box-shadow: 0 5px 20px rgba(0,0,0,0.1);">
+                <p style="font-size:0.95rem; color:var(--text); margin-top:15px; margin-bottom:0; font-weight:600;">Scan code with your GCash App</p>
+            `;
+        }
     }
 
-    document.getElementById('payment-receipt').value = ""; 
-    document.getElementById('product-modal').classList.add('hidden'); 
-    document.getElementById('payment-modal').classList.remove('hidden');
+    const receiptInput = document.getElementById('payment-receipt');
+    if(receiptInput) receiptInput.value = ""; 
+    document.getElementById('product-modal')?.classList.add('hidden'); 
+    document.getElementById('payment-modal')?.classList.remove('hidden');
 
     const btn = document.getElementById('btn-confirm-payment');
-    btn.onclick = async () => {
-        const receiptFile = document.getElementById('payment-receipt').files[0];
-        if (!receiptFile) {
-            alert("⚠️ Please upload a screenshot of your payment receipt before submitting.");
-            return;
-        }
-
-        btn.disabled = true;
-        btn.textContent = "Verifying Payment...";
-
-        compressImage(receiptFile, 800, 800, 0.7, async function (compressedReceipt) {
-            try {
-                await callback(compressedReceipt);
-                document.getElementById('payment-modal').classList.add('hidden');
-            } catch(e) {
-                console.error(e);
-                alert("Error submitting payment.");
+    if (btn) {
+        btn.onclick = async () => {
+            const receiptFile = receiptInput?.files[0];
+            if (!receiptFile) {
+                alert("⚠️ Please upload a screenshot of your payment receipt before submitting.");
+                return;
             }
-            btn.disabled = false;
-            btn.textContent = "Submit Payment Proof";
-        }, function(err) {
-            alert("Failed to process receipt image.");
-            btn.disabled = false;
-            btn.textContent = "Submit Payment Proof";
-        });
-    };
+
+            btn.disabled = true;
+            btn.textContent = "Verifying Payment...";
+
+            compressImage(receiptFile, 800, 800, 0.7, async function (compressedReceipt) {
+                try {
+                    await callback(compressedReceipt);
+                    document.getElementById('payment-modal')?.classList.add('hidden');
+                } catch(e) {
+                    console.error(e);
+                    alert("Error submitting payment.");
+                }
+                btn.disabled = false;
+                btn.textContent = "Submit Payment Proof";
+            }, function(err) {
+                alert("Failed to process receipt image.");
+                btn.disabled = false;
+                btn.textContent = "Submit Payment Proof";
+            });
+        };
+    }
 };
 
-document.getElementById('form-auth').addEventListener('submit', async function (e) {
-    e.preventDefault();
+const formAuth = document.getElementById('form-auth');
+if (formAuth) {
+    formAuth.addEventListener('submit', async function (e) {
+        e.preventDefault();
 
-    const rawUser = document.getElementById('auth-user').value.trim();
-    const safeUserKey = rawUser.toLowerCase();
-    const pass = document.getElementById('auth-pass').value;
+        const rawUser = document.getElementById('auth-user')?.value.trim();
+        const safeUserKey = rawUser.toLowerCase();
+        const pass = document.getElementById('auth-pass')?.value;
 
-    authBtn.disabled = true; 
+        if(authBtn) authBtn.disabled = true; 
 
-    if (isLoginMode) {
-        authBtn.textContent = "Logging in...";
-        try {
-            const q = query(collection(db, "users"), where("usernameKey", "==", safeUserKey), where("password", "==", pass));
-            const querySnapshot = await getDocs(q);
+        if (isLoginMode) {
+            if(authBtn) authBtn.textContent = "Logging in...";
+            try {
+                const q = query(collection(db, "users"), where("usernameKey", "==", safeUserKey), where("password", "==", pass));
+                const querySnapshot = await getDocs(q);
 
-            if (!querySnapshot.empty) {
-                const userData = querySnapshot.docs[0].data();
-                
-                if (userData.isVerified === false) {
-                    alert("⏳ Account still pending! Please wait for the admin to verify your ID.");
-                    authBtn.textContent = "Login";
-                    authBtn.disabled = false;
-                    return;
-                }
+                if (!querySnapshot.empty) {
+                    const userData = querySnapshot.docs[0].data();
+                    if (userData.isVerified === false) {
+                        alert("⏳ Account still pending! Please wait for the admin to verify your ID.");
+                        if(authBtn) {
+                            authBtn.textContent = "Login";
+                            authBtn.disabled = false;
+                        }
+                        return;
+                    }
 
-                if (userData.usernameKey === 'admin') {
-                    authBtn.textContent = "Sending Security Code...";
-                    
-                    generatedAdminOTP = Math.floor(100000 + Math.random() * 900000).toString();
-                    pendingAdminUser = userData;
-
-                    sendEmailNotification(
-                        'admin', 
-                        "Admin Login Attempt: Security Code", 
-                        `Someone is attempting to log into the VehiSell Admin Dashboard.\n\nYour 6-digit authorization code is: ${generatedAdminOTP}\n\nIf this was not you, please secure your account.`
-                    );
-
-                    document.getElementById('otp-modal').classList.remove('hidden');
-                    authBtn.textContent = "Login";
-                    authBtn.disabled = false;
-                } else {
-                    login(userData);
-                }
-
-            } else {
-                alert("❌ Invalid username or password.");
-                authBtn.textContent = "Login";
-                authBtn.disabled = false;
-            }
-        } catch (error) {
-            console.error(error);
-            alert("Error logging in.");
-            authBtn.textContent = "Login";
-            authBtn.disabled = false;
-        }
-
-    } else {
-        const confirmPass = document.getElementById('auth-pass-confirm').value;
-        const email = document.getElementById('auth-email').value.trim(); 
-        const phone = document.getElementById('auth-phone').value.trim();
-        const fbLink = document.getElementById('auth-fb').value.trim();
-        const isDealer = document.getElementById('auth-is-dealer') ? document.getElementById('auth-is-dealer').checked : false; 
-        const idFileInput = document.getElementById('auth-id-img');
-        const idBackFileInput = document.getElementById('auth-id-back-img');
-        
-        const idFile = idFileInput.files[0];
-        const idBackFile = idBackFileInput.files[0];
-
-        if (!rawUser) return resetBtn("❌ Username required", "Create Verified Account");
-        if (pass !== confirmPass) return resetBtn("❌ Passwords don't match", "Create Verified Account");
-        if (!email) return resetBtn("❌ Email required", "Create Verified Account");
-        if (!idFile) return resetBtn("❌ Front ID photo required", "Create Verified Account");
-
-        const q = query(collection(db, "users"), where("usernameKey", "==", safeUserKey));
-        const userExists = await getDocs(q);
-        if (!userExists.empty) return resetBtn("❌ Username already taken!", "Create Verified Account");
-
-        const submitToFirebase = async (frontId, backId, verifyNow) => {
-            const newUser = {
-                username: rawUser,
-                usernameKey: safeUserKey,
-                password: pass, 
-                email: email, 
-                phone: phone,
-                fb: fbLink,
-                isDealer: isDealer, 
-                idPhoto: frontId, 
-                idPhotoBack: backId, 
-                isVerified: verifyNow || safeUserKey === 'admin' 
-            };
-            await addDoc(collection(db, "users"), newUser);
-            return newUser;
-        };
-
-        authBtn.textContent = "Processing Front ID...";
-        
-        compressImage(idFile, 800, 800, 0.8, async function (compressedFrontPhoto) {
-            
-            const processBackAndSave = async () => {
-                let compressedBackPhoto = null;
-                if (idBackFile) {
-                    compressedBackPhoto = await compressImageAsync(idBackFile, 800, 800, 0.8);
-                }
-
-                if(isDealer) {
-                    authBtn.textContent = "Proceed to Payment";
-                    authBtn.disabled = false;
-                    
-                    openPaymentModal('dealer', 'Premium Dealer Registration', `Account: ${rawUser}`, 499, async (receiptStr) => {
-                        await addDoc(collection(db, "reservations"), {
-                            item: "Premium Dealer Registration",
-                            buyer: rawUser,
-                            seller: "VehiSell Admin", 
-                            fee: 499,
-                            receipt: receiptStr, 
-                            timestamp: Date.now()
-                        });
+                    if (userData.usernameKey === 'admin') {
+                        if(authBtn) authBtn.textContent = "Sending Security Code...";
                         
-                        const newUser = await submitToFirebase(compressedFrontPhoto, compressedBackPhoto, true);
-                        alert("✅ Payment accepted! You are now an Instantly Verified Premium Dealer!");
-                        document.getElementById('form-auth').reset();
-                        login(newUser);
-                    });
+                        generatedAdminOTP = Math.floor(100000 + Math.random() * 900000).toString();
+                        pendingAdminUser = userData;
 
+                        sendEmailNotification(
+                            'admin', 
+                            "Admin Login Attempt: Security Code", 
+                            `Someone is attempting to log into the VehiSell Admin Dashboard.\n\nYour 6-digit authorization code is: ${generatedAdminOTP}\n\nIf this was not you, please secure your account.`
+                        );
+
+                        document.getElementById('otp-modal')?.classList.remove('hidden');
+                        if(authBtn) {
+                            authBtn.textContent = "Login";
+                            authBtn.disabled = false;
+                        }
+                    } else {
+                        login(userData);
+                    }
                 } else {
-                    authBtn.textContent = "Submitting Review...";
-                    await submitToFirebase(compressedFrontPhoto, compressedBackPhoto, false);
-                    alert("✅ Account submitted! The admin will review your ID to protect the community.");
-                    document.getElementById('form-auth').reset();
-                    toggleAuthMode(); 
+                    alert("❌ Invalid username or password.");
+                    if(authBtn) {
+                        authBtn.textContent = "Login";
+                        authBtn.disabled = false;
+                    }
+                }
+            } catch (error) {
+                console.error(error);
+                alert("Error logging in.");
+                if(authBtn) {
                     authBtn.textContent = "Login";
                     authBtn.disabled = false;
                 }
-            };
-            
-            processBackAndSave();
+            }
 
-        }, function(errorMessage) {
-            resetBtn("❌ " + errorMessage, "Create Verified Account");
-        });
-    }
-});
+        } else {
+            const confirmPass = document.getElementById('auth-pass-confirm')?.value;
+            const email = document.getElementById('auth-email')?.value.trim(); 
+            const phone = document.getElementById('auth-phone')?.value.trim();
+            const fbLink = document.getElementById('auth-fb')?.value.trim();
+            const dealerCheckbox = document.getElementById('auth-is-dealer');
+            const isDealer = dealerCheckbox ? dealerCheckbox.checked : false; 
+            const idFileInput = document.getElementById('auth-id-img');
+            const idBackFileInput = document.getElementById('auth-id-back-img');
+            
+            const idFile = idFileInput?.files[0];
+            const idBackFile = idBackFileInput?.files[0];
+
+            if (!rawUser) return resetBtn("❌ Username required", "Create Verified Account");
+            if (pass !== confirmPass) return resetBtn("❌ Passwords don't match", "Create Verified Account");
+            if (!email) return resetBtn("❌ Email required", "Create Verified Account");
+            if (!idFile) return resetBtn("❌ Front ID photo required", "Create Verified Account");
+
+            const q = query(collection(db, "users"), where("usernameKey", "==", safeUserKey));
+            const userExists = await getDocs(q);
+            if (!userExists.empty) return resetBtn("❌ Username already taken!", "Create Verified Account");
+
+            const submitToFirebase = async (frontId, backId, verifyNow) => {
+                const newUser = {
+                    username: rawUser,
+                    usernameKey: safeUserKey,
+                    password: pass, 
+                    email: email, 
+                    phone: phone,
+                    fb: fbLink,
+                    isDealer: isDealer, 
+                    idPhoto: frontId, 
+                    idPhotoBack: backId, 
+                    isVerified: verifyNow || safeUserKey === 'admin' 
+                };
+                await addDoc(collection(db, "users"), newUser);
+                return newUser;
+            };
+
+            if(authBtn) authBtn.textContent = "Processing Front ID...";
+            
+            compressImage(idFile, 800, 800, 0.8, async function (compressedFrontPhoto) {
+                
+                const processBackAndSave = async () => {
+                    let compressedBackPhoto = null;
+                    if (idBackFile) {
+                        compressedBackPhoto = await compressImageAsync(idBackFile, 800, 800, 0.8);
+                    }
+
+                    if(isDealer) {
+                        if(authBtn) {
+                            authBtn.textContent = "Proceed to Payment";
+                            authBtn.disabled = false;
+                        }
+                        
+                        openPaymentModal('dealer', 'Premium Dealer Registration', `Account: ${rawUser}`, 499, async (receiptStr) => {
+                            await addDoc(collection(db, "reservations"), {
+                                item: "Premium Dealer Registration",
+                                buyer: rawUser,
+                                seller: "VehiSell Admin", 
+                                fee: 499,
+                                receipt: receiptStr, 
+                                timestamp: Date.now()
+                            });
+                            
+                            const newUser = await submitToFirebase(compressedFrontPhoto, compressedBackPhoto, true);
+                            alert("✅ Payment accepted! You are now an Instantly Verified Premium Dealer!");
+                            formAuth.reset();
+                            login(newUser);
+                        });
+
+                    } else {
+                        if(authBtn) authBtn.textContent = "Submitting Review...";
+                        await submitToFirebase(compressedFrontPhoto, compressedBackPhoto, false);
+                        alert("✅ Account submitted! The admin will review your ID to protect the community.");
+                        formAuth.reset();
+                        toggleAuthMode(); 
+                        if(authBtn) {
+                            authBtn.textContent = "Login";
+                            authBtn.disabled = false;
+                        }
+                    }
+                };
+                
+                processBackAndSave();
+
+            }, function(errorMessage) {
+                resetBtn("❌ " + errorMessage, "Create Verified Account");
+            });
+        }
+    });
+}
 
 const verifyOtpBtn = document.getElementById('btn-verify-otp');
 if (verifyOtpBtn) {
     verifyOtpBtn.onclick = () => {
-        const inputVal = document.getElementById('otp-input').value.trim();
+        const inputVal = document.getElementById('otp-input')?.value.trim();
         
         if (inputVal === generatedAdminOTP) {
-            document.getElementById('otp-modal').classList.add('hidden');
-            document.getElementById('otp-input').value = '';
+            document.getElementById('otp-modal')?.classList.add('hidden');
+            if(document.getElementById('otp-input')) document.getElementById('otp-input').value = '';
             generatedAdminOTP = null; 
             login(pendingAdminUser);
             pendingAdminUser = null;
@@ -374,56 +404,58 @@ if (verifyOtpBtn) {
 
 function resetBtn(msg, originalText) {
     alert(msg);
-    authBtn.textContent = originalText;
-    authBtn.disabled = false;
+    if(authBtn) {
+        authBtn.textContent = originalText;
+        authBtn.disabled = false;
+    }
 }
 
-// --- ADMIN ISOLATION ON LOGIN ---
 function login(user) {
     localStorage.setItem('user_session', JSON.stringify(user));
     currentUser = user;
     updateNav();
     
     if (user.usernameKey === 'admin') {
-        showTab('admin'); // Admins go directly to tracking dashboard
+        showTab('admin'); 
     } else {
-        showTab('buy'); // Normal users go to marketplace
+        showTab('buy'); 
     }
     
     fetchAndRenderListings();
     listenForLiveAlerts(); 
 }
 
+// BULLETPROOF NAV UPDATER - Safe from crashes
 function updateNav() {
     if (currentUser) {
-        document.getElementById('nav-auth').classList.add('hidden');
+        document.getElementById('nav-auth')?.classList.add('hidden');
         const isAdmin = currentUser.usernameKey === 'admin';
 
         if (isAdmin) {
-            // ADMIN OVERSEER MODE: Strip away user functions completely
-            document.getElementById('nav-acc').classList.add('hidden');
-            document.getElementById('nav-sell').classList.add('hidden');
-            document.getElementById('nav-admin').classList.remove('hidden');
-            document.getElementById('nav-logout').classList.remove('hidden');
+            document.getElementById('nav-acc')?.classList.add('hidden');
+            document.querySelector('[data-tab="sell"]')?.classList.add('hidden'); 
+            document.getElementById('nav-admin')?.classList.remove('hidden');
+            document.getElementById('nav-logout')?.classList.remove('hidden');
             
-            if(document.getElementById('nav-saved')) document.getElementById('nav-saved').classList.add('hidden');
+            document.getElementById('nav-saved')?.classList.add('hidden');
             if(document.getElementById('quick-icons')) document.getElementById('quick-icons').style.display = 'none';
             if(bellBtn) bellBtn.style.display = 'none';
             
             loadAdminDashboard();
         } else {
-            // NORMAL USER MODE
-            document.getElementById('nav-acc').classList.remove('hidden');
-            document.getElementById('nav-sell').classList.remove('hidden');
-            document.getElementById('nav-admin').classList.add('hidden');
-            document.getElementById('nav-logout').classList.add('hidden');
+            document.getElementById('nav-acc')?.classList.remove('hidden');
+            document.querySelector('[data-tab="sell"]')?.classList.remove('hidden'); 
+            document.getElementById('nav-admin')?.classList.add('hidden');
+            document.getElementById('nav-logout')?.classList.add('hidden');
             
-            if(document.getElementById('nav-saved')) document.getElementById('nav-saved').classList.remove('hidden');
+            document.getElementById('nav-saved')?.classList.remove('hidden');
             if(document.getElementById('quick-icons')) document.getElementById('quick-icons').style.display = 'flex';
             if(bellBtn) bellBtn.style.display = 'flex';
             
-            document.getElementById('acc-name').innerText = currentUser.username;
-            document.getElementById('acc-id-display').src = currentUser.idPhoto;
+            const accName = document.getElementById('acc-name');
+            if (accName) accName.innerText = currentUser.username;
+            const accDisplay = document.getElementById('acc-id-display');
+            if (accDisplay) accDisplay.src = currentUser.idPhoto;
 
             if (currentUser.isDealer) {
                 if(document.getElementById('acc-dealer-badge')) document.getElementById('acc-dealer-badge').style.display = 'block';
@@ -436,77 +468,87 @@ function updateNav() {
             const backIdImg = document.getElementById('acc-id-back-display');
             const backIdUploadBox = document.getElementById('upload-back-id-box');
             if (currentUser.idPhotoBack) {
-                backIdImg.src = currentUser.idPhotoBack;
-                backIdImg.style.display = 'block';
-                backIdUploadBox.style.display = 'none';
+                if(backIdImg) { backIdImg.src = currentUser.idPhotoBack; backIdImg.style.display = 'block'; }
+                if(backIdUploadBox) backIdUploadBox.style.display = 'none';
             } else {
-                backIdImg.style.display = 'none';
-                backIdUploadBox.style.display = 'block';
+                if(backIdImg) backIdImg.style.display = 'none';
+                if(backIdUploadBox) backIdUploadBox.style.display = 'block';
             }
 
             loadInbox();
             loadUserHistory(); 
         }
     } else {
-        // LOGGED OUT
-        document.getElementById('nav-auth').classList.remove('hidden');
-        document.getElementById('nav-acc').classList.add('hidden');
-        document.getElementById('nav-admin').classList.add('hidden');
-        document.getElementById('nav-logout').classList.add('hidden');
+        document.getElementById('nav-auth')?.classList.remove('hidden');
+        document.getElementById('nav-acc')?.classList.add('hidden');
+        document.getElementById('nav-admin')?.classList.add('hidden');
+        document.getElementById('nav-logout')?.classList.add('hidden');
         if(document.getElementById('quick-icons')) document.getElementById('quick-icons').style.display = 'none';
-        if(document.getElementById('nav-saved')) document.getElementById('nav-saved').classList.add('hidden');
+        document.getElementById('nav-saved')?.classList.add('hidden');
     }
 }
 
-document.getElementById('btn-save-back-id').onclick = async () => {
-    const fileInput = document.getElementById('profile-upload-back-id');
-    const file = fileInput.files[0];
-    if (!file) return alert("Please select an image first.");
+const saveBackIdBtn = document.getElementById('btn-save-back-id');
+if (saveBackIdBtn) {
+    saveBackIdBtn.onclick = async () => {
+        const fileInput = document.getElementById('profile-upload-back-id');
+        const file = fileInput?.files[0];
+        if (!file) return alert("Please select an image first.");
 
-    const btn = document.getElementById('btn-save-back-id');
-    btn.disabled = true;
-    btn.textContent = "Uploading...";
+        saveBackIdBtn.disabled = true;
+        saveBackIdBtn.textContent = "Uploading...";
 
-    compressImage(file, 800, 800, 0.8, async function(compressedBackPhoto) {
-        try {
-            const q = query(collection(db, "users"), where("usernameKey", "==", currentUser.usernameKey));
-            const snap = await getDocs(q);
-            if (!snap.empty) {
-                const docId = snap.docs[0].id;
-                await updateDoc(doc(db, "users", docId), { idPhotoBack: compressedBackPhoto });
-                
-                currentUser.idPhotoBack = compressedBackPhoto;
-                localStorage.setItem('user_session', JSON.stringify(currentUser));
-                
-                alert("✅ Back ID uploaded successfully!");
-                updateNav();
+        compressImage(file, 800, 800, 0.8, async function(compressedBackPhoto) {
+            try {
+                const q = query(collection(db, "users"), where("usernameKey", "==", currentUser.usernameKey));
+                const snap = await getDocs(q);
+                if (!snap.empty) {
+                    const docId = snap.docs[0].id;
+                    await updateDoc(doc(db, "users", docId), { idPhotoBack: compressedBackPhoto });
+                    
+                    currentUser.idPhotoBack = compressedBackPhoto;
+                    localStorage.setItem('user_session', JSON.stringify(currentUser));
+                    
+                    alert("✅ Back ID uploaded successfully!");
+                    updateNav();
+                }
+            } catch (e) {
+                alert("Error saving back ID.");
             }
-        } catch (e) {
-            alert("Error saving back ID.");
-        }
-        btn.disabled = false;
-        btn.textContent = "Upload & Save";
-    }, function(err) {
-        alert("Error reading image.");
-        btn.disabled = false;
-        btn.textContent = "Upload & Save";
-    });
-};
+            saveBackIdBtn.disabled = false;
+            saveBackIdBtn.textContent = "Upload & Save";
+        }, function(err) {
+            alert("Error reading image.");
+            saveBackIdBtn.disabled = false;
+            saveBackIdBtn.textContent = "Upload & Save";
+        });
+    };
+}
 
-document.getElementById('logout-btn').onclick = () => {
+// SAFE LOGOUT LOGIC
+const performLogout = () => {
     localStorage.removeItem('user_session');
     location.reload();
 };
 
+const hiddenLogoutBtn = document.getElementById('logout-btn');
+if (hiddenLogoutBtn) hiddenLogoutBtn.onclick = performLogout;
+
+const navLogoutBtn = document.getElementById('nav-logout');
+if (navLogoutBtn) navLogoutBtn.onclick = performLogout;
+
 let pendingProductImages = [];
 
-document.getElementById('p-img').addEventListener('change', function(e) {
-    Array.from(this.files).forEach(file => {
-        if(file.type.startsWith('image/')) pendingProductImages.push(file);
+const pImgInput = document.getElementById('p-img');
+if (pImgInput) {
+    pImgInput.addEventListener('change', function(e) {
+        Array.from(this.files).forEach(file => {
+            if(file.type.startsWith('image/')) pendingProductImages.push(file);
+        });
+        renderImagePreviews();
+        this.value = ''; 
     });
-    renderImagePreviews();
-    this.value = ''; 
-});
+}
 
 window.removePendingImage = function(index) {
     pendingProductImages.splice(index, 1);
@@ -515,6 +557,7 @@ window.removePendingImage = function(index) {
 
 function renderImagePreviews() {
     const container = document.getElementById('sell-img-previews');
+    if(!container) return;
     container.innerHTML = ''; 
     pendingProductImages.forEach((file, index) => {
         const reader = new FileReader();
@@ -534,75 +577,78 @@ function renderImagePreviews() {
 const boostCheck = document.getElementById('p-boost');
 if(boostCheck) {
     boostCheck.onchange = function() {
-        document.getElementById('submit-sell-btn').textContent = this.checked ? 'Proceed to Payment (₱150)' : 'Post Item';
+        const submitBtn = document.getElementById('submit-sell-btn');
+        if (submitBtn) submitBtn.textContent = this.checked ? 'Proceed to Payment (₱150)' : 'Post Item';
     };
 }
 
 const sellForm = document.getElementById('form-sell');
-sellForm.onsubmit = async (e) => {
-    e.preventDefault();
-    if (pendingProductImages.length === 0) return alert("Please select at least one image.");
+if (sellForm) {
+    sellForm.onsubmit = async (e) => {
+        e.preventDefault();
+        if (pendingProductImages.length === 0) return alert("Please select at least one image.");
 
-    const submitBtn = document.getElementById('submit-sell-btn');
-    submitBtn.disabled = true;
-    submitBtn.textContent = "Compressing Photos...";
+        const submitBtn = document.getElementById('submit-sell-btn');
+        if(submitBtn) { submitBtn.disabled = true; submitBtn.textContent = "Compressing Photos..."; }
 
-    try {
-        const compressedImagesArray = await Promise.all(pendingProductImages.map(f => compressImageAsync(f, 1200, 1200, 0.8)));
-        const isBoosted = document.getElementById('p-boost') ? document.getElementById('p-boost').checked : false;
+        try {
+            const compressedImagesArray = await Promise.all(pendingProductImages.map(f => compressImageAsync(f, 1200, 1200, 0.8)));
+            const isBoosted = document.getElementById('p-boost') ? document.getElementById('p-boost').checked : false;
 
-        const publishToCloud = async () => {
-            submitBtn.textContent = "Saving Listing...";
-            const newItem = {
-                title: document.getElementById('p-title').value,
-                price: Number(document.getElementById('p-price').value),
-                category: document.getElementById('p-category').value,
-                desc: document.getElementById('p-desc').value,
-                seller: currentUser.username,
-                sellerKey: currentUser.username.toLowerCase(),
-                sellerIdPhoto: currentUser.idPhoto, 
-                boosted: isBoosted, 
-                status: 'available', 
-                timestamp: Date.now(),
-                images: compressedImagesArray 
+            const publishToCloud = async () => {
+                if(submitBtn) submitBtn.textContent = "Saving Listing...";
+                const newItem = {
+                    title: document.getElementById('p-title')?.value || "",
+                    price: Number(document.getElementById('p-price')?.value) || 0,
+                    category: document.getElementById('p-category')?.value || "",
+                    desc: document.getElementById('p-desc')?.value || "",
+                    seller: currentUser.username,
+                    sellerKey: currentUser.username.toLowerCase(),
+                    sellerIdPhoto: currentUser.idPhoto, 
+                    isDealer: currentUser.isDealer || false, 
+                    boosted: isBoosted, 
+                    status: 'available', 
+                    timestamp: Date.now(),
+                    images: compressedImagesArray 
+                };
+                
+                await addDoc(collection(db, "listings"), newItem);
+
+                sellForm.reset();
+                pendingProductImages = []; 
+                const previewCont = document.getElementById('sell-img-previews');
+                if(previewCont) previewCont.innerHTML = ''; 
+                if(submitBtn) submitBtn.textContent = "Post Item";
+                alert(isBoosted ? "🌟 Boost successful! Item posted to Hot List." : "✅ Item listed successfully!");
+                fetchAndRenderListings();
+                loadUserHistory();
+                showTab('buy');
             };
-            
-            await addDoc(collection(db, "listings"), newItem);
 
-            sellForm.reset();
-            pendingProductImages = []; 
-            document.getElementById('sell-img-previews').innerHTML = ''; 
-            document.getElementById('submit-sell-btn').textContent = "Post Item";
-            alert(isBoosted ? "🌟 Boost successful! Item posted to Hot List." : "✅ Item listed successfully!");
-            fetchAndRenderListings();
-            loadUserHistory();
-            showTab('buy');
-        };
-
-        if(isBoosted) {
-            submitBtn.disabled = false;
-            window.openPaymentModal('boost', 'Hot List Boost', document.getElementById('p-title').value, 150, async (receiptStr) => {
-                await addDoc(collection(db, "reservations"), {
-                    item: "Listing Boost Fee",
-                    buyer: currentUser.username,
-                    seller: "VehiSell Admin", 
-                    fee: 150,
-                    receipt: receiptStr, 
-                    timestamp: Date.now()
+            if(isBoosted) {
+                if(submitBtn) submitBtn.disabled = false;
+                window.openPaymentModal('boost', 'Hot List Boost', document.getElementById('p-title')?.value || 'Item', 150, async (receiptStr) => {
+                    await addDoc(collection(db, "reservations"), {
+                        item: "Listing Boost Fee",
+                        buyer: currentUser.username,
+                        seller: "VehiSell Admin", 
+                        fee: 150,
+                        receipt: receiptStr, 
+                        timestamp: Date.now()
+                    });
+                    await publishToCloud();
                 });
+            } else {
                 await publishToCloud();
-            });
-        } else {
-            await publishToCloud();
-        }
+            }
 
-    } catch (error) {
-        console.error(error);
-        alert("❌ Failed to list item.");
-        submitBtn.disabled = false;
-        submitBtn.textContent = "Post Item";
-    }
-};
+        } catch (error) {
+            console.error(error);
+            alert("❌ Failed to list item.");
+            if(submitBtn) { submitBtn.disabled = false; submitBtn.textContent = "Post Item"; }
+        }
+    };
+}
 
 window.toggleFavorite = (e, docId) => {
     e.stopPropagation();
@@ -646,6 +692,7 @@ function loadUserHistory() {
     const q = query(collection(db, "listings"), where("sellerKey", "==", currentUser.usernameKey));
     onSnapshot(q, (snapshot) => {
         const historyBox = document.getElementById('user-history-list');
+        if(!historyBox) return;
         historyBox.innerHTML = '';
         
         let items = [];
@@ -726,6 +773,7 @@ window.markAsSold = async function(docId) {
 async function fetchAndRenderListings() {
     const targetGridId = currentTab === 'saved' ? 'saved-grid' : 'listings-grid';
     const grid = document.getElementById(targetGridId);
+    if(!grid) return;
     grid.innerHTML = '<p style="text-align:center; grid-column:1/-1; color: var(--light);">Loading premium listings...</p>';
 
     try {
@@ -770,11 +818,11 @@ function renderFilteredListings() {
     if(!grid) return;
     grid.innerHTML = '';
 
-    const filterTerm = document.getElementById('search-input').value.toLowerCase();
-    const filterCat = document.getElementById('category-filter').value;
-    const minP = Number(document.getElementById('min-price').value) || 0;
-    const maxP = Number(document.getElementById('max-price').value) || Infinity;
-    const sortOrder = document.getElementById('sort-filter').value;
+    const filterTerm = document.getElementById('search-input')?.value.toLowerCase() || "";
+    const filterCat = document.getElementById('category-filter')?.value || "all";
+    const minP = Number(document.getElementById('min-price')?.value) || 0;
+    const maxP = Number(document.getElementById('max-price')?.value) || Infinity;
+    const sortOrder = document.getElementById('sort-filter')?.value || "newest";
 
     let filtered = allListings.filter(item => {
         if (item.status === 'sold') return false; 
@@ -802,7 +850,8 @@ function renderFilteredListings() {
 
     if (filtered.length === 0) {
         grid.innerHTML = '<p style="text-align:center; grid-column:1/-1; padding: 3rem; color: var(--light); font-size:1.1rem;">No items found matching your criteria.</p>';
-        document.getElementById('load-more-container').style.display = 'none';
+        const loadContainer = document.getElementById('load-more-container');
+        if(loadContainer) loadContainer.style.display = 'none';
         return;
     }
 
@@ -824,10 +873,9 @@ function renderFilteredListings() {
             : '';
             
         const boostClass = item.boosted ? 'boosted-card' : '';
-        
+        const dealerIcon = item.isDealer ? `<span style="color:#3b82f6; font-size:0.85rem;" title="Verified Dealer">☑️</span>` : '';
         const heartClass = userFavorites.includes(item.docId) ? 'heart-btn active' : 'heart-btn';
         
-        // ADMIN FIX: Admin cannot see the heart/wishlist button
         const heartBtnHtml = isAdmin ? '' : `<button class="${heartClass}" style="position: absolute; top: 15px; right: 15px; z-index: 50;" onclick="toggleFavorite(event, '${item.docId}')">❤️</button>`;
 
         const card = document.createElement('div');
@@ -860,7 +908,7 @@ function renderFilteredListings() {
             
             <div class="product-body" style="padding-top: 0; flex: 0;">
                 <div class="card-footer" style="flex-direction: column; align-items: stretch; gap: 10px; border-top: none;">
-                    <span style="font-weight: 800; color: var(--text);">👤 ${item.seller}</span>
+                    <span style="font-weight: 800; color: var(--text);">👤 ${item.seller} ${dealerIcon}</span>
                     <button class="btn-primary" style="padding:0.8rem;border-radius:12px;cursor:pointer;flex:1;" onclick="openProductModal('${item.docId}')">View Details</button>
                 </div>
             </div>
@@ -868,10 +916,13 @@ function renderFilteredListings() {
         grid.appendChild(card);
     });
 
-    if (filtered.length > currentLimit && currentTab !== 'saved') {
-        document.getElementById('load-more-container').style.display = 'block';
-    } else {
-        document.getElementById('load-more-container').style.display = 'none';
+    const loadContainer = document.getElementById('load-more-container');
+    if (loadContainer) {
+        if (filtered.length > currentLimit && currentTab !== 'saved') {
+            loadContainer.style.display = 'block';
+        } else {
+            loadContainer.style.display = 'none';
+        }
     }
 }
 
@@ -885,10 +936,12 @@ window.openProductModal = function(docId) {
 
     window.currentActiveListing = item;
 
-    document.getElementById('pm-title').innerText = item.title;
-    document.getElementById('pm-price').innerText = `₱${Number(item.price).toLocaleString()}`;
-    document.getElementById('pm-desc').innerText = item.desc;
-    document.getElementById('pm-seller-name').innerHTML = `${item.seller}`;
+    if(document.getElementById('pm-title')) document.getElementById('pm-title').innerText = item.title;
+    if(document.getElementById('pm-price')) document.getElementById('pm-price').innerText = `₱${Number(item.price).toLocaleString()}`;
+    if(document.getElementById('pm-desc')) document.getElementById('pm-desc').innerText = item.desc;
+    
+    const dealerIcon = item.isDealer ? `<span style="color:#3b82f6; font-size:0.95rem;">☑️</span>` : '';
+    if(document.getElementById('pm-seller-name')) document.getElementById('pm-seller-name').innerHTML = `${item.seller} ${dealerIcon}`;
     
     window.currentGalleryImages = item.images && item.images.length > 0 ? item.images : [item.image];
     window.currentGalleryIndex = 0;
@@ -898,37 +951,37 @@ window.openProductModal = function(docId) {
     const isAdmin = currentUser && currentUser.usernameKey === 'admin';
     const isOwner = currentUser && currentUser.username === item.seller;
     
-    // ADMIN FIX: Admin cannot report listings
     const reportBtn = document.getElementById('pm-report-btn');
     if (reportBtn) {
         reportBtn.style.display = (isAdmin || isOwner) ? 'none' : 'inline-block';
     }
 
     const actionsDiv = document.getElementById('pm-actions');
-    actionsDiv.innerHTML = '';
+    if(actionsDiv) {
+        actionsDiv.innerHTML = '';
 
-    // ADMIN FIX: Admins can ONLY delete listings. No buying or chatting.
-    if (isAdmin) {
-        actionsDiv.innerHTML = `<button class="btn-del" style="background:#ef4444;color:white;padding:1rem 2rem;border:none;border-radius:12px;cursor:pointer;font-weight:800;" onclick="deleteItem('${item.docId}')">Delete Listing (Admin Action)</button>`;
-    } 
-    else if (isOwner) {
-        actionsDiv.innerHTML = `<button class="btn-del" style="background:#ef4444;color:white;padding:1rem 2rem;border:none;border-radius:12px;cursor:pointer;font-weight:800;" onclick="deleteItem('${item.docId}')">Remove Listing</button>`;
-    } else {
-        const isReserved = item.status === 'reserved';
-        const reserveBtnHtml = isReserved 
-            ? `<button class="btn-contact" style="background:#94a3b8;color:white;padding:1rem 1.5rem;border:none;border-radius:12px;cursor:not-allowed;font-weight:800;" disabled>Item is Reserved</button>`
-            : `<button class="btn-contact" style="background:#10b981;color:white;padding:1rem 1.5rem;border:none;border-radius:12px;cursor:pointer;font-weight:800;" onclick="openPaymentModal('reserve', 'Reserve Item', '${item.title.replace(/'/g, "\\'")}', ${item.price * 0.05}, processReservation)">Reserve (5%)</button>`;
+        if (isAdmin) {
+            actionsDiv.innerHTML = `<button class="btn-del" style="background:#ef4444;color:white;padding:1rem 2rem;border:none;border-radius:12px;cursor:pointer;font-weight:800;" onclick="deleteItem('${item.docId}')">Delete Listing (Admin Action)</button>`;
+        } 
+        else if (isOwner) {
+            actionsDiv.innerHTML = `<button class="btn-del" style="background:#ef4444;color:white;padding:1rem 2rem;border:none;border-radius:12px;cursor:pointer;font-weight:800;" onclick="deleteItem('${item.docId}')">Remove Listing</button>`;
+        } else {
+            const isReserved = item.status === 'reserved';
+            const reserveBtnHtml = isReserved 
+                ? `<button class="btn-contact" style="background:#94a3b8;color:white;padding:1rem 1.5rem;border:none;border-radius:12px;cursor:not-allowed;font-weight:800;" disabled>Item is Reserved</button>`
+                : `<button class="btn-contact" style="background:#10b981;color:white;padding:1rem 1.5rem;border:none;border-radius:12px;cursor:pointer;font-weight:800;" onclick="openPaymentModal('reserve', 'Reserve Item', '${item.title.replace(/'/g, "\\'")}', ${item.price * 0.05}, processReservation)">Reserve (5%)</button>`;
 
-        window.pendingReservation = { docId: item.docId, title: item.title, sellerKey: item.sellerKey, sellerName: item.seller, fee: item.price * 0.05 };
+            window.pendingReservation = { docId: item.docId, title: item.title, sellerKey: item.sellerKey, sellerName: item.seller, fee: item.price * 0.05 };
 
-        actionsDiv.innerHTML = `
-            <button class="btn-contact" style="background:#64748b;color:white;padding:1rem 1.5rem;border:none;border-radius:12px;cursor:pointer;font-weight:700;" onclick="contactSeller('${item.sellerKey}')">Contact</button>
-            <button class="btn-contact" style="background:var(--primary);color:white;padding:1rem 1.5rem;border:none;border-radius:12px;cursor:pointer;font-weight:700;" onclick="openChatModal('${item.sellerKey}', '${item.seller.replace(/'/g, "\\'")}')">Live Chat</button>
-            ${reserveBtnHtml}
-        `;
+            actionsDiv.innerHTML = `
+                <button class="btn-contact" style="background:#64748b;color:white;padding:1rem 1.5rem;border:none;border-radius:12px;cursor:pointer;font-weight:700;" onclick="contactSeller('${item.sellerKey}')">Contact</button>
+                <button class="btn-contact" style="background:var(--primary);color:white;padding:1rem 1.5rem;border:none;border-radius:12px;cursor:pointer;font-weight:700;" onclick="openChatModal('${item.sellerKey}', '${item.seller.replace(/'/g, "\\'")}')">Live Chat</button>
+                ${reserveBtnHtml}
+            `;
+        }
     }
 
-    document.getElementById('product-modal').classList.remove('hidden');
+    document.getElementById('product-modal')?.classList.remove('hidden');
 };
 
 window.reportCurrentListing = async function() {
@@ -954,9 +1007,11 @@ window.reportCurrentListing = async function() {
 };
 
 window.renderGallery = function() {
-    document.getElementById('pm-main-img').src = window.currentGalleryImages[window.currentGalleryIndex];
+    const mainImg = document.getElementById('pm-main-img');
+    if(mainImg) mainImg.src = window.currentGalleryImages[window.currentGalleryIndex];
     
     const thumbsContainer = document.getElementById('pm-thumbnails');
+    if(!thumbsContainer) return;
     thumbsContainer.innerHTML = '';
     
     if(window.currentGalleryImages.length > 1) {
@@ -989,7 +1044,7 @@ window.deleteItem = async function(docId) {
     if (confirm("Delete this listing from the cloud?")) {
         try {
             await deleteDoc(doc(db, "listings", docId));
-            document.getElementById('product-modal').classList.add('hidden'); 
+            document.getElementById('product-modal')?.classList.add('hidden'); 
             alert("Deleted!");
             fetchAndRenderListings();
         } catch (error) {
@@ -1010,20 +1065,23 @@ window.contactSeller = async function(sellerKey) {
 
         const sellerData = querySnapshot.docs[0].data();
 
-        document.getElementById('modal-seller-name').innerText = sellerData.username;
-        document.getElementById('modal-seller-avatar').src = sellerData.idPhoto;
+        if(document.getElementById('modal-seller-name')) document.getElementById('modal-seller-name').innerText = sellerData.username;
+        if(document.getElementById('modal-seller-avatar')) document.getElementById('modal-seller-avatar').src = sellerData.idPhoto;
 
         const phoneBtn = document.getElementById('modal-seller-phone');
-        phoneBtn.href = `tel:${sellerData.phone}`; 
-        phoneBtn.innerText = `📞 Call / SMS: ${sellerData.phone}`;
+        if(phoneBtn) {
+            phoneBtn.href = `tel:${sellerData.phone}`; 
+            phoneBtn.innerText = `📞 Call / SMS: ${sellerData.phone}`;
+        }
 
         const fbBtn = document.getElementById('modal-seller-fb');
-        let cleanFbLink = sellerData.fb.startsWith('http') ? sellerData.fb : `https://${sellerData.fb}`;
-        fbBtn.href = cleanFbLink;
+        if(fbBtn) {
+            let cleanFbLink = sellerData.fb.startsWith('http') ? sellerData.fb : `https://${sellerData.fb}`;
+            fbBtn.href = cleanFbLink;
+        }
 
-        document.getElementById('modal-seller-address').style.display = 'none';
-
-        document.getElementById('seller-modal').classList.remove('hidden');
+        if(document.getElementById('modal-seller-address')) document.getElementById('modal-seller-address').style.display = 'none';
+        document.getElementById('seller-modal')?.classList.remove('hidden');
     } catch (error) {
         alert("Error loading seller info.");
     }
@@ -1070,9 +1128,9 @@ window.openChatModal = function(sellerKey, sellerName) {
     if (!currentUser) { alert("Login required to chat."); showTab('auth'); return; }
     
     activeChatUserId = sellerKey;
-    document.getElementById('chat-target-name').innerText = "Chat with " + sellerName;
-    document.getElementById('product-modal').classList.add('hidden'); 
-    document.getElementById('chat-modal').classList.remove('hidden');
+    if(document.getElementById('chat-target-name')) document.getElementById('chat-target-name').innerText = "Chat with " + sellerName;
+    document.getElementById('product-modal')?.classList.add('hidden'); 
+    document.getElementById('chat-modal')?.classList.remove('hidden');
 
     const chatId = getChatId(currentUser.usernameKey, sellerKey);
     const q = query(collection(db, "messages"), where("chatId", "==", chatId));
@@ -1085,6 +1143,7 @@ window.openChatModal = function(sellerKey, sellerName) {
         msgs.sort((a, b) => a.timestamp - b.timestamp);
 
         const chatBox = document.getElementById('chat-messages');
+        if(!chatBox) return;
         chatBox.innerHTML = '';
         
         msgs.forEach(m => {
@@ -1112,78 +1171,86 @@ window.openChatModal = function(sellerKey, sellerName) {
 };
 
 window.closeChatModal = function() {
-    document.getElementById('chat-modal').classList.add('hidden');
+    document.getElementById('chat-modal')?.classList.add('hidden');
     activeChatUserId = null; 
 };
 
 window.removeChatImg = function() {
-    document.getElementById('chat-img-input').value = '';
-    document.getElementById('chat-img-preview-container').style.display = 'none';
+    const chatImgInput = document.getElementById('chat-img-input');
+    if(chatImgInput) chatImgInput.value = '';
+    const chatImgPreviewContainer = document.getElementById('chat-img-preview-container');
+    if(chatImgPreviewContainer) chatImgPreviewContainer.style.display = 'none';
 };
 
-document.getElementById('chat-img-input').onchange = function(e) {
-    const file = e.target.files[0];
-    if(file) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            document.getElementById('chat-img-preview').src = e.target.result;
-            document.getElementById('chat-img-preview-container').style.display = 'block';
-        };
-        reader.readAsDataURL(file);
-    }
-};
-
-document.getElementById('form-chat').onsubmit = async (e) => {
-    e.preventDefault();
-    const input = document.getElementById('chat-input');
-    const fileInput = document.getElementById('chat-img-input');
-    
-    const text = input.value.trim();
-    const file = fileInput.files[0];
-    
-    if (!text && !file) return;
-
-    const submitBtn = document.querySelector('#form-chat button[type="submit"]');
-    submitBtn.disabled = true;
-
-    try {
-        let imgBase64 = null;
-        if (file) {
-            imgBase64 = await compressImageAsync(file, 800, 800, 0.7); 
+const chatImgInput = document.getElementById('chat-img-input');
+if(chatImgInput) {
+    chatImgInput.onchange = function(e) {
+        const file = e.target.files[0];
+        if(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                if(document.getElementById('chat-img-preview')) document.getElementById('chat-img-preview').src = e.target.result;
+                if(document.getElementById('chat-img-preview-container')) document.getElementById('chat-img-preview-container').style.display = 'block';
+            };
+            reader.readAsDataURL(file);
         }
+    };
+}
 
-        input.value = '';
-        removeChatImg();
+const formChat = document.getElementById('form-chat');
+if(formChat) {
+    formChat.onsubmit = async (e) => {
+        e.preventDefault();
+        const input = document.getElementById('chat-input');
+        const fileInput = document.getElementById('chat-img-input');
+        
+        const text = input?.value.trim() || "";
+        const file = fileInput?.files[0];
+        
+        if (!text && !file) return;
 
-        const chatId = getChatId(currentUser.usernameKey, activeChatUserId);
+        const submitBtn = document.querySelector('#form-chat button[type="submit"]');
+        if(submitBtn) submitBtn.disabled = true;
 
-        await addDoc(collection(db, "messages"), {
-            chatId: chatId,
-            sender: currentUser.usernameKey,
-            text: text,
-            imageUrl: imgBase64, 
-            timestamp: Date.now()
-        });
+        try {
+            let imgBase64 = null;
+            if (file) {
+                imgBase64 = await compressImageAsync(file, 800, 800, 0.7); 
+            }
 
-        await addDoc(collection(db, "notifications"), {
-            targetUser: activeChatUserId,
-            type: 'message',
-            fromUser: currentUser.username,
-            text: text ? text : "Sent an image.",
-            timestamp: Date.now()
-        });
+            if(input) input.value = '';
+            removeChatImg();
 
-        sendEmailNotification(
-            activeChatUserId, 
-            "New Message Received", 
-            `You have a new unread message from ${currentUser.username} on VehiSell.`
-        );
+            const chatId = getChatId(currentUser.usernameKey, activeChatUserId);
 
-    } catch (err) {
-        console.error(err);
-    }
-    submitBtn.disabled = false;
-};
+            await addDoc(collection(db, "messages"), {
+                chatId: chatId,
+                sender: currentUser.usernameKey,
+                text: text,
+                imageUrl: imgBase64, 
+                timestamp: Date.now()
+            });
+
+            await addDoc(collection(db, "notifications"), {
+                targetUser: activeChatUserId,
+                type: 'message',
+                fromUser: currentUser.username,
+                text: text ? text : "Sent an image.",
+                timestamp: Date.now()
+            });
+
+            sendEmailNotification(
+                activeChatUserId, 
+                "New Message Received", 
+                `You have a new unread message from ${currentUser.username} on VehiSell.`
+            );
+
+        } catch (err) {
+            console.error(err);
+        }
+        if(submitBtn) submitBtn.disabled = false;
+    };
+}
 
 let alertsUnsubscribe = null;
 let seenAlerts = new Set();
@@ -1215,6 +1282,8 @@ function triggerToastPopup(data) {
     if (data.type === 'message' && activeChatUserId === data.fromUser.toLowerCase()) return;
 
     const container = document.getElementById('toast-container');
+    if(!container) return;
+
     const toast = document.createElement('div');
     toast.className = data.type === 'reserve' ? 'toast reserve-toast' : 'toast';
     
@@ -1242,6 +1311,7 @@ function loadInbox() {
     const q = query(collection(db, "notifications"), where("targetUser", "==", currentUser.usernameKey));
     onSnapshot(q, (snapshot) => {
         const dropdownBox = document.getElementById('dropdown-list');
+        if(!dropdownBox) return;
         dropdownBox.innerHTML = '';
         
         let interactors = new Map();
@@ -1261,11 +1331,13 @@ function loadInbox() {
 
         if(interactors.size === 0) {
             dropdownBox.innerHTML = '<p style="color: var(--light); text-align: center; margin: 20px 0; font-size: 0.9rem;">No messages yet.</p>';
-            notifBadge.classList.add('hidden');
+            if(notifBadge) notifBadge.classList.add('hidden');
             return;
         } else {
-            notifBadge.innerText = interactors.size;
-            notifBadge.classList.remove('hidden');
+            if(notifBadge) {
+                notifBadge.innerText = interactors.size;
+                notifBadge.classList.remove('hidden');
+            }
         }
 
         interactors.forEach((data, user) => {
@@ -1276,7 +1348,7 @@ function loadInbox() {
             dropDiv.onmouseover = () => dropDiv.style.background = 'var(--bg)';
             dropDiv.onmouseout = () => dropDiv.style.background = 'transparent';
             dropDiv.onclick = () => {
-                document.getElementById('notif-dropdown').classList.add('hidden'); 
+                document.getElementById('notif-dropdown')?.classList.add('hidden'); 
                 openChatModal(user.toLowerCase(), user); 
             };
             dropDiv.innerHTML = `
@@ -1291,91 +1363,56 @@ function loadInbox() {
     });
 }
 
-let currentTotalAdminProfit = 0;
-let adminReserves = [];
-let adminWithdrawals = [];
-
 async function loadAdminDashboard() {
     const resQuery = query(collection(db, "reservations"));
     const withQuery = query(collection(db, "withdrawals"));
     
     const updateDashboardUI = () => {
         let grossProfit = 0;
-        adminReserves.forEach(r => grossProfit += Number(r.fee));
-
-        let totalWithdrawn = 0;
-        adminWithdrawals.forEach(w => totalWithdrawn += Number(w.amount));
-
-        currentTotalAdminProfit = grossProfit - totalWithdrawn;
-        document.getElementById('admin-total-profit').innerText = currentTotalAdminProfit.toLocaleString(undefined, {minimumFractionDigits: 2});
-
-        const logsBox = document.getElementById('admin-logs');
-        logsBox.innerHTML = '';
+        let adminReserves = [];
+        let adminWithdrawals = [];
         
-        let allLogs = [];
-        adminReserves.forEach(r => allLogs.push({ type: 'reserve', data: r, time: r.timestamp }));
-        adminWithdrawals.forEach(w => allLogs.push({ type: 'withdraw', data: w, time: w.timestamp }));
-
-        allLogs.sort((a, b) => b.time - a.time);
-
-        if (allLogs.length === 0) {
-            logsBox.innerHTML = '<p style="color: var(--light); text-align: center; margin: 20px 0;">No system transactions yet.</p>';
-        } else {
-            allLogs.forEach(log => {
-                const logItem = document.createElement('div');
-                logItem.style = "padding: 15px; border-bottom: 1px solid var(--border); font-size: 0.95rem;";
-                
-                const timeString = new Date(log.time).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-
-                if (log.type === 'reserve') {
-                    const r = log.data;
-                    let logText = `<strong>${r.buyer}</strong> reserved <em>${r.item}</em> from <strong>${r.seller}</strong>`;
-                    if (r.item.includes("Listing Boost Fee") || r.item.includes("Premium Dealer Registration")) {
-                        logText = `<strong>${r.buyer}</strong> paid for <em>${r.item}</em>`;
-                    }
-                    logItem.innerHTML = `
-                        <div style="display:flex; justify-content: space-between; align-items: center;">
-                            <span style="color: var(--text);">${logText}</span>
-                            <span style="color: #10b981; font-weight: 800; font-size: 1.1rem;">+₱${Number(r.fee).toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
-                        </div>
-                        <div style="display:flex; justify-content: space-between; margin-top: 8px; font-size: 0.85rem;">
-                            <span style="color: var(--light); font-weight: 600;">${timeString}</span>
-                            ${r.receipt ? `<span onclick="viewFullImage('${r.receipt}')" style="color:var(--primary); font-weight:800; cursor: pointer;">🔍 View Receipt</span>` : ''}
-                        </div>
-                    `;
-                } else {
-                    const w = log.data;
-                    logItem.innerHTML = `
-                        <div style="display:flex; justify-content: space-between; align-items: center;">
-                            <span style="color: var(--text);"><strong>Bank Withdrawal</strong></span>
-                            <span style="color: #ef4444; font-weight: 800; font-size: 1.1rem;">-₱${Number(w.amount).toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
-                        </div>
-                        <div style="display:flex; justify-content: space-between; margin-top: 8px; font-size: 0.85rem;">
-                            <span style="color: var(--light); font-weight: 600;">${timeString}</span>
-                            <span style="color: var(--light); font-weight:800;">🏦 Processed</span>
-                        </div>
-                    `;
-                }
-                logsBox.appendChild(logItem);
-            });
-        }
+        // This is safe since it's driven by snapshot callbacks below
     };
 
     onSnapshot(resQuery, (snapshot) => {
-        adminReserves = [];
-        snapshot.forEach(doc => adminReserves.push(doc.data()));
-        updateDashboardUI();
+        let grossProfit = 0;
+        let allLogs = [];
+        snapshot.forEach(doc => {
+            const r = doc.data();
+            grossProfit += Number(r.fee);
+            allLogs.push({ type: 'reserve', data: r, time: r.timestamp });
+        });
+
+        // Store these globally to compute balance properly if needed
+        window.tempAdminGross = grossProfit;
+        window.tempAdminReservesLogs = allLogs;
+        
+        if(window.tempAdminWithdrawn !== undefined) {
+            renderAdminFinancials();
+        }
     });
 
     onSnapshot(withQuery, (snapshot) => {
-        adminWithdrawals = [];
-        snapshot.forEach(doc => adminWithdrawals.push(doc.data()));
-        updateDashboardUI();
+        let totalWithdrawn = 0;
+        let allLogs = [];
+        snapshot.forEach(doc => {
+            const w = doc.data();
+            totalWithdrawn += Number(w.amount);
+            allLogs.push({ type: 'withdraw', data: w, time: w.timestamp });
+        });
+        
+        window.tempAdminWithdrawn = totalWithdrawn;
+        window.tempAdminWithdrawLogs = allLogs;
+        
+        if(window.tempAdminGross !== undefined) {
+            renderAdminFinancials();
+        }
     });
 
     try {
         const usersSnap = await getDocs(collection(db, "users"));
-        document.getElementById('admin-total-users').innerText = usersSnap.size.toLocaleString();
+        if(document.getElementById('admin-total-users')) document.getElementById('admin-total-users').innerText = usersSnap.size.toLocaleString();
 
         const listingsSnap = await getDocs(collection(db, "listings"));
         let active = 0, reserved = 0, sold = 0;
@@ -1387,9 +1424,9 @@ async function loadAdminDashboard() {
             else active++;
         });
 
-        document.getElementById('admin-total-listings').innerText = active.toLocaleString();
-        document.getElementById('admin-total-reserved').innerText = reserved.toLocaleString();
-        document.getElementById('admin-total-sold').innerText = sold.toLocaleString();
+        if(document.getElementById('admin-total-listings')) document.getElementById('admin-total-listings').innerText = active.toLocaleString();
+        if(document.getElementById('admin-total-reserved')) document.getElementById('admin-total-reserved').innerText = reserved.toLocaleString();
+        if(document.getElementById('admin-total-sold')) document.getElementById('admin-total-sold').innerText = sold.toLocaleString();
     } catch(err) {
         console.error("Could not fetch counts", err);
     }
@@ -1397,6 +1434,7 @@ async function loadAdminDashboard() {
     const qPending = query(collection(db, "users"), where("isVerified", "==", false));
     onSnapshot(qPending, (snapshot) => {
         const pendingBox = document.getElementById('admin-pending-users');
+        if(!pendingBox) return;
         pendingBox.innerHTML = '';
         
         if(snapshot.empty) {
@@ -1437,7 +1475,6 @@ async function loadAdminDashboard() {
         });
     });
 
-    // ADMIN FIX: NEW PLATFORM USERS TRACKER
     const qVerified = query(collection(db, "users"), where("isVerified", "==", true));
     onSnapshot(qVerified, (snapshot) => {
         const allUsersBox = document.getElementById('admin-all-users');
@@ -1449,7 +1486,6 @@ async function loadAdminDashboard() {
             const u = docSnap.data();
             const uId = docSnap.id;
             
-            // Do not show the admin in the ban list
             if(u.usernameKey === 'admin') return; 
             count++;
             
@@ -1466,7 +1502,7 @@ async function loadAdminDashboard() {
                             <span style="font-size:0.8rem; color:var(--light);">${u.email} | ${u.phone}</span>
                         </div>
                     </div>
-                    <button class="btn-del" style="background:#ef4444; color:white; border:none; padding:8px 15px; border-radius:8px; cursor:pointer; font-size:0.85rem;" onclick="banUser('${uId}', '${u.username}')">Ban User</button>
+                    <button class="btn-del" style="background:#ef4444; color:white; border:none; padding:8px 15px; border-radius:8px; cursor:pointer; font-size:0.85rem;" onclick="banUser('${uId}', '${u.username.replace(/'/g, "\\'")}')">Ban User</button>
                 </div>
             `;
         });
@@ -1477,6 +1513,7 @@ async function loadAdminDashboard() {
     const reportsQuery = query(collection(db, "reports"));
     onSnapshot(reportsQuery, (snapshot) => {
         const box = document.getElementById('admin-reports');
+        if(!box) return;
         box.innerHTML = '';
         if(snapshot.empty) {
             box.innerHTML = '<p style="color: var(--light); text-align: center; margin: 20px 0;">No reported listings.</p>';
@@ -1500,7 +1537,61 @@ async function loadAdminDashboard() {
     });
 }
 
-// ADMIN FIX: THE BAN HAMMER FUNCTION
+function renderAdminFinancials() {
+    let currentTotalAdminProfit = (window.tempAdminGross || 0) - (window.tempAdminWithdrawn || 0);
+    const profitEl = document.getElementById('admin-total-profit');
+    if(profitEl) profitEl.innerText = currentTotalAdminProfit.toLocaleString(undefined, {minimumFractionDigits: 2});
+
+    const logsBox = document.getElementById('admin-logs');
+    if(!logsBox) return;
+    logsBox.innerHTML = '';
+    
+    let allLogs = (window.tempAdminReservesLogs || []).concat(window.tempAdminWithdrawLogs || []);
+    allLogs.sort((a, b) => b.time - a.time);
+
+    if (allLogs.length === 0) {
+        logsBox.innerHTML = '<p style="color: var(--light); text-align: center; margin: 20px 0;">No system transactions yet.</p>';
+    } else {
+        allLogs.forEach(log => {
+            const logItem = document.createElement('div');
+            logItem.style = "padding: 15px; border-bottom: 1px solid var(--border); font-size: 0.95rem;";
+            
+            const timeString = new Date(log.time).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+            if (log.type === 'reserve') {
+                const r = log.data;
+                let logText = `<strong>${r.buyer}</strong> reserved <em>${r.item}</em> from <strong>${r.seller}</strong>`;
+                if (r.item.includes("Listing Boost Fee") || r.item.includes("Premium Dealer Registration")) {
+                    logText = `<strong>${r.buyer}</strong> paid for <em>${r.item}</em>`;
+                }
+                logItem.innerHTML = `
+                    <div style="display:flex; justify-content: space-between; align-items: center;">
+                        <span style="color: var(--text);">${logText}</span>
+                        <span style="color: #10b981; font-weight: 800; font-size: 1.1rem;">+₱${Number(r.fee).toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                    </div>
+                    <div style="display:flex; justify-content: space-between; margin-top: 8px; font-size: 0.85rem;">
+                        <span style="color: var(--light); font-weight: 600;">${timeString}</span>
+                        ${r.receipt ? `<span onclick="viewFullImage('${r.receipt}')" style="color:var(--primary); font-weight:800; cursor: pointer;">🔍 View Receipt</span>` : ''}
+                    </div>
+                `;
+            } else {
+                const w = log.data;
+                logItem.innerHTML = `
+                    <div style="display:flex; justify-content: space-between; align-items: center;">
+                        <span style="color: var(--text);"><strong>Bank Withdrawal</strong></span>
+                        <span style="color: #ef4444; font-weight: 800; font-size: 1.1rem;">-₱${Number(w.amount).toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                    </div>
+                    <div style="display:flex; justify-content: space-between; margin-top: 8px; font-size: 0.85rem;">
+                        <span style="color: var(--light); font-weight: 600;">${timeString}</span>
+                        <span style="color: var(--light); font-weight:800;">🏦 Processed</span>
+                    </div>
+                `;
+            }
+            logsBox.appendChild(logItem);
+        });
+    }
+}
+
 window.banUser = async function(docId, username) {
     if(confirm(`Are you absolutely sure you want to PERMANENTLY BAN and delete ${username} from the platform?`)) {
         try {
@@ -1547,51 +1638,54 @@ window.rejectUser = async function(docId) {
     }
 };
 
-document.getElementById('btn-withdraw').onclick = async () => {
-    if(currentTotalAdminProfit <= 0) {
-        alert("You have no funds available to withdraw.");
-        return;
-    }
-
-    const amountStr = prompt(`You have ₱${currentTotalAdminProfit.toLocaleString(undefined, {minimumFractionDigits: 2})} available.\n\nHow much would you like to withdraw?`, currentTotalAdminProfit);
-    
-    if (amountStr === null) return; 
-
-    const amountToWithdraw = Number(amountStr.replace(/,/g, ''));
-
-    if (isNaN(amountToWithdraw) || amountToWithdraw <= 0) {
-        alert("⚠️ Invalid amount entered.");
-        return;
-    }
-
-    if (amountToWithdraw > currentTotalAdminProfit) {
-        alert("⚠️ Insufficient funds! You cannot withdraw more than your available profit.");
-        return;
-    }
-
-    if(confirm(`Confirm withdrawal of ₱${amountToWithdraw.toLocaleString(undefined, {minimumFractionDigits: 2})} to your bank account?`)) {
-        try {
-            const btn = document.getElementById('btn-withdraw');
-            btn.disabled = true;
-            btn.textContent = "Processing...";
-
-            await addDoc(collection(db, "withdrawals"), {
-                amount: amountToWithdraw,
-                timestamp: Date.now()
-            });
-
-            alert(`✅ ₱${amountToWithdraw.toLocaleString()} Withdrawal Requested! Funds will reflect in your bank account within 2-3 business days.`);
-            
-            btn.disabled = false;
-            btn.textContent = "🏦 Withdraw Funds to Bank";
-
-        } catch(err) {
-            alert("Error processing withdrawal.");
-            document.getElementById('btn-withdraw').disabled = false;
-            document.getElementById('btn-withdraw').textContent = "🏦 Withdraw Funds to Bank";
+const withdrawBtn = document.getElementById('btn-withdraw');
+if(withdrawBtn) {
+    withdrawBtn.onclick = async () => {
+        let currentTotalAdminProfit = (window.tempAdminGross || 0) - (window.tempAdminWithdrawn || 0);
+        if(currentTotalAdminProfit <= 0) {
+            alert("You have no funds available to withdraw.");
+            return;
         }
-    }
-};
+
+        const amountStr = prompt(`You have ₱${currentTotalAdminProfit.toLocaleString(undefined, {minimumFractionDigits: 2})} available.\n\nHow much would you like to withdraw?`, currentTotalAdminProfit);
+        
+        if (amountStr === null) return; 
+
+        const amountToWithdraw = Number(amountStr.replace(/,/g, ''));
+
+        if (isNaN(amountToWithdraw) || amountToWithdraw <= 0) {
+            alert("⚠️ Invalid amount entered.");
+            return;
+        }
+
+        if (amountToWithdraw > currentTotalAdminProfit) {
+            alert("⚠️ Insufficient funds! You cannot withdraw more than your available profit.");
+            return;
+        }
+
+        if(confirm(`Confirm withdrawal of ₱${amountToWithdraw.toLocaleString(undefined, {minimumFractionDigits: 2})} to your bank account?`)) {
+            try {
+                withdrawBtn.disabled = true;
+                withdrawBtn.textContent = "Processing...";
+
+                await addDoc(collection(db, "withdrawals"), {
+                    amount: amountToWithdraw,
+                    timestamp: Date.now()
+                });
+
+                alert(`✅ ₱${amountToWithdraw.toLocaleString()} Withdrawal Requested! Funds will reflect in your bank account within 2-3 business days.`);
+                
+                withdrawBtn.disabled = false;
+                withdrawBtn.textContent = "🏦 Withdraw Funds to Bank";
+
+            } catch(err) {
+                alert("Error processing withdrawal.");
+                withdrawBtn.disabled = false;
+                withdrawBtn.textContent = "🏦 Withdraw Funds to Bank";
+            }
+        }
+    };
+}
 
 async function sendEmailNotification(targetUsernameKey, subjectTitle, bodyMessage) {
     try {
@@ -1644,17 +1738,22 @@ window.onclick = (event) => {
     }
 };
 
-document.getElementById('search-input').oninput = (e) => {
-    currentLimit = 12;
-    renderFilteredListings();
-};
+const searchInput = document.getElementById('search-input');
+if(searchInput) {
+    searchInput.oninput = (e) => {
+        currentLimit = 12;
+        renderFilteredListings();
+    };
+}
 
-document.getElementById('category-filter').onchange = (e) => {
-    currentLimit = 12;
-    renderFilteredListings();
-};
+const catFilter = document.getElementById('category-filter');
+if(catFilter) {
+    catFilter.onchange = (e) => {
+        currentLimit = 12;
+        renderFilteredListings();
+    };
+}
 
-// Force initialization to start on home page
 showTab('home');
 updateNav();
 fetchAndRenderListings();
