@@ -119,16 +119,10 @@ window.openLegalModal = function(type) {
 };
 
 window.startAdminChat = function() {
-    if (!currentUser) {
-        alert("Please login to access Customer Service.");
-        showTab('auth');
-        return;
-    }
-    if (currentUser.usernameKey === 'admin') {
+    if (currentUser && currentUser.usernameKey === 'admin') {
         alert("Welcome Admin. Please check your notification bell to respond to user messages.");
         return;
     }
-    
     openChatModal('admin', 'Customer Support');
 };
 
@@ -468,8 +462,6 @@ function updateNav() {
             if(document.getElementById('quick-icons')) document.getElementById('quick-icons').style.display = 'none';
             if(bellBtn) bellBtn.style.display = 'none';
             
-            document.getElementById('floating-cs-btn')?.classList.add('hidden'); 
-            
             loadAdminDashboard();
         } else {
             document.getElementById('nav-acc')?.classList.remove('hidden');
@@ -479,8 +471,6 @@ function updateNav() {
             document.getElementById('nav-saved')?.classList.remove('hidden');
             if(document.getElementById('quick-icons')) document.getElementById('quick-icons').style.display = 'flex';
             if(bellBtn) bellBtn.style.display = 'flex';
-            
-            document.getElementById('floating-cs-btn')?.classList.remove('hidden'); 
             
             const accName = document.getElementById('acc-name');
             if (accName) accName.innerText = currentUser.username;
@@ -507,8 +497,6 @@ function updateNav() {
         document.getElementById('nav-logout')?.classList.add('hidden');
         if(document.getElementById('quick-icons')) document.getElementById('quick-icons').style.display = 'none';
         document.getElementById('nav-saved')?.classList.add('hidden');
-        
-        document.getElementById('floating-cs-btn')?.classList.add('hidden'); 
     }
 }
 
@@ -988,13 +976,14 @@ window.openProductModal = function(docId) {
             actionsDiv.innerHTML = `<button class="btn-del" style="background:#ef4444;color:white;padding:1rem 2rem;border:none;border-radius:12px;cursor:pointer;font-weight:800;" onclick="deleteItem('${item.docId}')">Remove Listing</button>`;
         } else {
             const isReserved = item.status === 'reserved';
-            const isLowPrice = Number(item.price) <= 200;
+            const isLowPrice = Number(item.price) < 200; // Under 200 pesos triggers the optional reserve button
 
             let reserveBtnHtml = '';
             if (isReserved) {
                 reserveBtnHtml = `<button class="btn-contact" style="background:#94a3b8;color:white;padding:1rem 1.5rem;border:none;border-radius:12px;cursor:not-allowed;font-weight:800;" disabled>Item is Reserved</button>`;
             } else if (isLowPrice) {
-                reserveBtnHtml = `<button class="btn-contact" style="background:var(--border);color:var(--text);padding:1rem 1.5rem;border:none;border-radius:12px;cursor:not-allowed;font-weight:800;" disabled title="Not available for items ₱200 and below.">Reserve (N/A)</button>`;
+                // The new stylish optional reserve button
+                reserveBtnHtml = `<button class="btn-reserve" onclick="openPaymentModal('reserve', 'Reserve Item', '${item.title.replace(/'/g, "\\'")}', 200, processReservation)">Reserve (Optional)</button>`;
             } else {
                 reserveBtnHtml = `<button class="btn-contact" style="background:#10b981;color:white;padding:1rem 1.5rem;border:none;border-radius:12px;cursor:pointer;font-weight:800;" onclick="openPaymentModal('reserve', 'Reserve Item', '${item.title.replace(/'/g, "\\'")}', 200, processReservation)">Reserve (₱200)</button>`;
             }
@@ -1116,6 +1105,8 @@ window.contactSeller = async function(sellerKey) {
 };
 
 window.processReservation = async function(compressedReceipt) {
+    if (!currentUser) { alert("Please login to reserve items."); showTab('auth'); return; }
+    
     await addDoc(collection(db, "notifications"), {
         targetUser: window.pendingReservation.sellerKey,
         type: 'reserve',
@@ -1152,15 +1143,31 @@ function getChatId(user1, user2) {
     return user1 < user2 ? `${user1}_${user2}` : `${user2}_${user1}`;
 }
 
+// Generate/fetch guest ID for chat users who are not logged in
+function getGuestId() {
+    let guestId = localStorage.getItem('guest_chat_id');
+    if (!guestId) {
+        guestId = 'guest_' + Math.random().toString(36).substring(2, 10);
+        localStorage.setItem('guest_chat_id', guestId);
+    }
+    return guestId;
+}
+
 window.openChatModal = function(sellerKey, sellerName) {
-    if (!currentUser) { alert("Login required to chat."); showTab('auth'); return; }
+    if (!currentUser && sellerKey !== 'admin') { 
+        alert("Login required to chat with sellers."); 
+        showTab('auth'); 
+        return; 
+    }
+    
+    let chatUserId = currentUser ? currentUser.usernameKey : getGuestId();
     
     activeChatUserId = sellerKey;
     if(document.getElementById('chat-target-name')) document.getElementById('chat-target-name').innerText = "Chat with " + sellerName;
     document.getElementById('product-modal')?.classList.add('hidden'); 
     document.getElementById('chat-modal')?.classList.remove('hidden');
 
-    const chatId = getChatId(currentUser.usernameKey, sellerKey);
+    const chatId = getChatId(chatUserId, sellerKey);
     const q = query(collection(db, "messages"), where("chatId", "==", chatId));
 
     if (currentChatUnsubscribe) currentChatUnsubscribe();
@@ -1175,8 +1182,9 @@ window.openChatModal = function(sellerKey, sellerName) {
         chatBox.innerHTML = '';
         
         msgs.forEach(m => {
+            const isSentByMe = m.sender === chatUserId;
             const div = document.createElement('div');
-            div.className = 'chat-bubble ' + (m.sender === currentUser.usernameKey ? 'sent' : 'received');
+            div.className = 'chat-bubble ' + (isSentByMe ? 'sent' : 'received');
             
             const timeString = new Date(m.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
             
@@ -1249,11 +1257,14 @@ if(formChat) {
             if(input) input.value = '';
             removeChatImg();
 
-            const chatId = getChatId(currentUser.usernameKey, activeChatUserId);
+            let chatUserId = currentUser ? currentUser.usernameKey : getGuestId();
+            let chatUserName = currentUser ? currentUser.username : 'Customer';
+            const chatId = getChatId(chatUserId, activeChatUserId);
 
             await addDoc(collection(db, "messages"), {
                 chatId: chatId,
-                sender: currentUser.usernameKey,
+                sender: chatUserId,
+                senderName: chatUserName, // Save name so Admin knows if it's a Customer or logged-in User
                 text: text,
                 imageUrl: imgBase64, 
                 timestamp: Date.now()
@@ -1262,7 +1273,8 @@ if(formChat) {
             await addDoc(collection(db, "notifications"), {
                 targetUser: activeChatUserId,
                 type: 'message',
-                fromUser: currentUser.username,
+                fromUser: chatUserName,
+                fromUserKey: chatUserId, // Send the unique guest ID so the admin clicks exactly the right chat
                 text: text ? text : "Sent an image.",
                 timestamp: Date.now()
             });
@@ -1270,7 +1282,7 @@ if(formChat) {
             sendEmailNotification(
                 activeChatUserId, 
                 "New Message Received", 
-                `You have a new unread message from ${currentUser.username} on VehiSell.`
+                `You have a new unread message from ${chatUserName} on VehiSell.`
             );
 
         } catch (err) {
@@ -1307,7 +1319,8 @@ function listenForLiveAlerts() {
 }
 
 function triggerToastPopup(data) {
-    if (data.type === 'message' && activeChatUserId === data.fromUser.toLowerCase()) return;
+    let senderIdForChat = data.fromUserKey || data.fromUser.toLowerCase();
+    if (data.type === 'message' && activeChatUserId === senderIdForChat) return;
 
     const container = document.getElementById('toast-container');
     if(!container) return;
@@ -1325,7 +1338,7 @@ function triggerToastPopup(data) {
     }
 
     toast.onclick = () => {
-        window.openChatModal(data.fromUser.toLowerCase(), data.fromUser);
+        window.openChatModal(senderIdForChat, data.fromUser);
         toast.remove();
     };
 
@@ -1346,11 +1359,13 @@ function loadInbox() {
         
         snapshot.forEach(doc => {
             const data = doc.data();
-            if(!interactors.has(data.fromUser)) {
-                interactors.set(data.fromUser, data);
+            let senderIdentifier = data.fromUserKey || data.fromUser.toLowerCase(); // Map by guest ID if they are a guest
+            
+            if(!interactors.has(senderIdentifier)) {
+                interactors.set(senderIdentifier, data);
             } else {
-                if(data.timestamp > interactors.get(data.fromUser).timestamp) {
-                    interactors.set(data.fromUser, data);
+                if(data.timestamp > interactors.get(senderIdentifier).timestamp) {
+                    interactors.set(senderIdentifier, data);
                 }
             }
         });
@@ -1368,7 +1383,7 @@ function loadInbox() {
             }
         }
 
-        interactors.forEach((data, user) => {
+        interactors.forEach((data, senderIdentifier) => {
             let actionText = data.type === 'reserve' ? 'reserved your item.' : 'sent you a message.';
             
             const dropDiv = document.createElement('div');
@@ -1377,11 +1392,11 @@ function loadInbox() {
             dropDiv.onmouseout = () => dropDiv.style.background = 'transparent';
             dropDiv.onclick = () => {
                 document.getElementById('notif-dropdown')?.classList.add('hidden'); 
-                openChatModal(user.toLowerCase(), user); 
+                openChatModal(senderIdentifier, data.fromUser); 
             };
             dropDiv.innerHTML = `
                 <div>
-                    <strong style="color: var(--text); font-size: 1.05rem;">${user}</strong>
+                    <strong style="color: var(--text); font-size: 1.05rem;">${data.fromUser}</strong>
                     <p style="margin: 4px 0 0 0; font-size: 0.85rem; color: var(--light);">${actionText}</p>
                 </div>
                 <span style="font-size: 1.5rem; color: var(--primary);">💬</span>
