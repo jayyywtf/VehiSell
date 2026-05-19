@@ -130,6 +130,9 @@ window.startAdminChat = function() {
     }
     
     openChatModal('admin', 'Customer Support');
+ 
+window.currentActiveChatId = conversationId; 
+document.getElementById('chat-modal').classList.remove('hidden');
 };
 
 navButtons.forEach(btn => {
@@ -1775,6 +1778,59 @@ if(catFilter) {
         currentLimit = 12;
         renderFilteredListings();
     };
+    // --- ADMIN REPLY FUNCTIONALITY ---
+const sendReply = async (chatId, senderId) => {
+    const replyInput = document.getElementById('admin-reply-input');
+    const message = replyInput.value.trim();
+
+    if (!message) return;
+
+    try {
+        await addDoc(collection(db, "messages"), {
+            chatId: chatId,
+            senderId: senderId,
+            text: message,
+            timestamp: serverTimestamp() // Ensure this is available, or use Date.now()
+        });
+
+        replyInput.value = '';
+        alert("Message sent!");
+    } catch (error) {
+        console.error("Error sending reply: ", error);
+        alert("Failed to send message.");
+    }
+};
+// --- ADMIN REPLY FUNCTIONALITY ---
+const sendReply = async (chatId, senderId) => {
+    const replyInput = document.getElementById('admin-reply-input');
+    const message = replyInput.value.trim();
+
+    if (!message) return;
+
+    try {
+        await addDoc(collection(db, "messages"), {
+            chatId: chatId,
+            senderId: senderId,
+            text: message,
+            timestamp: serverTimestamp() // Ensure this is available, or use Date.now()
+        });
+
+        replyInput.value = '';
+        alert("Message sent!");
+    } catch (error) {
+        console.error("Error sending reply: ", error);
+        alert("Failed to send message.");
+    }
+};
+
+// Hook up the button (make sure this runs after DOM loads)
+document.getElementById('send-reply-btn').addEventListener('click', () => {
+    const activeChatId = window.currentActiveChatId; // You must set this when opening the chat
+    const adminId = currentUser?.usernameKey === 'admin' ? currentUser.usernameKey : 'user';
+    
+    sendReply(activeChatId, adminId);
+});
+    
 }
 
 showTab('home');
