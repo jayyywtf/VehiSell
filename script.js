@@ -169,7 +169,7 @@ window.openPaymentModal = function(type, title, itemName, feeAmount, callback) {
     if(feeAmountEl) feeAmountEl.innerText = Number(feeAmount).toLocaleString(undefined, {minimumFractionDigits: 2});
     
     let label = 'Required Fee';
-    if(type === 'reserve') label = 'Required Downpayment (5%)';
+    if(type === 'reserve') label = 'Required Commission (₱200)';
     if(type === 'boost') label = 'Hot List Boost Fee';
     if(feeLabel) feeLabel.innerText = label;
 
@@ -543,7 +543,7 @@ const boostCheck = document.getElementById('p-boost');
 if(boostCheck) {
     boostCheck.onchange = function() {
         const submitBtn = document.getElementById('submit-sell-btn');
-        if (submitBtn) submitBtn.textContent = this.checked ? 'Proceed to Payment (₱150)' : 'Post Item';
+        if (submitBtn) submitBtn.textContent = this.checked ? 'Proceed to Payment (₱100)' : 'Post Item';
     };
 }
 
@@ -593,12 +593,12 @@ if (sellForm) {
             // BOOST IS AVAILABLE TO EVERYONE NOW
             if(isBoosted) {
                 if(submitBtn) submitBtn.disabled = false;
-                window.openPaymentModal('boost', 'Hot List Boost', document.getElementById('p-title')?.value || 'Item', 150, async (receiptStr) => {
+                window.openPaymentModal('boost', 'Hot List Boost', document.getElementById('p-title')?.value || 'Item', 100, async (receiptStr) => {
                     await addDoc(collection(db, "reservations"), {
                         item: "Listing Boost Fee",
                         buyer: currentUser.username,
                         seller: "VehiSell Admin", 
-                        fee: 150,
+                        fee: 100,
                         receipt: receiptStr, 
                         timestamp: Date.now()
                     });
@@ -631,12 +631,12 @@ window.toggleFavorite = (e, docId) => {
 };
 
 window.boostExistingItem = function(docId, title) {
-    window.openPaymentModal('boost', 'Hot List Boost', title, 150, async (receiptStr) => {
+    window.openPaymentModal('boost', 'Hot List Boost', title, 100, async (receiptStr) => {
         await addDoc(collection(db, "reservations"), {
             item: "Listing Boost Fee",
             buyer: currentUser.username,
             seller: "VehiSell Admin", 
-            fee: 150,
+            fee: 100,
             receipt: receiptStr, 
             timestamp: Date.now()
         });
@@ -687,7 +687,7 @@ function loadUserHistory() {
             // BOOST AVAILABLE TO EVERYONE
             const canBoost = item.status === 'available' && !item.boosted;
             const boostBtnHtml = canBoost 
-                ? `<button class="btn-boost" onclick="boostExistingItem('${item.docId}', '${item.title.replace(/'/g, "\\'")}')">🚀 Boost (₱150)</button>` 
+                ? `<button class="btn-boost" onclick="boostExistingItem('${item.docId}', '${item.title.replace(/'/g, "\\'")}')">🚀 Boost (₱100)</button>` 
                 : '';
 
             if (item.status === 'sold') {
@@ -934,9 +934,9 @@ window.openProductModal = function(docId) {
             const isReserved = item.status === 'reserved';
             const reserveBtnHtml = isReserved 
                 ? `<button class="btn-contact" style="background:#94a3b8;color:white;padding:1rem 1.5rem;border:none;border-radius:12px;cursor:not-allowed;font-weight:800;" disabled>Item is Reserved</button>`
-                : `<button class="btn-contact" style="background:#10b981;color:white;padding:1rem 1.5rem;border:none;border-radius:12px;cursor:pointer;font-weight:800;" onclick="openPaymentModal('reserve', 'Reserve Item', '${item.title.replace(/'/g, "\\'")}', ${item.price * 0.05}, processReservation)">Reserve (5%)</button>`;
+                : `<button class="btn-contact" style="background:#10b981;color:white;padding:1rem 1.5rem;border:none;border-radius:12px;cursor:pointer;font-weight:800;" onclick="openPaymentModal('reserve', 'Reserve Item', '${item.title.replace(/'/g, "\\'")}', 200, processReservation)">Reserve (₱200)</button>`;
 
-            window.pendingReservation = { docId: item.docId, title: item.title, sellerKey: item.sellerKey, sellerName: item.seller, fee: item.price * 0.05 };
+            window.pendingReservation = { docId: item.docId, title: item.title, sellerKey: item.sellerKey, sellerName: item.seller, fee: 200 };
 
             actionsDiv.innerHTML = `
                 <button class="btn-contact" style="background:#64748b;color:white;padding:1rem 1.5rem;border:none;border-radius:12px;cursor:pointer;font-weight:700;" onclick="contactSeller('${item.sellerKey}')">Contact</button>
