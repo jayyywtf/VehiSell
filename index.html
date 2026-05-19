@@ -69,8 +69,8 @@
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon">💳</div>
-                    <h3>Secure the item by Reservation Fee of P200 </h3>
-                    <p>Found the perfect car but need time to inspect it? Secure it instantly! Pay a small P200 Reservation Fee into our protected escrow to reserve the vehicle and remove it from the market.</p>
+                    <h3>Secure the item by Reservation Fee of ₱200 </h3>
+                    <p>Found the perfect car but need time to inspect it? Secure it instantly! Pay a small ₱200 Reservation Fee into our protected escrow to reserve the vehicle and remove it from the market.</p>
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon">💬</div>
@@ -96,8 +96,8 @@
                         <ul>
                             <li><a href="#" onclick="window.switchTab('buy'); return false;">Browse Marketplace</a></li>
                             <li><a href="#" onclick="window.switchTab('auth'); return false;">Create an Account</a></li>
-                            <li><a href="#">Safety Guidelines</a></li>
-                            <li><a href="#">Privacy Policy</a></li>
+                            <li><a href="#" onclick="openLegalModal('safety'); return false;">Safety Guidelines</a></li>
+                            <li><a href="#" onclick="openLegalModal('privacy'); return false;">Privacy Policy</a></li>
                         </ul>
                     </div>
                 </div>
@@ -421,6 +421,19 @@
             <button id="btn-verify-otp" class="btn-primary" style="margin-top: 20px; font-size: 1.1rem; padding: 12px;">Verify & Login</button>
         </div>
     </div>
+
+    <div id="legal-modal" class="modal hidden">
+        <div class="modal-content glass-card" style="max-width: 650px; text-align: left; overflow: hidden; display: flex; flex-direction: column;">
+            <span class="close-btn" onclick="document.getElementById('legal-modal').classList.add('hidden')">&times;</span>
+            <h2 id="legal-title" style="margin-top:0; font-size: 1.8rem;">Legal Info</h2>
+            <div id="legal-content" style="margin-top: 15px; font-size: 0.95rem; line-height: 1.6; max-height: 65vh; overflow-y: auto; padding-right: 15px;">
+                </div>
+        </div>
+    </div>
+
+    <button id="floating-cs-btn" class="hidden" onclick="startAdminChat()" title="Customer Service Live Chat">
+        🎧
+    </button>
 
     <button id="logout-btn" style="display: none;"></button>
 
