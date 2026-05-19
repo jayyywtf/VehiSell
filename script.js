@@ -89,7 +89,7 @@ window.openLegalModal = function(type) {
                 <h3 style="color: #10b981; margin-top: 0; display: flex; align-items: center; gap: 10px;">
                     <span>✅</span> 1-Month Warranty & Insurance
                 </h3>
-                <p style="color: var(--text); margin-bottom: 0;">By paying the <strong>₱200 Reservation Fee</strong> through our secure Escrow platform, your transaction is officially protected by VehiSell. This automatically grants you a <strong>1-Month Insurance and Warranty</strong>. If the item is defective or the seller acts fraudulently, our Admin team will mediate and assist in providing compensation.</p>
+                <p style="color: var(--text); margin-bottom: 0;">By paying the <strong>3% Reservation Fee</strong> through our secure Escrow platform, your transaction is officially protected by VehiSell. This automatically grants you a <strong>1-Month Insurance and Warranty</strong>. If the item is defective or the seller acts fraudulently, our Admin team will mediate and assist in providing compensation.</p>
             </div>
 
             <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; padding: 20px; border-radius: 16px;">
@@ -118,7 +118,6 @@ window.openLegalModal = function(type) {
     document.getElementById('legal-modal').classList.remove('hidden');
 };
 
-// UPDATE: Added logic to open the Admin Inbox modal for the admin
 window.startAdminChat = function() {
     if (currentUser && currentUser.usernameKey === 'admin') {
         document.getElementById('admin-inbox-modal')?.classList.remove('hidden');
@@ -217,9 +216,12 @@ window.openPaymentModal = function(type, title, itemName, feeAmount, callback) {
     if(itemTitle) itemTitle.innerText = itemName;
     if(feeAmountEl) feeAmountEl.innerText = Number(feeAmount).toLocaleString(undefined, {minimumFractionDigits: 2});
     
+    // UPDATED FEE LABELS
     let label = 'Required Fee';
-    if(type === 'reserve') label = 'Required Commission (₱200)';
+    if(type === 'reserve') label = 'Required Commission (3%)';
     if(type === 'boost') label = 'Hot List Boost Fee';
+    if(type === 'post') label = 'Standard Listing Fee';
+    if(type === 'post_boost') label = 'Listing + Hot List Boost Fee';
     if(feeLabel) feeLabel.innerText = label;
 
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
@@ -464,6 +466,7 @@ function updateNav() {
             if(bellBtn) bellBtn.style.display = 'none';
             
             loadAdminDashboard();
+            loadInbox(); // ADMIN BUG FIX: We must load the inbox for the admin too!
         } else {
             document.getElementById('nav-acc')?.classList.remove('hidden');
             document.querySelector('[data-tab="sell"]')?.classList.remove('hidden'); 
@@ -590,7 +593,8 @@ const boostCheck = document.getElementById('p-boost');
 if(boostCheck) {
     boostCheck.onchange = function() {
         const submitBtn = document.getElementById('submit-sell-btn');
-        if (submitBtn) submitBtn.textContent = this.checked ? 'Proceed to Payment (₱100)' : 'Post Item';
+        // UPDATED: Dynamic text for new Listing fee logic (100 base + 75 boost)
+        if (submitBtn) submitBtn.textContent = this.checked ? 'Proceed to Payment (₱175)' : 'Proceed to Payment (₱100)';
     };
 }
 
@@ -606,6 +610,11 @@ if (sellForm) {
         try {
             const compressedImagesArray = await Promise.all(pendingProductImages.map(f => compressImageAsync(f, 1200, 1200, 0.8)));
             const isBoosted = document.getElementById('p-boost') ? document.getElementById('p-boost').checked : false;
+
+            // UPDATED: New posting fee logic
+            const totalFee = isBoosted ? 175 : 100;
+            const feeType = isBoosted ? 'post_boost' : 'post';
+            const feeLabelTitle = isBoosted ? 'Listing + Boost Fee' : 'Listing Fee';
 
             const publishToCloud = async () => {
                 if(submitBtn) submitBtn.textContent = "Saving Listing...";
@@ -630,34 +639,31 @@ if (sellForm) {
                 pendingProductImages = []; 
                 const previewCont = document.getElementById('sell-img-previews');
                 if(previewCont) previewCont.innerHTML = ''; 
-                if(submitBtn) submitBtn.textContent = "Post Item";
+                if(submitBtn) submitBtn.textContent = "Proceed to Payment (₱100)";
                 alert(isBoosted ? "🌟 Boost successful! Item posted to Hot List." : "✅ Item listed successfully!");
                 fetchAndRenderListings();
                 loadUserHistory();
                 showTab('buy');
             };
 
-            if(isBoosted) {
-                if(submitBtn) submitBtn.disabled = false;
-                window.openPaymentModal('boost', 'Hot List Boost', document.getElementById('p-title')?.value || 'Item', 100, async (receiptStr) => {
-                    await addDoc(collection(db, "reservations"), {
-                        item: "Listing Boost Fee",
-                        buyer: currentUser.username,
-                        seller: "VehiSell Admin", 
-                        fee: 100,
-                        receipt: receiptStr, 
-                        timestamp: Date.now()
-                    });
-                    await publishToCloud();
+            // Post action now always goes to Payment Gateway due to 100php base fee
+            window.openPaymentModal(feeType, feeLabelTitle, document.getElementById('p-title')?.value || 'Item', totalFee, async (receiptStr) => {
+                await addDoc(collection(db, "reservations"), {
+                    item: feeLabelTitle,
+                    buyer: currentUser.username,
+                    seller: "VehiSell Admin", 
+                    fee: totalFee,
+                    receipt: receiptStr, 
+                    timestamp: Date.now()
                 });
-            } else {
                 await publishToCloud();
-            }
+            });
 
         } catch (error) {
             console.error(error);
             alert("❌ Failed to list item.");
-            if(submitBtn) { submitBtn.disabled = false; submitBtn.textContent = "Post Item"; }
+            const isBoosted = document.getElementById('p-boost') ? document.getElementById('p-boost').checked : false;
+            if(submitBtn) { submitBtn.disabled = false; submitBtn.textContent = isBoosted ? 'Proceed to Payment (₱175)' : 'Proceed to Payment (₱100)'; }
         }
     };
 }
@@ -677,12 +683,13 @@ window.toggleFavorite = (e, docId) => {
 };
 
 window.boostExistingItem = function(docId, title) {
-    window.openPaymentModal('boost', 'Hot List Boost', title, 100, async (receiptStr) => {
+    // UPDATED: Boost fee changed from 100 to 75
+    window.openPaymentModal('boost', 'Hot List Boost', title, 75, async (receiptStr) => {
         await addDoc(collection(db, "reservations"), {
             item: "Listing Boost Fee",
             buyer: currentUser.username,
             seller: "VehiSell Admin", 
-            fee: 100,
+            fee: 75,
             receipt: receiptStr, 
             timestamp: Date.now()
         });
@@ -731,8 +738,9 @@ function loadUserHistory() {
             let actionButtons = '';
 
             const canBoost = item.status === 'available' && !item.boosted;
+            // UPDATED: Boost Button UI text changed to 75
             const boostBtnHtml = canBoost 
-                ? `<button class="btn-boost" onclick="boostExistingItem('${item.docId}', '${item.title.replace(/'/g, "\\'")}')">🚀 Boost (₱100)</button>` 
+                ? `<button class="btn-boost" onclick="boostExistingItem('${item.docId}', '${item.title.replace(/'/g, "\\'")}')">🚀 Boost (₱75)</button>` 
                 : '';
 
             if (item.status === 'sold') {
@@ -979,16 +987,20 @@ window.openProductModal = function(docId) {
             const isReserved = item.status === 'reserved';
             const isLowPrice = Number(item.price) < 200; 
 
+            // UPDATED: Dynamic Reservation Fee logic (3% of original price)
+            let reserveFee = Number(item.price) * 0.03;
+            let feeDisplay = reserveFee % 1 === 0 ? reserveFee : reserveFee.toFixed(2);
+
             let reserveBtnHtml = '';
             if (isReserved) {
                 reserveBtnHtml = `<button class="btn-contact" style="background:#94a3b8;color:white;padding:1rem 1.5rem;border:none;border-radius:12px;cursor:not-allowed;font-weight:800;" disabled>Item is Reserved</button>`;
             } else if (isLowPrice) {
-                reserveBtnHtml = `<button class="btn-reserve" onclick="openPaymentModal('reserve', 'Reserve Item', '${item.title.replace(/'/g, "\\'")}', 200, processReservation)">Reserve (Optional)</button>`;
+                reserveBtnHtml = `<button class="btn-contact" style="background:var(--card-bg);color:var(--text);border:1px solid #10b981;padding:1rem 1.5rem;border-radius:12px;cursor:pointer;font-weight:800;" onclick="openPaymentModal('reserve', 'Reserve Item', '${item.title.replace(/'/g, "\\'")}', ${reserveFee}, processReservation)">Reserve (Optional 3%: ₱${feeDisplay})</button>`;
             } else {
-                reserveBtnHtml = `<button class="btn-contact" style="background:#10b981;color:white;padding:1rem 1.5rem;border:none;border-radius:12px;cursor:pointer;font-weight:800;" onclick="openPaymentModal('reserve', 'Reserve Item', '${item.title.replace(/'/g, "\\'")}', 200, processReservation)">Reserve (₱200)</button>`;
+                reserveBtnHtml = `<button class="btn-contact" style="background:#10b981;color:white;padding:1rem 1.5rem;border:none;border-radius:12px;cursor:pointer;font-weight:800;" onclick="openPaymentModal('reserve', 'Reserve Item', '${item.title.replace(/'/g, "\\'")}', ${reserveFee}, processReservation)">Reserve (₱${feeDisplay})</button>`;
             }
 
-            window.pendingReservation = { docId: item.docId, title: item.title, sellerKey: item.sellerKey, sellerName: item.seller, fee: 200 };
+            window.pendingReservation = { docId: item.docId, title: item.title, sellerKey: item.sellerKey, sellerName: item.seller, fee: reserveFee };
 
             actionsDiv.innerHTML = `
                 <button class="btn-contact" style="background:#64748b;color:white;padding:1rem 1.5rem;border:none;border-radius:12px;cursor:pointer;font-weight:700;" onclick="contactSeller('${item.sellerKey}')">Contact</button>
@@ -1345,7 +1357,7 @@ function triggerToastPopup(data) {
     setTimeout(() => { if(container.contains(toast)) toast.remove(); }, 8000);
 }
 
-// UPDATE: Unified Inbox Logic to handle both Normal Users and Admin!
+// Unified Inbox Logic to handle both Normal Users and Admin!
 function loadInbox() {
     if (!currentUser) return;
     
@@ -1643,7 +1655,7 @@ function renderAdminFinancials() {
             if (log.type === 'reserve') {
                 const r = log.data;
                 let logText = `<strong>${r.buyer}</strong> reserved <em>${r.item}</em> from <strong>${r.seller}</strong>`;
-                if (r.item.includes("Listing Boost Fee") || r.item.includes("Premium Dealer Registration")) {
+                if (r.item.includes("Listing Fee") || r.item.includes("Listing + Boost Fee") || r.item.includes("Listing Boost Fee") || r.item.includes("Premium Dealer Registration")) {
                     logText = `<strong>${r.buyer}</strong> paid for <em>${r.item}</em>`;
                 }
                 logItem.innerHTML = `
@@ -1807,7 +1819,7 @@ window.onclick = (event) => {
     const notifDropdown = document.getElementById('notif-dropdown');
     const otpModal = document.getElementById('otp-modal');
     const legalModal = document.getElementById('legal-modal'); 
-    const adminInboxModal = document.getElementById('admin-inbox-modal'); // UPDATE: Modal close listener
+    const adminInboxModal = document.getElementById('admin-inbox-modal'); 
     
     if (event.target === sellerModal) sellerModal.classList.add('hidden');
     if (event.target === paymentModal) paymentModal.classList.add('hidden');
