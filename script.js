@@ -597,11 +597,9 @@ const boostCheck = document.getElementById('p-boost');
 if(boostCheck) {
     boostCheck.onchange = function() {
         const submitBtn = document.getElementById('submit-sell-btn');
-        // UPDATED: Dynamic text for new Listing fee logic (100 base + 75 boost)
-        if (submitBtn) submitBtn.textContent = this.checked ? 'Proceed to Payment (₱175)' : 'Proceed to Payment (₱100)';
+        if (submitBtn) submitBtn.textContent = this.checked ? 'Proceed to Payment (₱75)' : 'Post Item';
     };
 }
-
 const sellForm = document.getElementById('form-sell');
 if (sellForm) {
     sellForm.onsubmit = async (e) => {
@@ -614,11 +612,6 @@ if (sellForm) {
         try {
             const compressedImagesArray = await Promise.all(pendingProductImages.map(f => compressImageAsync(f, 1200, 1200, 0.8)));
             const isBoosted = document.getElementById('p-boost') ? document.getElementById('p-boost').checked : false;
-
-            // UPDATED: New posting fee logic
-            const totalFee = isBoosted ? 175 : 100;
-            const feeType = isBoosted ? 'post_boost' : 'post';
-            const feeLabelTitle = isBoosted ? 'Listing + Boost Fee' : 'Listing Fee';
 
             const publishToCloud = async () => {
                 if(submitBtn) submitBtn.textContent = "Saving Listing...";
@@ -643,31 +636,37 @@ if (sellForm) {
                 pendingProductImages = []; 
                 const previewCont = document.getElementById('sell-img-previews');
                 if(previewCont) previewCont.innerHTML = ''; 
-                if(submitBtn) submitBtn.textContent = "Proceed to Payment (₱100)";
+                if(submitBtn) submitBtn.textContent = "Post Item";
                 alert(isBoosted ? "🌟 Boost successful! Item posted to Hot List." : "✅ Item listed successfully!");
                 fetchAndRenderListings();
                 loadUserHistory();
                 showTab('buy');
             };
 
-            // Post action now always goes to Payment Gateway due to 100php base fee
-            window.openPaymentModal(feeType, feeLabelTitle, document.getElementById('p-title')?.value || 'Item', totalFee, async (receiptStr) => {
-                await addDoc(collection(db, "reservations"), {
-                    item: feeLabelTitle,
-                    buyer: currentUser.username,
-                    seller: "VehiSell Admin", 
-                    fee: totalFee,
-                    receipt: receiptStr, 
-                    timestamp: Date.now()
+            // Only trigger the payment modal if the user checked the Boost box
+            if(isBoosted) {
+                if(submitBtn) submitBtn.disabled = false;
+                window.openPaymentModal('boost', 'Hot List Boost', document.getElementById('p-title')?.value || 'Item', 75, async (receiptStr) => {
+                    await addDoc(collection(db, "reservations"), {
+                        item: "Listing Boost Fee",
+                        buyer: currentUser.username,
+                        seller: "VehiSell Admin", 
+                        fee: 75,
+                        receipt: receiptStr, 
+                        timestamp: Date.now()
+                    });
+                    await publishToCloud();
                 });
+            } else {
+                // If not boosted, immediately publish the item for free
                 await publishToCloud();
-            });
+            }
 
         } catch (error) {
             console.error(error);
             alert("❌ Failed to list item.");
             const isBoosted = document.getElementById('p-boost') ? document.getElementById('p-boost').checked : false;
-            if(submitBtn) { submitBtn.disabled = false; submitBtn.textContent = isBoosted ? 'Proceed to Payment (₱175)' : 'Proceed to Payment (₱100)'; }
+            if(submitBtn) { submitBtn.disabled = false; submitBtn.textContent = isBoosted ? 'Proceed to Payment (₱75)' : 'Post Item'; }
         }
     };
 }
