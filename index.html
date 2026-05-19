@@ -23,376 +23,401 @@
                             🔔 <span id="notif-badge" class="hidden badge">0</span>
                         </button>
                         
-                        <div id="notif-dropdown" class="hidden" style="position: absolute; top: 50px; right: 0; width: 320px; z-index: 1000;">
-                            <div class="glass-card" style="padding: 15px; max-height: 400px; overflow-y: auto;">
-                                <h4 style="margin: 0 0 10px 0; display: flex; justify-content: space-between; align-items: center;">
-                                    Notifications 
-                                    <span style="font-size: 0.8rem; color: var(--primary); cursor: pointer;" onclick="clearAllNotifications()">Clear All</span>
-                                </h4>
-                                <div id="notif-list" style="display: flex; flex-direction: column; gap: 8px;"></div>
+                        <div id="notif-dropdown" class="hidden" style="position: absolute; top: 55px; left: 0; background: var(--card-bg); backdrop-filter: blur(10px); width: 320px; border-radius: 16px; box-shadow: 0 15px 50px rgba(0,0,0,0.15); border: 1px solid var(--border); z-index: 1000; overflow: hidden;">
+                            <div style="background: var(--bg); padding: 15px; border-bottom: 1px solid var(--border); font-weight: 800; color: var(--text); font-size: 1rem;">
+                                Notifications
+                            </div>
+                            <div id="dropdown-list" style="max-height: 350px; overflow-y: auto; padding: 5px;">
+                                <p style="color: var(--light); text-align: center; margin: 20px 0; font-size: 0.9rem;">No messages yet.</p>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="search-bar">
-                <input type="text" id="search-input" placeholder="Search premium items, vehicles, machinery...">
-                <select id="category-filter">
-                    <option value="all">All Categories</option>
-                    <option value="Cars">Cars</option>
-                    <option value="Motorcycles">Motorcycles</option>
-                    <option value="Trucks">Trucks</option>
-                    <option value="Heavy Equipment">Heavy Equipment</option>
-                    <option value="Bicycles">Bicycles</option>
-                    <option value="Parts & Accessories">Parts & Accessories</option>
-                </select>
-            </div>
-
-            <div class="nav-actions" id="nav-actions">
-                <button class="btn-primary" onclick="openLoginModal()">Login / Register</button>
-            </div>
+            <nav id="main-nav">
+                <button class="nav-btn active" data-tab="home">Home</button>
+                <button class="nav-btn" data-tab="buy">Marketplace</button>
+                <button class="nav-btn hidden" id="nav-saved" data-tab="saved" style="color: #ef4444;">Saved</button>
+                <button class="nav-btn" id="nav-sell" data-tab="sell">Sell Item</button>
+                <button class="nav-btn nav-accent" id="nav-auth" data-tab="auth">Sign In</button>
+                <button class="nav-btn hidden" id="nav-acc" data-tab="acc">Profile</button>
+                <button class="nav-btn hidden" id="nav-admin" data-tab="admin" style="background: var(--primary); color: white;">Dashboard</button>
+                <button class="nav-btn hidden" id="nav-logout" style="color: #ef4444;" onclick="document.getElementById('logout-btn').click()">Logout</button>
+            </nav>
         </div>
     </header>
 
-    <main class="container">
-        <section class="hero-section">
-            <h1 class="hero-title">Find Your Next Perfect Ride & Machine</h1>
-            <p class="hero-subtitle">The Philippines' trusted marketplace for verified vehicles, heavy equipment, and authentic spare parts.</p>
-            <div class="hero-buttons">
-                <button class="btn-primary" onclick="document.getElementById('listings-heading').scrollIntoView({behavior: 'smooth'})" style="width: 180px; font-size: 1rem; padding: 14px;">Browse Catalog</button>
-                <button id="hero-sell-btn" class="btn-secondary" onclick="openSellerModal()" style="width: 180px; font-size: 1rem; padding: 14px;">Sell an Item</button>
+    <div id="toast-container" class="toast-container"></div>
+
+    <main>
+        <section id="sec-home" class="tab-content">
+            <div class="hero-section">
+                <h1 class="hero-title">The Premium Marketplace<br>for <span>Vehicles & Parts.</span></h1>
+                <p class="hero-subtitle">Buy, sell, and reserve with absolute confidence. Every seller is ID-verified, and every transaction is protected by our secure Escrow system.</p>
+                <div class="hero-buttons">
+                    <button class="btn-primary" style="width: auto; padding: 1rem 2.5rem; font-size: 1.1rem; border-radius: 30px;" onclick="window.switchTab('buy')">Explore Marketplace</button>
+                    <button class="btn-secondary" style="background: var(--card-bg); color: var(--text); border: 1px solid var(--border); width: auto; padding: 1rem 2.5rem; font-size: 1.1rem; border-radius: 30px;" onclick="window.switchTab('sell')">Start Selling</button>
+                </div>
+            </div>
+
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🛡️</div>
+                    <h3>ID-Verified Sellers</h3>
+                    <p>No scams. No fake accounts. Every single seller on our platform undergoes manual government ID verification by our administrative team before they can list a single item.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">💳</div>
+                    <h3>Secure the item by Reservation Fee of ₱200 </h3>
+                    <p>Found the perfect car but need time to inspect it? Secure it instantly! Pay a small ₱200 Reservation Fee into our protected escrow to reserve the vehicle and remove it from the market.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">💬</div>
+                    <h3>Real-Time Live Chat</h3>
+                    <p>Negotiate, ask for extra pictures, and finalize meetup details using our lightning-fast built-in messaging system. Receive instant email notifications so you never miss a deal.</p>
+                </div>
+            </div>
+
+            <footer class="site-footer">
+                <div class="footer-grid">
+                    <div class="footer-col">
+                        <h2 class="logo" style="color: white; font-size: 2rem; margin-top: 0;">Vehi<span>Sell</span></h2>
+                        <p>The safest way to buy and sell vehicles and parts in the Philippines. Join thousands of verified users today.</p>
+                    </div>
+                    <div class="footer-col">
+                        <h3>Contact Us</h3>
+                        <p>📞 Phone: +63 924 489 6829</p>
+                        <p>✉️ Email: hernandezbjay1@gmail.com</p>
+                        <p>🏢 Office: STI College Balayan, Balayan, Batangas</p>
+                    </div>
+                    <div class="footer-col">
+                        <h3>Quick Links</h3>
+                        <ul>
+                            <li><a href="#" onclick="window.switchTab('buy'); return false;">Browse Marketplace</a></li>
+                            <li><a href="#" onclick="window.switchTab('auth'); return false;">Create an Account</a></li>
+                            <li><a href="#" onclick="openLegalModal('safety'); return false;">Safety Guidelines</a></li>
+                            <li><a href="#" onclick="openLegalModal('privacy'); return false;">Privacy Policy</a></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="footer-bottom">
+                    &copy; 2026 VehiSell Marketplace. All rights reserved.
+                </div>
+            </footer>
+        </section>
+
+        <section id="sec-buy" class="tab-content hidden">
+            <div class="section-header" style="margin-bottom: 2rem;">
+                <h2 style="font-size: 2rem; margin: 0 0 5px 0;">Verified Listings</h2>
+                <p style="color: var(--light); margin: 0; font-size: 1.1rem;">Buy with confidence from ID-verified sellers.</p>
             </div>
             
-            <div class="stats-grid">
-                <div class="stat-card glass-card">
-                    <h3 id="stat-total-items">0+</h3>
-                    <p>Verified Assets</p>
-                </div>
-                <div class="stat-card glass-card">
-                    <h3 id="stat-active-sellers">0+</h3>
-                    <p>Trusted Sellers</p>
-                </div>
-                <div class="stat-card glass-card">
-                    <h3 id="stat-completed">0+</h3>
-                    <p>Successful Deals</p>
+            <div class="filter-bar">
+                <input type="text" id="search-input" placeholder="Search for vehicles or parts...">
+                <select id="category-filter">
+                    <option value="all">All Categories</option>
+                    <option value="parts">Parts</option>
+                    <option value="sedan">Sedan</option>
+                    <option value="suv">SUV</option>
+                    <option value="4x4">4X4</option>
+                </select>
+                <input type="number" id="min-price" placeholder="Min Price ₱">
+                <input type="number" id="max-price" placeholder="Max Price ₱">
+                <select id="sort-filter">
+                    <option value="newest">Sort: Newest First</option>
+                    <option value="price-asc">Sort: Price (Low to High)</option>
+                    <option value="price-desc">Sort: Price (High to Low)</option>
+                </select>
+            </div>
+            
+            <div id="listings-grid" class="grid"></div>
+            
+            <div id="load-more-container" style="text-align: center; margin-top: 2rem; display: none;">
+                <button id="btn-load-more" class="btn-secondary" style="width: auto; padding: 12px 40px; font-size: 1.1rem;">Load More Items</button>
+            </div>
+        </section>
+
+        <section id="sec-saved" class="tab-content hidden">
+            <div class="section-header" style="margin-bottom: 2rem;">
+                <h2 style="font-size: 2rem; margin: 0 0 5px 0;">My Saved Items</h2>
+                <p style="color: var(--light); margin: 0; font-size: 1.1rem;">Keep track of the vehicles you love.</p>
+            </div>
+            <div id="saved-grid" class="grid"></div>
+        </section>
+
+        <section id="sec-sell" class="tab-content hidden">
+            <div class="glass-card">
+                <h2 style="margin-top:0;">Create Listing</h2>
+                <form id="form-sell">
+                    <input type="text" id="p-title" placeholder="Item Name" required>
+                    <input type="number" id="p-price" placeholder="Price (PHP)" required>
+                    
+                    <select id="p-category" required>
+                        <option value="" disabled selected>Select Category</option>
+                        <option value="parts">Parts</option>
+                        <option value="sedan">Sedan</option>
+                        <option value="suv">SUV</option>
+                        <option value="4x4">4X4</option>
+                    </select>
+
+                    <textarea id="p-desc" placeholder="Product details..." rows="5" required></textarea>
+                    
+                    <div class="file-box" style="margin-bottom: 1.5rem;">
+                        <label style="font-weight: 700; font-size: 0.9rem; color: var(--light); margin-bottom: 8px; display: block;">Product Photos (Select multiple)</label>
+                        <input type="file" id="p-img" accept="image/*" multiple style="background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px; color: var(--text);">
+                        <div id="sell-img-previews" style="display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap;"></div>
+                    </div>
+                    
+                    <div id="boost-container" style="margin: 15px 0; background: rgba(245, 158, 11, 0.1); padding: 15px; border-radius: 12px; border: 1px solid #f59e0b;">
+                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: 800; color: #d97706;">
+                            <input type="checkbox" id="p-boost" style="width: 20px; height: 20px; margin:0;">
+                            Boost this listing (₱100 fee)
+                        </label>
+                        <p style="margin: 5px 0 0 30px; font-size: 0.8rem; color: var(--text);">Boosted listings always appear at the very top of the marketplace.</p>
+                    </div>
+
+                    <button type="submit" id="submit-sell-btn" class="btn-primary">Post Item</button>
+                </form>
+            </div>
+        </section>
+
+        <section id="sec-auth" class="tab-content hidden">
+            <div class="glass-card">
+                <h2 id="auth-title" style="margin-top:0;">Welcome Back</h2>
+                <form id="form-auth">
+                    <input type="text" id="auth-user" placeholder="Username" required>
+                    <input type="password" id="auth-pass" placeholder="Password" required>
+                    
+                    <div id="signup-extra" class="hidden">
+                        <input type="password" id="auth-pass-confirm" placeholder="Confirm Password">
+                        <input type="email" id="auth-email" placeholder="Email Address (For Notifications)">
+                        <input type="tel" id="auth-phone" placeholder="Phone Number (e.g., 09123456789)">
+                        <input type="text" id="auth-fb" placeholder="Facebook Profile Link">
+
+                        <div class="id-upload-area" style="background: var(--bg); border: 2px dashed var(--border); padding: 15px; border-radius: 12px;">
+                            <label style="color: var(--primary); font-weight: 800;">Front of Valid ID (Required)</label>
+                            <p style="margin: 5px 0; font-size: 0.85rem; color: var(--light);">Upload a clear photo of the front</p>
+                            <input type="file" id="auth-id-img" accept="image/*" style="border:none; padding:0; background:transparent;">
+                        </div>
+                        <div class="id-upload-area" style="margin-top: 15px; background: var(--bg); border: 2px dashed var(--border); padding: 15px; border-radius: 12px;">
+                            <label style="font-weight: 800;">Back of Valid ID (Optional)</label>
+                            <p style="margin: 5px 0; font-size: 0.85rem; color: var(--light);">Upload the back if it contains details</p>
+                            <input type="file" id="auth-id-back-img" accept="image/*" style="border:none; padding:0; background:transparent;">
+                        </div>
+                    </div>
+
+                    <button type="submit" id="auth-btn" class="btn-primary" style="margin-top: 1rem;">Login</button>
+                </form>
+                <div class="auth-toggle">
+                    <button type="button" id="switch-auth" class="btn-text">New here? Create a verified account</button>
                 </div>
             </div>
         </section>
 
-        <section id="admin-dashboard" class="hidden" style="margin-bottom: 40px;">
-            <div class="glass-card" style="padding: 25px; border: 2px solid var(--primary);">
-                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 20px;">
-                    <div>
-                        <h2 style="margin: 0; color: var(--primary);">👑 Admin Command Center</h2>
-                        <p style="margin: 5px 0 0 0; color: var(--light);">Manage items, verifications, and system live chat requests.</p>
-                    </div>
-                    <div style="display: flex; gap: 10px;">
-                        <button class="btn-primary" onclick="switchAdminTab('items')">Manage Listings</button>
-                        <button class="btn-secondary" onclick="switchAdminTab('chat')" id="admin-chat-tab-btn" style="position: relative;">
-                            Live Chat Support <span id="admin-chat-badge" class="badge hidden" style="top:-5px; right:-5px;">!</span>
-                        </button>
+        <section id="sec-acc" class="tab-content hidden">
+            <div class="glass-card acc-view" style="max-width: 600px; text-align: center;">
+                <div style="font-size: 4rem; margin-bottom: 10px;">👤</div>
+                <h2 id="acc-name" style="margin-top: 0; margin-bottom: 5px;">User</h2>
+                
+                <div class="id-display-section" style="width: 100%; text-align: left; background: var(--bg); padding: 20px; border-radius: 16px; border: 1px solid var(--border); margin-top: 20px; box-sizing: border-box;">
+                    <p style="font-weight: 800; margin-bottom: 10px; color: var(--text);">Front ID:</p>
+                    <img id="acc-id-display" src="" alt="Front ID" style="width: 100%; height: 200px; object-fit: cover; border-radius: 12px; border: 2px solid var(--primary); cursor: zoom-in; box-shadow: 0 4px 15px rgba(0,0,0,0.05);" onclick="viewFullImage(this.src)">
+                    
+                    <div style="margin-top: 20px;">
+                        <p style="font-weight: 800; margin-bottom: 10px; color: var(--text);">Back ID:</p>
+                        <img id="acc-id-back-display" src="" alt="Back ID" style="display: none; width: 100%; height: 200px; object-fit: cover; border-radius: 12px; border: 2px solid var(--primary); cursor: zoom-in; box-shadow: 0 4px 15px rgba(0,0,0,0.05);" onclick="viewFullImage(this.src)">
+                        
+                        <div id="upload-back-id-box" class="file-box" style="display: none; background: var(--card-bg); padding: 20px; border-radius: 12px; border: 2px dashed var(--border); text-align: center;">
+                            <label style="font-size: 0.95rem; font-weight: 800; color: var(--primary); display: block; margin-bottom: 10px;">Upload Back ID (Optional)</label>
+                            <input type="file" id="profile-upload-back-id" accept="image/*" style="border: none; padding: 0; width: auto;">
+                            <button id="btn-save-back-id" class="btn-primary" style="margin-top: 15px; padding: 10px 20px; font-size: 0.9rem; width: auto;">Upload & Save</button>
+                        </div>
                     </div>
                 </div>
 
-                <div id="admin-items-view">
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; margin-bottom: 25px;">
-                        <div class="glass-card" style="padding: 15px; text-align: center; background: rgba(79,70,229,0.05);">
-                            <span style="font-size: 1.5rem;">💰</span>
-                            <h4 style="margin: 5px 0;">Total Marketplace Volume</h4>
-                            <p id="admin-total-profit" style="font-size: 1.8rem; font-weight: 800; color: var(--primary); margin: 5px 0;">₱0</p>
-                        </div>
-                        <div class="glass-card" style="padding: 15px; text-align: center;">
-                            <span style="font-size: 1.5rem;">⏳</span>
-                            <h4 style="margin: 5px 0;">Pending Approval</h4>
-                            <p id="admin-pending-count" style="font-size: 1.8rem; font-weight: 800; margin: 5px 0;">0</p>
-                        </div>
-                        <div class="glass-card" style="padding: 15px; text-align: center;">
-                            <span style="font-size: 1.5rem;">✅</span>
-                            <h4 style="margin: 5px 0;">Active Published</h4>
-                            <p id="admin-active-count" style="font-size: 1.8rem; font-weight: 800; margin: 5px 0;">0</p>
-                        </div>
-                    </div>
-                    <div class="table-container">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Item</th>
-                                    <th>Seller</th>
-                                    <th>Price</th>
-                                    <th>Status</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="admin-table-body"></tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <div id="admin-chat-view" class="hidden">
-                    <div style="display: grid; grid-template-columns: 280px 1fr; gap: 20px; height: 500px;">
-                        <div class="glass-card" style="padding: 10px; display: flex; flex-direction: column; overflow-y: auto; gap: 8px;" id="admin-chat-channels">
-                            <p style="text-align: center; color: var(--light); padding: 20px 0;">No active messages.</p>
-                        </div>
-                        <div class="glass-card" style="padding: 15px; display: flex; flex-direction: column; position: relative;">
-                            <div id="admin-chat-header" style="font-weight: 600; padding-bottom: 10px; border-bottom: 1px solid var(--border); margin-bottom: 10px; color: var(--primary);">
-                                Select a customer channel to start chatting
-                            </div>
-                            <div id="admin-chat-messages" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding-right: 5px; margin-bottom: 10px;"></div>
-                            <div style="display: flex; gap: 10px;">
-                                <input type="text" id="admin-chat-input" placeholder="Type a professional customer service response..." style="flex: 1; margin:0;" onkeypress="if(event.key==='Enter') sendAdminChatResponse()">
-                                <button class="btn-primary" onclick="sendAdminChatResponse()">Send</button>
-                            </div>
-                        </div>
+                <div style="margin-top: 30px; width: 100%; text-align: left;">
+                    <h3 style="border-bottom: 2px solid var(--border); padding-bottom: 10px; margin-bottom: 15px; color: var(--primary);">My Listings & History</h3>
+                    <div id="user-history-list" style="max-height: 350px; overflow-y: auto; background: var(--bg); border-radius: 12px; border: 1px solid var(--border); padding: 10px;">
+                        <p style="color: var(--light); text-align: center;">No history yet.</p>
                     </div>
                 </div>
             </div>
         </section>
 
-        <section id="seller-dashboard" class="hidden" style="margin-bottom: 40px;">
-            <div class="glass-card" style="padding: 20px; background: rgba(16, 185, 129, 0.03); border: 1px dashed #10b981;">
-                <h3 style="margin-top: 0; color: #10b981; display: flex; align-items: center; gap: 10px;">
-                    <span>👨‍💼</span> Seller Dashboard
-                </h3>
-                <div class="table-container">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Your Item</th>
-                                <th>Price</th>
-                                <th>Status</th>
-                                <th>Views</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="seller-table-body"></tbody>
-                    </table>
+        <section id="sec-admin" class="tab-content hidden">
+            <div class="glass-card" style="max-width: 800px;">
+                <h2 style="margin-top:0;">🛡️ Overseer Dashboard</h2>
+                <p style="color: var(--light); margin-top: -15px; margin-bottom: 25px;">Welcome to the VehiSell Administration Panel.</p>
+                
+                <div style="background: var(--bg); padding: 30px; border-radius: 20px; text-align: center; margin-bottom: 20px; border: 1px solid var(--border); box-shadow: 0 10px 30px rgba(0,0,0,0.03);">
+                    <h3 style="margin:0; color: var(--light); font-size: 1rem; text-transform: uppercase; letter-spacing: 1px;">Available Escrow Profit & Fees</h3>
+                    <h1 style="margin:15px 0; color: #10b981; font-size: 3.5rem; letter-spacing: -1px;" id="admin-total-profit">₱0.00</h1>
+                    <button id="btn-withdraw" class="btn-primary" style="background: var(--text); color: var(--bg); width: auto; padding: 12px 25px; border-radius: 30px; font-size: 1rem;">🏦 Withdraw Funds to Bank</button>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h4 style="margin:0; color: var(--light); font-size:0.9rem;">Total Users</h4>
+                        <h2 style="margin:10px 0 0 0; color: var(--primary); font-size: 1.8rem;" id="admin-total-users">0</h2>
+                    </div>
+                    <div class="stat-card">
+                        <h4 style="margin:0; color: var(--light); font-size:0.9rem;">Active Listings</h4>
+                        <h2 style="margin:10px 0 0 0; color: #10b981; font-size: 1.8rem;" id="admin-total-listings">0</h2>
+                    </div>
+                    <div class="stat-card">
+                        <h4 style="margin:0; color: var(--light); font-size:0.9rem;">Reserved Items</h4>
+                        <h2 style="margin:10px 0 0 0; color: #f59e0b; font-size: 1.8rem;" id="admin-total-reserved">0</h2>
+                    </div>
+                    <div class="stat-card">
+                        <h4 style="margin:0; color: var(--light); font-size:0.9rem;">Items Sold</h4>
+                        <h2 style="margin:10px 0 0 0; color: #ef4444; font-size: 1.8rem;" id="admin-total-sold">0</h2>
+                    </div>
+                </div>
+
+                <h3 style="margin-bottom: 15px; color: var(--primary); font-size: 1.2rem;">⏳ Pending Account Approvals</h3>
+                <div id="admin-pending-users" style="max-height: 400px; overflow-y: auto; background: var(--bg); border: 1px solid var(--border); border-radius: 16px; padding: 15px; margin-bottom: 25px;">
+                    <p style="color: var(--light); text-align: center; margin: 20px 0;">No pending accounts.</p>
+                </div>
+
+                <h3 style="margin-bottom: 15px; color: #3b82f6; font-size: 1.2rem;">👥 Active Platform Users</h3>
+                <div id="admin-all-users" style="max-height: 350px; overflow-y: auto; background: var(--bg); border: 1px solid var(--border); border-radius: 16px; padding: 15px; margin-bottom: 25px;">
+                    <p style="color: var(--light); text-align: center; margin: 20px 0;">Loading users...</p>
+                </div>
+
+                <h3 style="margin-bottom: 15px; color: #ef4444; font-size: 1.2rem;">🚩 Reported Listings</h3>
+                <div id="admin-reports" style="max-height: 300px; overflow-y: auto; background: rgba(239, 68, 68, 0.1); border: 1px solid #fecdd3; border-radius: 16px; padding: 15px; margin-bottom: 25px;">
+                    <p style="color: var(--light); text-align: center; margin: 20px 0;">No reported listings.</p>
+                </div>
+
+                <h3 style="margin-bottom: 15px; font-size: 1.2rem;">🧾 System Ledger</h3>
+                <div id="admin-logs" style="max-height: 350px; overflow-y: auto; background: var(--bg); border: 1px solid var(--border); border-radius: 16px; padding: 15px;">
                 </div>
             </div>
         </section>
-
-        <h2 id="listings-heading" style="margin-bottom: 25px; font-weight: 800; font-size: 2rem;">Featured Showroom</h2>
-        
-        <div class="products-grid" id="products-container"></div>
-        
-        <div style="text-align: center; margin-top: 40px; margin-bottom: 60px;">
-            <button id="load-more-btn" class="btn-secondary" style="width: auto; padding: 12px 35px;" onclick="loadMoreListings()">Load More Assets</button>
-        </div>
     </main>
 
-    <footer class="site-footer container">
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 30px; margin-bottom: 40px;">
-            <div>
-                <h3 style="color: white; margin-top:0;">Vehi<span>Sell</span></h3>
-                <p style="color: #94a3b8; font-size: 0.9rem; line-height: 1.6;">The premiere digital ecosystem for heavy machines, commercial vehicles, and automotive parts in the Philippines.</p>
-            </div>
-            <div>
-                <h4>Quick Links</h4>
-                <p style="cursor:pointer;" onclick="window.scrollTo({top:0, behavior:'smooth'})">Back to Top</p>
-                <p style="cursor:pointer;" onclick="document.getElementById('listings-heading').scrollIntoView({behavior: 'smooth'})">Showroom Marketplace</p>
-                <p style="cursor:pointer;" onclick="openSellerModal()">Become a Verified Partner</p>
-            </div>
-            <div>
-                <h4>Safety & Legal Guidelines</h4>
-                <p style="cursor:pointer;" onclick="openLegalModal('terms')">Terms of Service</p>
-                <p style="cursor:pointer;" onclick="openLegalModal('privacy')">Privacy Policy</p>
-                <p style="cursor:pointer;" onclick="openLegalModal('safety')">Safe Buying Guide</p>
-            </div>
+    <div id="image-modal" class="modal hidden" style="z-index: 9999;">
+        <div class="modal-content" style="background: transparent; box-shadow: none; text-align: center; padding: 0 !important; max-width: 95%; max-height: none; overflow: visible; border: none;">
+            <span class="close-btn" onclick="document.getElementById('image-modal').classList.add('hidden')" style="color: white; font-size: 50px; position: absolute; right: 0; top: -50px; text-shadow: 0 2px 10px rgba(0,0,0,0.5);">&times;</span>
+            <img id="full-image-viewer" src="" style="max-width: 100%; max-height: 85vh; border-radius: 16px; box-shadow: 0 20px 50px rgba(0,0,0,0.8); object-fit: contain;">
         </div>
-        <div style="text-align: center; padding-top: 20px; border-top: 1px solid #334155; color: #64748b; font-size: 0.85rem;">
-            &copy; 2026 VehiSell Marketplace Group Inc. All rights reserved. Built with enterprise grade standards.
-        </div>
-    </footer>
+    </div>
 
-    <div id="login-modal" class="modal hidden">
-        <div class="modal-content glass-card" style="max-width: 420px;">
-            <span class="close-btn" onclick="closeLoginModal()">&times;</span>
+    <div id="product-modal" class="modal hidden">
+        <div class="modal-content glass-card" style="max-width: 650px; padding: 0 !important; overflow-y: auto; display: flex; flex-direction: column; border: none; max-height: 90vh;">
+            <span class="close-btn" onclick="document.getElementById('product-modal').classList.add('hidden')" style="cursor: pointer; position: absolute; right: 20px; top: 15px; z-index: 50; background: rgba(255,255,255,0.95); box-shadow: 0 4px 10px rgba(0,0,0,0.1); border-radius: 50%; width: 36px; height: 36px; text-align: center; line-height: 36px; font-weight: bold; color: #0f172a;">&times;</span>
             
-            <div style="display: flex; justify-content: space-around; margin-bottom: 25px; border-bottom: 1px solid var(--border); padding-bottom: 10px;">
-                <h3 id="tab-login" class="active" style="cursor: pointer; margin: 0; padding-bottom: 5px;" onclick="switchAuthTab('login')">Sign In</h3>
-                <h3 id="tab-register" style="cursor: pointer; margin: 0; padding-bottom: 5px;" onclick="switchAuthTab('register')">Register Account</h3>
+            <div style="background: #0f172a; text-align: center; position: relative; display: flex; align-items: center; justify-content: center; height: 35vh; min-height: 200px; width: 100%;">
+                <button class="gallery-nav-btn" style="left: 15px;" onclick="prevGalleryImage(event)">&#10094;</button>
+                <img id="pm-main-img" src="" style="max-height: 100%; max-width: 100%; object-fit: contain; cursor: zoom-in;" onclick="viewFullImage(this.src)">
+                <button class="gallery-nav-btn" style="right: 15px;" onclick="nextGalleryImage(event)">&#10095;</button>
             </div>
+            
+            <div id="pm-thumbnails"></div>
 
-            <div id="auth-login-fields">
-                <div class="form-group">
-                    <label>Email Address</label>
-                    <input type="email" id="login-email" placeholder="name@example.com">
+            <div style="padding: 20px; text-align: left; background: var(--card-bg);">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <h2 id="pm-price" style="color: #10b981; margin: 0 0 5px 0; font-size: 2rem; letter-spacing: -1px;">₱0</h2>
+                    <button id="pm-report-btn" onclick="reportCurrentListing()" style="background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #ef4444;" title="Report this listing">🚩 Report</button>
                 </div>
-                <div class="form-group">
-                    <label>Password</label>
-                    <input type="password" id="login-password" placeholder="••••••••">
+                <h3 id="pm-title" style="margin: 0 0 10px 0; font-size: 1.5rem; color: var(--text);">Product Title</h3>
+                <p id="pm-desc" style="color: var(--light); white-space: pre-wrap; line-height: 1.6; max-height: 150px; overflow-y: auto; padding-right: 10px; font-size: 0.95rem;">Description...</p>
+                
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border); flex-wrap: wrap; gap: 10px;">
+                    <div style="display: flex; align-items: center; gap: 12px; background: var(--bg); padding: 10px 20px; border-radius: 30px; border: 1px solid var(--border);">
+                        <span style="font-size: 1.3rem;">👤</span>
+                        <strong id="pm-seller-name" style="font-size: 1rem; color: var(--primary);">Seller Name</strong>
+                    </div>
+                    <div id="pm-actions" style="display: flex; gap: 10px; flex-wrap: wrap; flex: 1; justify-content: flex-end;">
+                    </div>
                 </div>
-                <button class="btn-primary" style="margin-top: 10px;" onclick="handleLogin()">Sign In securely</button>
-            </div>
-
-            <div id="auth-register-fields" class="hidden">
-                <div class="form-group">
-                    <label>Full Structural Name</label>
-                    <input type="text" id="reg-name" placeholder="Juan Dela Cruz">
-                </div>
-                <div class="form-group">
-                    <label>Username Handle</label>
-                    <input type="text" id="reg-username" placeholder="juan_dev">
-                </div>
-                <div class="form-group">
-                    <label>Email Address</label>
-                    <input type="email" id="reg-email" placeholder="juan@domain.com">
-                </div>
-                <div class="form-group">
-                    <label>Account Authorization Tier</label>
-                    <select id="reg-role" style="width: 100%; padding: 10px; border-radius: 8px; background: var(--bg); color: var(--text); border: 1px solid var(--border);">
-                        <option value="Buyer">Standard Asset Buyer</option>
-                        <option value="Seller">Merchant / Equipment Vendor</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Password Secret</label>
-                    <input type="password" id="reg-password" placeholder="Min. 6 characters">
-                </div>
-                <button class="btn-primary" style="margin-top: 10px;" onclick="handleRegister()">Complete Registration</button>
             </div>
         </div>
     </div>
 
     <div id="seller-modal" class="modal hidden">
-        <div class="modal-content glass-card" style="max-width: 550px;">
+        <div class="modal-content glass-card" style="text-align: center;">
             <span class="close-btn" onclick="document.getElementById('seller-modal').classList.add('hidden')">&times;</span>
-            <h2 style="margin-top: 0; font-weight: 800; color: var(--primary);">Publish Asset Listing</h2>
-            <p style="color: var(--light); font-size: 0.9rem; margin-top: -10px; margin-bottom: 20px;">Provide complete details for review and publication.</p>
+            <h2 style="margin-top:0;">Contact Seller</h2>
+            <img id="modal-seller-avatar" src="" alt="Seller ID" style="width: 100%; height: 200px; object-fit: cover; border-radius: 16px; margin: 15px 0; border: 2px solid var(--border);">
+            <h3 id="modal-seller-name" style="font-size: 1.5rem; margin-bottom: 5px;">Seller Name</h3>
+            <p id="modal-seller-address" style="color: var(--light); font-size: 14px; margin-bottom: 25px;">Location</p>
             
-            <div style="max-height: 70vh; overflow-y: auto; padding-right: 5px;">
-                <div class="form-group">
-                    <label>Asset / Product Title</label>
-                    <input type="text" id="prod-title" placeholder="e.g., 2021 Toyota Hilux Conquest 4x4 Automatic">
-                </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                    <div class="form-group">
-                        <label>Category Type</label>
-                        <select id="prod-category" style="width:100%; padding:10px; border-radius:8px; background:var(--bg); color:var(--text); border:1px solid var(--border);">
-                            <option value="Cars">Cars</option>
-                            <option value="Motorcycles">Motorcycles</option>
-                            <option value="Trucks">Trucks</option>
-                            <option value="Heavy Equipment">Heavy Equipment</option>
-                            <option value="Bicycles">Bicycles</option>
-                            <option value="Parts & Accessories">Parts & Accessories</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Price (PHP ₱)</label>
-                        <input type="number" id="prod-price" placeholder="550000">
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label>Asset Specifications & Description</label>
-                    <textarea id="prod-desc" rows="4" placeholder="List item mileage, conditions, inclusions, engine details..."></textarea>
-                </div>
-                <div class="form-group">
-                    <label>Asset Image Representation</label>
-                    <div style="display: flex; flex-direction: column; gap: 10px;">
-                        <input type="file" id="prod-file" accept="image/*" style="padding: 5px 0;">
-                        <input type="text" id="prod-url" placeholder="Or paste standard secure image direct URL link instead...">
-                    </div>
-                </div>
-                <button class="btn-primary" style="margin-top: 15px; width:100%; padding:14px;" onclick="submitNewListing()">Submit Asset Listing for Verification</button>
+            <div class="modal-actions" style="display: flex; flex-direction: column; gap: 12px;">
+                <a id="modal-seller-phone" href="#" class="btn-primary" style="text-decoration: none; display: block; padding: 15px;">📞 Call / SMS</a>
+                <a id="modal-seller-fb" href="#" target="_blank" class="btn-secondary" style="text-decoration: none; display: block; padding: 15px; border: none; background: #1877F2; color: white;">📘 Message on Facebook</a>
             </div>
+        </div>
+    </div>
+
+    <div id="chat-modal" class="modal hidden">
+        <div class="modal-content glass-card" style="padding: 0 !important; overflow: hidden; display: flex; flex-direction: column; height: 85vh; max-height: 700px; border: none;">
+            <div style="background: var(--primary-gradient); color: white; padding: 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1); z-index: 10;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 1.5rem;">💬</span>
+                    <h3 id="chat-target-name" style="margin: 0; font-size: 1.2rem; color: white;">Live Chat</h3>
+                </div>
+                <span class="close-btn" onclick="closeChatModal()" style="cursor: pointer; color: white; position: static; transform: none; font-size: 2rem;">&times;</span>
+            </div>
+            
+            <div id="chat-messages" style="flex: 1; padding: 20px; overflow-y: auto; background: var(--bg); display: flex; flex-direction: column; gap: 12px;"></div>
+
+            <div id="chat-img-preview-container" style="display: none; padding: 15px; background: var(--card-bg); border-top: 1px solid var(--border); text-align: left; box-shadow: 0 -4px 10px rgba(0,0,0,0.02);">
+                <span style="font-size: 0.85rem; font-weight: 800; color: var(--primary);">Attached Image:</span>
+                <img id="chat-img-preview" src="" style="height: 70px; border-radius: 8px; margin-left: 15px; vertical-align: middle; border: 1px solid var(--border); box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                <span style="cursor: pointer; color: white; background: #ef4444; padding: 5px 10px; border-radius: 20px; font-size: 0.8rem; margin-left: 15px; font-weight: bold; transition: 0.2s;" onclick="removeChatImg()">✖ Remove</span>
+            </div>
+
+            <form id="form-chat" style="display: flex; padding: 15px; background: var(--card-bg); border-top: 1px solid var(--border); align-items: center; gap: 12px;">
+                <input type="file" id="chat-img-input" accept="image/*" style="display: none;">
+                <button type="button" onclick="document.getElementById('chat-img-input').click()" style="background: var(--bg); color: var(--primary); border: 1px solid var(--border); padding: 14px; border-radius: 50%; cursor: pointer; font-size: 1.2rem; transition: 0.2s;" title="Attach Image">📎</button>
+                <input type="text" id="chat-input" placeholder="Type a message..." style="flex: 1; margin: 0; background: var(--bg); color: var(--text);">
+                <button type="submit" class="btn-primary" style="width: auto;">Send</button>
+            </form>
         </div>
     </div>
 
     <div id="payment-modal" class="modal hidden">
-        <div class="modal-content glass-card" style="max-width: 500px;">
+        <div class="modal-content glass-card" style="text-align: center;">
             <span class="close-btn" onclick="document.getElementById('payment-modal').classList.add('hidden')">&times;</span>
-            <h3 id="payment-modal-title" style="margin-top: 0; font-size: 1.4rem;">Direct Inquiry Channel</h3>
+            <h2 id="payment-modal-title" style="margin-top:0;">Payment Request</h2>
+            <h3 id="payment-item-title" style="margin-bottom: 5px; font-size: 1.2rem; color: var(--light);">Item Name</h3>
             
-            <div id="chat-box-container" style="display: flex; flex-direction: column; height: 350px; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; margin: 15px 0; overflow: hidden;">
-                <div id="direct-chat-messages" style="flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;"></div>
+            <div style="background: rgba(16, 185, 129, 0.1); padding: 20px; border-radius: 16px; margin: 20px 0; border: 1px solid #10b981; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.1);">
+                <p id="payment-fee-label" style="margin: 0; font-weight: 800; color: #10b981; text-transform: uppercase; font-size: 0.85rem; letter-spacing: 1px;">Required Fee</p>
+                <h2 style="margin: 10px 0 0 0; color: #10b981; font-size: 2.5rem; letter-spacing: -1px;">₱<span id="payment-fee-amount">0</span></h2>
+            </div>
+            
+            <div style="text-align: left; margin-bottom: 20px;">
+                <h4 style="margin-bottom: 15px; text-align: center; color: var(--text);">Send payment to VehiSell</h4>
                 
-                <div style="display: flex; border-top: 1px solid var(--border); background: var(--card-bg); padding: 8px;">
-                    <input type="text" id="direct-chat-input" placeholder="Inquire about delivery, pricing, condition..." style="flex: 1; border: none; padding: 8px 12px; font-size: 0.95rem; margin: 0; background: transparent; color: var(--text);" onkeypress="if(event.key==='Enter') sendDirectChatMessage()">
-                    <button class="btn-primary" style="width: auto; padding: 6px 18px; font-size: 0.85rem;" onclick="sendDirectChatMessage()">Send</button>
+                <div id="dynamic-gcash" style="text-align: center; margin-bottom: 15px; padding: 20px; border: 1px solid var(--border); border-radius: 16px; background: var(--bg); box-shadow: 0 4px 10px rgba(0,0,0,0.02);"></div>
+
+                <div style="border: 1px solid var(--border); padding: 15px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; background: var(--bg);">
+                    <strong style="color: var(--text);">🏦 Bank Transfer</strong>
+                    <span style="font-family: monospace; font-size: 1.1rem; color: var(--primary); font-weight: bold;">0012 3456 7890</span>
                 </div>
             </div>
 
-            <div id="payment-checkout-area" style="border-top: 1px dashed var(--border); padding-top: 15px; margin-top: 15px;">
-                <h4 style="margin: 0 0 10px 0;">Instant Secured Procurement Checkout</h4>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                    <button class="btn-primary" style="background:#10b981;" onclick="executeSimulatedTransaction('GCash')">Pay with GCash Secure</button>
-                    <button class="btn-primary" style="background:#2563eb;" onclick="executeSimulatedTransaction('Bank Transfer')">Direct Bank Wire</button>
-                </div>
+            <div class="file-box" style="text-align: left; margin-bottom: 25px; background: var(--bg); padding: 15px; border-radius: 12px; border: 2px dashed var(--primary);">
+                <label style="font-size: 0.95rem; font-weight: 800; color: var(--primary); display: block; margin-bottom: 10px;">Upload Proof of Payment (Receipt) *</label>
+                <input type="file" id="payment-receipt" accept="image/*" style="border: none; padding: 0; background: transparent; color: var(--text);">
             </div>
+            
+            <button id="btn-confirm-payment" class="btn-primary" style="background: #10b981; padding: 15px; font-size: 1.1rem;">Submit Payment Proof</button>
         </div>
-    </div>
-
-    <div id="product-modal" class="modal hidden">
-        <div class="modal-content glass-card" style="max-width: 700px; text-align: left; overflow: hidden;">
-            <span class="close-btn" onclick="document.getElementById('product-modal').classList.add('hidden')">&times;</span>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
-                <img id="detail-img" src="" alt="Asset Highres Image" style="width: 100%; height: 280px; object-fit: cover; border-radius: 12px; box-shadow: var(--shadow);">
-                <div style="display: flex; flex-direction: column; justify-content: space-between;">
-                    <div>
-                        <span id="detail-category" class="tag" style="display: inline-block; margin-bottom: 10px;">Category</span>
-                        <h2 id="detail-title" style="margin: 0 0 10px 0; font-size: 1.6rem; font-weight: 800;">Asset Name</h2>
-                        <div id="detail-price" style="font-size: 1.8rem; font-weight: 800; color: var(--primary); margin-bottom: 15px;">₱0.00</div>
-                        <p id="detail-desc" style="color: var(--light); font-size: 0.95rem; line-height: 1.6; max-height: 150px; overflow-y: auto; padding-right: 5px;">Description text...</p>
-                    </div>
-                    
-                    <div style="border-top: 1px solid var(--border); padding-top: 15px; margin-top: 15px; display:flex; flex-direction:column; gap:8px;">
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <div style="width: 35px; height: 35px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.9rem;" id="detail-seller-avatar">S</div>
-                            <div>
-                                <div id="detail-seller-name" style="font-weight: 600; font-size: 0.95rem;">Seller Name</div>
-                                <div style="font-size: 0.75rem; color: var(--light);">Verified Merchant Partner</div>
-                            </div>
-                        </div>
-                        <div style="display: flex; gap: 10px; margin-top: 10px;" id="detail-actions-row">
-                            </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div id="customer-service-modal" class="modal hidden" style="z-index: 1100;">
-        <div class="modal-content glass-card" style="max-width: 400px; position: fixed; bottom: 100px; right: 30px; margin: 0; padding: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.15);">
-            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 10px;">
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <span style="font-size: 1.4rem;">🎧</span>
-                    <div>
-                        <h4 style="margin: 0; font-size: 1rem;">VehiSell Support Live</h4>
-                        <span id="cs-chat-status" style="font-size: 0.75rem; color: #10b981; display: flex; align-items: center; gap: 4px;">
-                            <span style="width:6px; height:6px; background:#10b981; border-radius:50%; display:inline-block;"></span> Active Desk
-                        </span>
-                    </div>
-                </div>
-                <span class="close-btn" style="position:static; font-size:1.5rem;" onclick="document.getElementById('customer-service-modal').classList.add('hidden')">&times;</span>
-            </div>
-
-            <div id="cs-chat-messages" style="height: 280px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; background: var(--bg); padding: 10px; border-radius: 8px; margin-bottom: 10px;">
-                <div style="background: var(--card-bg); padding: 10px; border-radius: 8px; font-size: 0.88rem; color: var(--text); border: 1px solid var(--border); max-width: 85%;">
-                    Hello! Welcome to VehiSell Customer Care. How can we assist you with our vehicles or platform today?
-                </div>
-            </div>
-
-            <div style="display: flex; gap: 8px;">
-                <input type="text" id="cs-chat-input" placeholder="Type message for live concierge..." style="flex: 1; margin: 0; padding: 10px; font-size: 0.9rem;" onkeypress="if(event.key==='Enter') sendCustomerServiceMessage()">
-                <button class="btn-primary" style="width: auto; padding: 0 16px;" onclick="sendCustomerServiceMessage()">Send</button>
-            </div>
-        </div>
-    </div>
-
-    <div class="toast-container" id="toast-container"></div>
-
-    <div id="image-modal" class="modal hidden" style="background: rgba(0,0,0,0.85);">
-        <span class="close-btn" style="color: white; top: 20px; right: 30px; font-size: 3rem;" onclick="document.getElementById('image-modal').classList.add('hidden')">&times;</span>
-        <img id="image-modal-content" src="" alt="Full Scale Visualization Preview" style="margin: auto; display: block; max-width: 90%; max-height: 90vh; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); border-radius: 8px;">
     </div>
 
     <div id="otp-modal" class="modal hidden">
-        <div class="modal-content glass-card" style="max-width: 360px; text-align: center;">
+        <div class="modal-content glass-card" style="text-align: center; max-width: 400px; padding: 2rem !important; border: 1px solid var(--primary);">
             <span class="close-btn" onclick="document.getElementById('otp-modal').classList.add('hidden')">&times;</span>
             <div style="font-size: 3rem; margin-bottom: 10px;">🔐</div>
-            <h3 style="margin: 0 0 10px 0;">Two-Factor Identity Token</h3>
-            <p style="color: var(--light); font-size: 0.9rem; margin-bottom: 20px;">We've dispatched a 6-digit simulation keycode directly to your console logs for security verification.</p>
-            <input type="text" id="otp-input" maxlength="6" placeholder="000000" style="text-align: center; font-size: 2rem; padding: 8px; letter-spacing: 8px; font-weight: 800; background: var(--bg); border: 2px solid var(--border); color: var(--text);">
+            <h2 style="margin-top:0; margin-bottom: 5px;">Admin Security Check</h2>
+            <p style="color: var(--light); font-size: 0.9rem; margin-bottom: 20px;">We've sent a 6-digit verification code to your admin email address. Please enter it below.</p>
+            
+            <input type="text" id="otp-input" placeholder="000000" maxlength="6" style="text-align: center; font-size: 2rem; letter-spacing: 8px; font-weight: 800; background: var(--bg); border: 2px solid var(--border); color: var(--text);">
+            
             <button id="btn-verify-otp" class="btn-primary" style="margin-top: 20px; font-size: 1.1rem; padding: 12px;">Verify & Login</button>
         </div>
     </div>
@@ -401,7 +426,8 @@
         <div class="modal-content glass-card" style="max-width: 650px; text-align: left; overflow: hidden; display: flex; flex-direction: column;">
             <span class="close-btn" onclick="document.getElementById('legal-modal').classList.add('hidden')">&times;</span>
             <h2 id="legal-title" style="margin-top:0; font-size: 1.8rem;">Legal Info</h2>
-            <div id="legal-content" style="margin-top: 15px; font-size: 0.95rem; line-height: 1.6; max-height: 65vh; overflow-y: auto; padding-right: 15px;"></div>
+            <div id="legal-content" style="margin-top: 15px; font-size: 0.95rem; line-height: 1.6; max-height: 65vh; overflow-y: auto; padding-right: 15px;">
+                </div>
         </div>
     </div>
 
@@ -411,6 +437,15 @@
 
     <button id="logout-btn" style="display: none;"></button>
 
-    <script type="module" src="script.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+    <script type="text/javascript">
+       (function(){
+          emailjs.init({
+            publicKey: "HOpHUFwhh-6WO_eZZ",
+          });
+       })();
+    </script>
+
+    <script src="script.js" type="module"></script>
 </body>
 </html>
