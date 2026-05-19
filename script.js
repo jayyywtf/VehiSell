@@ -130,8 +130,6 @@ window.startAdminChat = function() {
     }
     
     openChatModal('admin', 'Customer Support');
- 
-
 };
 
 navButtons.forEach(btn => {
@@ -1777,9 +1775,6 @@ if(catFilter) {
         currentLimit = 12;
         renderFilteredListings();
     };
-};
-
-    
 }
 
 showTab('home');
