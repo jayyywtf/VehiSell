@@ -118,12 +118,13 @@ window.openLegalModal = function(type) {
     document.getElementById('legal-modal').classList.remove('hidden');
 };
 
+// UPDATE: Added logic to open the Admin Inbox modal for the admin
 window.startAdminChat = function() {
     if (currentUser && currentUser.usernameKey === 'admin') {
-        alert("Welcome Admin. Please check your notification bell to respond to user messages.");
-        return;
+        document.getElementById('admin-inbox-modal')?.classList.remove('hidden');
+    } else {
+        openChatModal('admin', 'Customer Support');
     }
-    openChatModal('admin', 'Customer Support');
 };
 
 navButtons.forEach(btn => {
@@ -976,13 +977,12 @@ window.openProductModal = function(docId) {
             actionsDiv.innerHTML = `<button class="btn-del" style="background:#ef4444;color:white;padding:1rem 2rem;border:none;border-radius:12px;cursor:pointer;font-weight:800;" onclick="deleteItem('${item.docId}')">Remove Listing</button>`;
         } else {
             const isReserved = item.status === 'reserved';
-            const isLowPrice = Number(item.price) < 200; // Under 200 pesos triggers the optional reserve button
+            const isLowPrice = Number(item.price) < 200; 
 
             let reserveBtnHtml = '';
             if (isReserved) {
                 reserveBtnHtml = `<button class="btn-contact" style="background:#94a3b8;color:white;padding:1rem 1.5rem;border:none;border-radius:12px;cursor:not-allowed;font-weight:800;" disabled>Item is Reserved</button>`;
             } else if (isLowPrice) {
-                // The new stylish optional reserve button
                 reserveBtnHtml = `<button class="btn-reserve" onclick="openPaymentModal('reserve', 'Reserve Item', '${item.title.replace(/'/g, "\\'")}', 200, processReservation)">Reserve (Optional)</button>`;
             } else {
                 reserveBtnHtml = `<button class="btn-contact" style="background:#10b981;color:white;padding:1rem 1.5rem;border:none;border-radius:12px;cursor:pointer;font-weight:800;" onclick="openPaymentModal('reserve', 'Reserve Item', '${item.title.replace(/'/g, "\\'")}', 200, processReservation)">Reserve (₱200)</button>`;
@@ -1143,7 +1143,6 @@ function getChatId(user1, user2) {
     return user1 < user2 ? `${user1}_${user2}` : `${user2}_${user1}`;
 }
 
-// Generate/fetch guest ID for chat users who are not logged in
 function getGuestId() {
     let guestId = localStorage.getItem('guest_chat_id');
     if (!guestId) {
@@ -1258,13 +1257,13 @@ if(formChat) {
             removeChatImg();
 
             let chatUserId = currentUser ? currentUser.usernameKey : getGuestId();
-            let chatUserName = currentUser ? currentUser.username : 'Customer';
+            let chatUserName = currentUser ? currentUser.username : 'Guest User';
             const chatId = getChatId(chatUserId, activeChatUserId);
 
             await addDoc(collection(db, "messages"), {
                 chatId: chatId,
                 sender: chatUserId,
-                senderName: chatUserName, // Save name so Admin knows if it's a Customer or logged-in User
+                senderName: chatUserName, 
                 text: text,
                 imageUrl: imgBase64, 
                 timestamp: Date.now()
@@ -1274,7 +1273,7 @@ if(formChat) {
                 targetUser: activeChatUserId,
                 type: 'message',
                 fromUser: chatUserName,
-                fromUserKey: chatUserId, // Send the unique guest ID so the admin clicks exactly the right chat
+                fromUserKey: chatUserId, 
                 text: text ? text : "Sent an image.",
                 timestamp: Date.now()
             });
@@ -1346,20 +1345,21 @@ function triggerToastPopup(data) {
     setTimeout(() => { if(container.contains(toast)) toast.remove(); }, 8000);
 }
 
+// UPDATE: Unified Inbox Logic to handle both Normal Users and Admin!
 function loadInbox() {
-    if (!currentUser || currentUser.usernameKey === 'admin') return;
+    if (!currentUser) return;
     
-    const q = query(collection(db, "notifications"), where("targetUser", "==", currentUser.usernameKey));
+    const isAdmin = currentUser.usernameKey === 'admin';
+    const targetKey = isAdmin ? 'admin' : currentUser.usernameKey;
+
+    const q = query(collection(db, "notifications"), where("targetUser", "==", targetKey));
+    
     onSnapshot(q, (snapshot) => {
-        const dropdownBox = document.getElementById('dropdown-list');
-        if(!dropdownBox) return;
-        dropdownBox.innerHTML = '';
-        
         let interactors = new Map();
         
         snapshot.forEach(doc => {
             const data = doc.data();
-            let senderIdentifier = data.fromUserKey || data.fromUser.toLowerCase(); // Map by guest ID if they are a guest
+            let senderIdentifier = data.fromUserKey || data.fromUser.toLowerCase(); 
             
             if(!interactors.has(senderIdentifier)) {
                 interactors.set(senderIdentifier, data);
@@ -1370,39 +1370,85 @@ function loadInbox() {
             }
         });
 
-        const notifBadge = document.getElementById('notif-badge');
+        if (isAdmin) {
+            // Populate the Admin Floating CS Icon Badge & Modal Inbox
+            const csBadge = document.getElementById('admin-cs-badge');
+            const adminInboxList = document.getElementById('admin-inbox-list');
 
-        if(interactors.size === 0) {
-            dropdownBox.innerHTML = '<p style="color: var(--light); text-align: center; margin: 20px 0; font-size: 0.9rem;">No messages yet.</p>';
-            if(notifBadge) notifBadge.classList.add('hidden');
-            return;
-        } else {
-            if(notifBadge) {
-                notifBadge.innerText = interactors.size;
-                notifBadge.classList.remove('hidden');
+            if(interactors.size === 0) {
+                if(adminInboxList) adminInboxList.innerHTML = '<p style="color: var(--light); text-align: center; margin: 20px 0; font-size: 0.9rem;">No messages yet.</p>';
+                if(csBadge) csBadge.classList.add('hidden');
+                return;
+            } else {
+                if(csBadge) {
+                    csBadge.innerText = interactors.size;
+                    csBadge.classList.remove('hidden');
+                }
             }
-        }
 
-        interactors.forEach((data, senderIdentifier) => {
-            let actionText = data.type === 'reserve' ? 'reserved your item.' : 'sent you a message.';
-            
-            const dropDiv = document.createElement('div');
-            dropDiv.style = "display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.2s;";
-            dropDiv.onmouseover = () => dropDiv.style.background = 'var(--bg)';
-            dropDiv.onmouseout = () => dropDiv.style.background = 'transparent';
-            dropDiv.onclick = () => {
-                document.getElementById('notif-dropdown')?.classList.add('hidden'); 
-                openChatModal(senderIdentifier, data.fromUser); 
-            };
-            dropDiv.innerHTML = `
-                <div>
-                    <strong style="color: var(--text); font-size: 1.05rem;">${data.fromUser}</strong>
-                    <p style="margin: 4px 0 0 0; font-size: 0.85rem; color: var(--light);">${actionText}</p>
-                </div>
-                <span style="font-size: 1.5rem; color: var(--primary);">💬</span>
-            `;
-            dropdownBox.appendChild(dropDiv);
-        });
+            if(adminInboxList) {
+                adminInboxList.innerHTML = '';
+                interactors.forEach((data, senderIdentifier) => {
+                    let actionText = data.type === 'reserve' ? 'reserved an item.' : 'sent you a message.';
+                    
+                    const dropDiv = document.createElement('div');
+                    dropDiv.style = "display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.2s;";
+                    dropDiv.onmouseover = () => dropDiv.style.background = 'var(--card-bg)';
+                    dropDiv.onmouseout = () => dropDiv.style.background = 'transparent';
+                    dropDiv.onclick = () => {
+                        document.getElementById('admin-inbox-modal')?.classList.add('hidden'); 
+                        openChatModal(senderIdentifier, data.fromUser); 
+                    };
+                    dropDiv.innerHTML = `
+                        <div>
+                            <strong style="color: var(--text); font-size: 1.05rem;">${data.fromUser}</strong>
+                            <p style="margin: 4px 0 0 0; font-size: 0.85rem; color: var(--light);">${actionText}</p>
+                        </div>
+                        <span style="font-size: 1.5rem; color: var(--primary);">💬</span>
+                    `;
+                    adminInboxList.appendChild(dropDiv);
+                });
+            }
+        } else {
+            // Normal User Logic (Bell Icon Dropdown)
+            const dropdownBox = document.getElementById('dropdown-list');
+            const notifBadge = document.getElementById('notif-badge');
+
+            if(!dropdownBox) return;
+            dropdownBox.innerHTML = '';
+
+            if(interactors.size === 0) {
+                dropdownBox.innerHTML = '<p style="color: var(--light); text-align: center; margin: 20px 0; font-size: 0.9rem;">No messages yet.</p>';
+                if(notifBadge) notifBadge.classList.add('hidden');
+                return;
+            } else {
+                if(notifBadge) {
+                    notifBadge.innerText = interactors.size;
+                    notifBadge.classList.remove('hidden');
+                }
+            }
+
+            interactors.forEach((data, senderIdentifier) => {
+                let actionText = data.type === 'reserve' ? 'reserved your item.' : 'sent you a message.';
+                
+                const dropDiv = document.createElement('div');
+                dropDiv.style = "display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.2s;";
+                dropDiv.onmouseover = () => dropDiv.style.background = 'var(--bg)';
+                dropDiv.onmouseout = () => dropDiv.style.background = 'transparent';
+                dropDiv.onclick = () => {
+                    document.getElementById('notif-dropdown')?.classList.add('hidden'); 
+                    openChatModal(senderIdentifier, data.fromUser); 
+                };
+                dropDiv.innerHTML = `
+                    <div>
+                        <strong style="color: var(--text); font-size: 1.05rem;">${data.fromUser}</strong>
+                        <p style="margin: 4px 0 0 0; font-size: 0.85rem; color: var(--light);">${actionText}</p>
+                    </div>
+                    <span style="font-size: 1.5rem; color: var(--primary);">💬</span>
+                `;
+                dropdownBox.appendChild(dropDiv);
+            });
+        }
     });
 }
 
@@ -1761,6 +1807,7 @@ window.onclick = (event) => {
     const notifDropdown = document.getElementById('notif-dropdown');
     const otpModal = document.getElementById('otp-modal');
     const legalModal = document.getElementById('legal-modal'); 
+    const adminInboxModal = document.getElementById('admin-inbox-modal'); // UPDATE: Modal close listener
     
     if (event.target === sellerModal) sellerModal.classList.add('hidden');
     if (event.target === paymentModal) paymentModal.classList.add('hidden');
@@ -1768,6 +1815,7 @@ window.onclick = (event) => {
     if (event.target === productModal) productModal.classList.add('hidden');
     if (otpModal && event.target === otpModal) otpModal.classList.add('hidden');
     if (legalModal && event.target === legalModal) legalModal.classList.add('hidden'); 
+    if (adminInboxModal && event.target === adminInboxModal) adminInboxModal.classList.add('hidden'); 
 
     if (notifDropdown && !notifDropdown.classList.contains('hidden')) {
         if (!event.target.closest('#quick-icons')) {
