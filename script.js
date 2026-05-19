@@ -78,6 +78,60 @@ window.switchTab = function(tabId) {
     showTab(tabId);
 };
 
+window.openLegalModal = function(type) {
+    const title = document.getElementById('legal-title');
+    const content = document.getElementById('legal-content');
+    
+    if (type === 'safety') {
+        title.innerHTML = '🛡️ Safety Guidelines & Warranty';
+        content.innerHTML = `
+            <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; padding: 20px; border-radius: 16px; margin-bottom: 20px;">
+                <h3 style="color: #10b981; margin-top: 0; display: flex; align-items: center; gap: 10px;">
+                    <span>✅</span> 1-Month Warranty & Insurance
+                </h3>
+                <p style="color: var(--text); margin-bottom: 0;">By paying the <strong>₱200 Reservation Fee</strong> through our secure Escrow platform, your transaction is officially protected by VehiSell. This automatically grants you a <strong>1-Month Insurance and Warranty</strong>. If the item is defective or the seller acts fraudulently, our Admin team will mediate and assist in providing compensation.</p>
+            </div>
+
+            <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; padding: 20px; border-radius: 16px;">
+                <h3 style="color: #ef4444; margin-top: 0; display: flex; align-items: center; gap: 10px;">
+                    <span>⚠️</span> Direct Transactions Risk
+                </h3>
+                <p style="color: var(--text); margin-bottom: 0;">If you bypass our reservation system and deal directly with the seller (e.g., messaging them to meet up blindly), <strong>the company and administrators will not be responsible</strong> for any outside happenings, scams, or damages. You proceed entirely at your own risk.</p>
+            </div>
+        `;
+    } else if (type === 'privacy') {
+        title.innerHTML = '🔒 Privacy Policy';
+        content.innerHTML = `
+            <p style="color: var(--light); font-size: 1.05rem;">VehiSell strictly protects your personal information.</p>
+            
+            <h3 style="color: var(--primary); margin-top: 20px;">Data Privacy Act of 2012 Compliance</h3>
+            <p style="color: var(--text);">In full compliance with the <strong>Data Privacy Act of 2012 (Republic Act No. 10173)</strong>, any personal data collected (such as Government IDs, contact details, and locations) is encrypted and used exclusively for:</p>
+            <ul style="color: var(--text); line-height: 1.8;">
+                <li>Verifying user identities to prevent fraudulent accounts.</li>
+                <li>Facilitating secure transactions and communication between buyers and sellers.</li>
+                <li>Customer Service resolution and mediation.</li>
+            </ul>
+            <p style="color: var(--text); margin-bottom: 0;">Your data is <strong>never sold</strong> to outside parties. You may request the full deletion of your account and files at any time by messaging the Admin team.</p>
+        `;
+    }
+    
+    document.getElementById('legal-modal').classList.remove('hidden');
+};
+
+window.startAdminChat = function() {
+    if (!currentUser) {
+        alert("Please login to access Customer Service.");
+        showTab('auth');
+        return;
+    }
+    if (currentUser.usernameKey === 'admin') {
+        alert("Welcome Admin. Please check your notification bell to respond to user messages.");
+        return;
+    }
+    
+    openChatModal('admin', 'Customer Support');
+};
+
 navButtons.forEach(btn => {
     btn.onclick = () => {
         const target = btn.getAttribute('data-tab');
@@ -414,6 +468,8 @@ function updateNav() {
             if(document.getElementById('quick-icons')) document.getElementById('quick-icons').style.display = 'none';
             if(bellBtn) bellBtn.style.display = 'none';
             
+            document.getElementById('floating-cs-btn')?.classList.add('hidden'); 
+            
             loadAdminDashboard();
         } else {
             document.getElementById('nav-acc')?.classList.remove('hidden');
@@ -423,6 +479,8 @@ function updateNav() {
             document.getElementById('nav-saved')?.classList.remove('hidden');
             if(document.getElementById('quick-icons')) document.getElementById('quick-icons').style.display = 'flex';
             if(bellBtn) bellBtn.style.display = 'flex';
+            
+            document.getElementById('floating-cs-btn')?.classList.remove('hidden'); 
             
             const accName = document.getElementById('acc-name');
             if (accName) accName.innerText = currentUser.username;
@@ -449,6 +507,8 @@ function updateNav() {
         document.getElementById('nav-logout')?.classList.add('hidden');
         if(document.getElementById('quick-icons')) document.getElementById('quick-icons').style.display = 'none';
         document.getElementById('nav-saved')?.classList.add('hidden');
+        
+        document.getElementById('floating-cs-btn')?.classList.add('hidden'); 
     }
 }
 
@@ -827,7 +887,6 @@ function renderFilteredListings() {
         const thumbnailSrc = item.images && item.images.length > 0 ? item.images[0] : item.image;
         const datePosted = new Date(item.timestamp).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 
-        // MODIFIED HERE: Forced layout to top-left corner using inline CSS to prevent overlap with heart icon
         const reservedBadge = item.status === 'reserved' 
             ? `<div class="status-badge status-reserved" style="position: absolute; top: 15px; left: 15px; right: auto; z-index: 45;">Reserved</div>` 
             : '';
@@ -929,9 +988,16 @@ window.openProductModal = function(docId) {
             actionsDiv.innerHTML = `<button class="btn-del" style="background:#ef4444;color:white;padding:1rem 2rem;border:none;border-radius:12px;cursor:pointer;font-weight:800;" onclick="deleteItem('${item.docId}')">Remove Listing</button>`;
         } else {
             const isReserved = item.status === 'reserved';
-            const reserveBtnHtml = isReserved 
-                ? `<button class="btn-contact" style="background:#94a3b8;color:white;padding:1rem 1.5rem;border:none;border-radius:12px;cursor:not-allowed;font-weight:800;" disabled>Item is Reserved</button>`
-                : `<button class="btn-contact" style="background:#10b981;color:white;padding:1rem 1.5rem;border:none;border-radius:12px;cursor:pointer;font-weight:800;" onclick="openPaymentModal('reserve', 'Reserve Item', '${item.title.replace(/'/g, "\\'")}', 200, processReservation)">Reserve (₱200)</button>`;
+            const isLowPrice = Number(item.price) <= 200;
+
+            let reserveBtnHtml = '';
+            if (isReserved) {
+                reserveBtnHtml = `<button class="btn-contact" style="background:#94a3b8;color:white;padding:1rem 1.5rem;border:none;border-radius:12px;cursor:not-allowed;font-weight:800;" disabled>Item is Reserved</button>`;
+            } else if (isLowPrice) {
+                reserveBtnHtml = `<button class="btn-contact" style="background:var(--border);color:var(--text);padding:1rem 1.5rem;border:none;border-radius:12px;cursor:not-allowed;font-weight:800;" disabled title="Not available for items ₱200 and below.">Reserve (N/A)</button>`;
+            } else {
+                reserveBtnHtml = `<button class="btn-contact" style="background:#10b981;color:white;padding:1rem 1.5rem;border:none;border-radius:12px;cursor:pointer;font-weight:800;" onclick="openPaymentModal('reserve', 'Reserve Item', '${item.title.replace(/'/g, "\\'")}', 200, processReservation)">Reserve (₱200)</button>`;
+            }
 
             window.pendingReservation = { docId: item.docId, title: item.title, sellerKey: item.sellerKey, sellerName: item.seller, fee: 200 };
 
@@ -1679,12 +1745,14 @@ window.onclick = (event) => {
     const productModal = document.getElementById('product-modal'); 
     const notifDropdown = document.getElementById('notif-dropdown');
     const otpModal = document.getElementById('otp-modal');
+    const legalModal = document.getElementById('legal-modal'); 
     
     if (event.target === sellerModal) sellerModal.classList.add('hidden');
     if (event.target === paymentModal) paymentModal.classList.add('hidden');
     if (event.target === imageModal) imageModal.classList.add('hidden');
     if (event.target === productModal) productModal.classList.add('hidden');
     if (otpModal && event.target === otpModal) otpModal.classList.add('hidden');
+    if (legalModal && event.target === legalModal) legalModal.classList.add('hidden'); 
 
     if (notifDropdown && !notifDropdown.classList.contains('hidden')) {
         if (!event.target.closest('#quick-icons')) {
