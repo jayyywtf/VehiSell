@@ -319,7 +319,7 @@ if (formAuth) {
                     email: email, 
                     phone: phone,
                     fb: fbLink,
-                    isDealer: false, // DEALER FEATURE REMOVED. EVERYONE IS STANDARD.
+                    isDealer: false, 
                     idPhoto: frontId, 
                     idPhotoBack: backId, 
                     isVerified: verifyNow || safeUserKey === 'admin' 
@@ -338,7 +338,6 @@ if (formAuth) {
                         compressedBackPhoto = await compressImageAsync(idBackFile, 800, 800, 0.8);
                     }
 
-                    // EVERYONE GOES THROUGH MANUAL APPROVAL NOW (NO BYPASS)
                     if(authBtn) authBtn.textContent = "Submitting Review...";
                     await submitToFirebase(compressedFrontPhoto, compressedBackPhoto, false);
                     alert("✅ Account submitted! The admin will review your ID to protect the community.");
@@ -399,11 +398,10 @@ function login(user) {
     listenForLiveAlerts(); 
 }
 
-// SECURE NAV UPDATER (LOGOUT NOW SHOWS FOR EVERYONE)
 function updateNav() {
     if (currentUser) {
         document.getElementById('nav-auth')?.classList.add('hidden');
-        document.getElementById('nav-logout')?.classList.remove('hidden'); // ALWAYS SHOW LOGOUT
+        document.getElementById('nav-logout')?.classList.remove('hidden'); 
         
         const isAdmin = currentUser.usernameKey === 'admin';
 
@@ -570,7 +568,7 @@ if (sellForm) {
                     seller: currentUser.username,
                     sellerKey: currentUser.username.toLowerCase(),
                     sellerIdPhoto: currentUser.idPhoto, 
-                    isDealer: false, // Dealer tag removed
+                    isDealer: false, 
                     boosted: isBoosted, 
                     status: 'available', 
                     timestamp: Date.now(),
@@ -590,7 +588,6 @@ if (sellForm) {
                 showTab('buy');
             };
 
-            // BOOST IS AVAILABLE TO EVERYONE NOW
             if(isBoosted) {
                 if(submitBtn) submitBtn.disabled = false;
                 window.openPaymentModal('boost', 'Hot List Boost', document.getElementById('p-title')?.value || 'Item', 100, async (receiptStr) => {
@@ -684,7 +681,6 @@ function loadUserHistory() {
             let statusBadge = '';
             let actionButtons = '';
 
-            // BOOST AVAILABLE TO EVERYONE
             const canBoost = item.status === 'available' && !item.boosted;
             const boostBtnHtml = canBoost 
                 ? `<button class="btn-boost" onclick="boostExistingItem('${item.docId}', '${item.title.replace(/'/g, "\\'")}')">🚀 Boost (₱100)</button>` 
@@ -831,8 +827,9 @@ function renderFilteredListings() {
         const thumbnailSrc = item.images && item.images.length > 0 ? item.images[0] : item.image;
         const datePosted = new Date(item.timestamp).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 
+        // MODIFIED HERE: Forced layout to top-left corner using inline CSS to prevent overlap with heart icon
         const reservedBadge = item.status === 'reserved' 
-            ? `<div class="status-badge status-reserved">Reserved</div>` 
+            ? `<div class="status-badge status-reserved" style="position: absolute; top: 15px; left: 15px; right: auto; z-index: 45;">Reserved</div>` 
             : '';
             
         const boostBadge = item.boosted 
