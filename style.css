@@ -266,3 +266,40 @@ input:focus, textarea:focus, select:focus { outline: none; background: var(--car
     .toast { width: 100%; min-width: unset; text-align: center; }
     .site-footer { padding: 3rem 1.5rem 1.5rem 1.5rem; border-radius: 20px; }
 }
+
+/* CUSTOMER SERVICE FLOATING BUTTON */
+#floating-cs-btn {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    background: var(--primary-gradient);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 65px;
+    height: 65px;
+    font-size: 2rem;
+    cursor: pointer;
+    box-shadow: 0 10px 25px rgba(79, 70, 229, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 990;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+#floating-cs-btn:hover {
+    transform: scale(1.15) translateY(-5px);
+    box-shadow: 0 15px 35px rgba(79, 70, 229, 0.6);
+}
+
+/* Adjust button size for mobile devices */
+@media (max-width: 768px) {
+    #floating-cs-btn {
+        width: 55px;
+        height: 55px;
+        font-size: 1.5rem;
+        bottom: 20px;
+        right: 20px;
+    }
+}
