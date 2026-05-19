@@ -347,15 +347,18 @@ if (formAuth) {
             const email = document.getElementById('auth-email')?.value.trim(); 
             const phone = document.getElementById('auth-phone')?.value.trim();
             const fbLink = document.getElementById('auth-fb')?.value.trim();
+            const municipality = document.getElementById('auth-municipality')?.value; // <-- Get Municipality
             const idFileInput = document.getElementById('auth-id-img');
             const idBackFileInput = document.getElementById('auth-id-back-img');
             
             const idFile = idFileInput?.files[0];
             const idBackFile = idBackFileInput?.files[0];
 
+            // REQUIRED FIELD VALIDATIONS
             if (!rawUser) return resetBtn("❌ Username required", "Create Verified Account");
             if (pass !== confirmPass) return resetBtn("❌ Passwords don't match", "Create Verified Account");
             if (!email) return resetBtn("❌ Email required", "Create Verified Account");
+            if (!municipality) return resetBtn("❌ Please select your municipality from District 1", "Create Verified Account"); // <-- Enforce Municipality
             if (!idFile) return resetBtn("❌ Front ID photo required", "Create Verified Account");
 
             const q = query(collection(db, "users"), where("usernameKey", "==", safeUserKey));
@@ -370,6 +373,7 @@ if (formAuth) {
                     email: email, 
                     phone: phone,
                     fb: fbLink,
+                    municipality: municipality, // <-- Save to Firebase Database
                     isDealer: false, 
                     idPhoto: frontId, 
                     idPhotoBack: backId, 
